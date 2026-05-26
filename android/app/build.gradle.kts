@@ -20,10 +20,8 @@ android {
     }
 
     signingConfigs {
-        release {
-            // Ensure 'upload-keystore.jks' is in your android/app folder
+        create("release") {
             storeFile = file("upload-keystore.jks")
-            // These read from your machine's environment variables
             storePassword = System.getenv("KEYSTORE_PASSWORD")
             keyAlias = System.getenv("KEY_ALIAS")
             keyPassword = System.getenv("KEY_PASSWORD")
@@ -49,17 +47,16 @@ android {
 
     buildTypes {
         release {
-            // Apply the signing config defined above
             signingConfig = signingConfigs.getByName("release")
-
-            // Recommended: Enable shrinking and optimization
-            minifyEnabled = true
-            shrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
 
         debug {
-            // Keep debug as is for development
             signingConfig = signingConfigs.getByName("debug")
         }
     }

@@ -15,6 +15,7 @@
 - Fixed notification tap handler navigates to alarm ring screen
 - Removed stale test_check.dart scratch file
 - Updated widget_test.dart to pass static analysis
+- Fixed AGP Kotlin DSL build errors: signingConfigs, isMinifyEnabled, isShrinkResources
 
 ## [1.0.2] - 2026-05-26
 - Added Nothing OS themed time picker with half-wheel effect
