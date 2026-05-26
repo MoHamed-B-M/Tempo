@@ -1,0 +1,83 @@
+name: Build Release APK
+
+on:
+  push:
+    branches:
+      - main
+      - '*'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Setup Gradle 8.2
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.2
+
+      - name: Build release APK
+        run: gradle assembleRelease
+
+      - name: Upload APK to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempo-release-apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          retention-days: 30
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tempo-release-apk
+          path: apk
+
+      - name: Extract changelog for current version
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          awk -v ver="$VERSION" '
+            BEGIN { found = 0 }
+            /^## / {
+              if (found) exit
+              if ($0 ~ "^## \\[" ver "\\]" || $0 ~ "^## " ver "$") found = 1
+              next
+            }
+            found { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "Release version $VERSION" > RELEASE_NOTES.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          files: apk/app-release-unsigned.apk
+          generate_release_notes: false
