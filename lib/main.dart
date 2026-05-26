@@ -11,10 +11,13 @@ import 'widgets/home_page.dart';
 final FlutterLocalNotificationsPlugin notificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final alarmService = AlarmService(notificationsPlugin);
+  AlarmService.navigatorKey = navigatorKey;
   await alarmService.initialize();
 
   final themeService = ThemeService();
@@ -45,6 +48,7 @@ class TempoApp extends StatelessWidget {
           return MaterialApp(
             title: 'Tempo',
             debugShowCheckedModeBanner: false,
+            navigatorKey: navigatorKey,
             themeMode: themeService.mode,
             theme: _buildLightTheme(),
             darkTheme: _buildDarkTheme(),

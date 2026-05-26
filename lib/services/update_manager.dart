@@ -29,7 +29,7 @@ class UpdateManager {
   static List<int> parseVersion(String v) {
     final parts = v.split('.');
     return [
-      parts.length > 0 ? int.tryParse(parts[0]) ?? 0 : 0,
+      parts.isNotEmpty ? int.tryParse(parts[0]) ?? 0 : 0,
       parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
       parts.length > 2 ? int.tryParse(parts[2]) ?? 0 : 0,
     ];
@@ -51,54 +51,89 @@ class UpdateManager {
   }) async {
     final channel = await getSavedChannel();
     final service = UpdateService();
-    final release = await service.checkForUpdate(channel);
+    final response = await service.checkForUpdate(channel);
     service.dispose();
 
-    if (release == null) {
-      if (!silent && context.mounted) {
-        _showNoUpdateSnackBar(context);
-      }
-      return;
-    }
+    if (!context.mounted) return;
 
-    final currentVersion = await getCurrentVersion();
-    final remoteVersion = stripV(release.tagName);
+    switch (response.result) {
+      case UpdateCheckResult.repoNotFound:
+        if (!silent) {
+          _showSnackBar(context,
+              'Update check failed: repository not found');
+        }
+      case UpdateCheckResult.networkError:
+        if (!silent) {
+          _showSnackBar(context,
+              'Could not check for updates. Check your connection.');
+        }
+      case UpdateCheckResult.noReleases:
+        if (!silent) {
+          _showSnackBar(context, 'No releases found on this channel');
+        }
+      case UpdateCheckResult.upToDate:
+        if (!silent) {
+          _showSnackBar(context, 'You are on the latest version');
+        }
+      case UpdateCheckResult.available:
+        final release = response.release!;
+        final currentVersion = await getCurrentVersion();
+        final remoteVersion = stripV(release.tagName);
 
-    if (!isNewer(remoteVersion, currentVersion)) {
-      if (!silent && context.mounted) {
-        _showNoUpdateSnackBar(context);
-      }
-      return;
-    }
+        if (!isNewer(remoteVersion, currentVersion)) {
+          if (!silent) {
+            _showSnackBar(context, 'You are on the latest version');
+          }
+          return;
+        }
 
-    if (context.mounted) {
-      _showUpdateDialog(context, release);
+        if (context.mounted) {
+          _showUpdateDialog(context, release);
+        }
     }
   }
 
-  static void _showNoUpdateSnackBar(BuildContext context) {
+  static void _showSnackBar(BuildContext context, String message) {
+    final brightness = Theme.of(context).brightness;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('You are on the latest version'),
-        backgroundColor: const Color(0xFF0E0E0E),
+        content: Text(message),
+        backgroundColor: brightness == Brightness.dark
+            ? const Color(0xFF0E0E0E)
+            : const Color(0xFFF2F2F2),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   static void _showUpdateDialog(BuildContext context, ReleaseInfo release) {
+    final brightness = Theme.of(context).brightness;
+    final bgColor = brightness == Brightness.dark
+        ? const Color(0xFF0E0E0E)
+        : const Color(0xFFFFFFFF);
+    final textColor = brightness == Brightness.dark
+        ? Colors.white
+        : Colors.black;
+    final dimColor = brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.5)
+        : Colors.black.withValues(alpha: 0.5);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0E0E0E),
+        backgroundColor: bgColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0xFF1A1A1A)),
+          side: BorderSide(
+            color: brightness == Brightness.dark
+                ? const Color(0xFF1A1A1A)
+                : const Color(0xFFE5E5EA),
+          ),
         ),
         title: Text(
           'Update Available',
           style: TextStyle(
-            color: Colors.white,
+            color: textColor,
             fontWeight: FontWeight.w600,
             letterSpacing: 1,
           ),
@@ -110,7 +145,7 @@ class UpdateManager {
             Text(
               'Version ${release.version}',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: textColor.withValues(alpha: 0.7),
                 letterSpacing: 0.5,
               ),
             ),
@@ -118,10 +153,7 @@ class UpdateManager {
               const SizedBox(height: 12),
               Text(
                 release.body,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: dimColor, fontSize: 13),
                 maxLines: 5,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -133,10 +165,7 @@ class UpdateManager {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Cancel',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                letterSpacing: 1,
-              ),
+              style: TextStyle(color: dimColor, letterSpacing: 1),
             ),
           ),
           TextButton(
@@ -144,10 +173,10 @@ class UpdateManager {
               Navigator.pop(ctx);
               _launchReleaseUrl(release.url);
             },
-            child: const Text(
+            child: Text(
               'Update Now',
               style: TextStyle(
-                color: Colors.white,
+                color: textColor,
                 letterSpacing: 1,
                 fontWeight: FontWeight.w600,
               ),

@@ -1,15 +1,19 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 import '../models/alarm_model.dart';
+import '../screens/alarm_ring_screen.dart';
 
 class AlarmService extends ChangeNotifier {
   static const _storageKey = 'alarms';
   static const _channelId = 'tempo_alarm_channel';
   static const _channelName = 'Alarm Notifications';
+
+  static GlobalKey<NavigatorState>? navigatorKey;
 
   final FlutterLocalNotificationsPlugin _notifications;
   List<AlarmModel> _alarms = [];
@@ -22,7 +26,10 @@ class AlarmService extends ChangeNotifier {
   Future<void> initialize() async {
     if (_initialized) return;
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    tz_data.initializeTimeZones();
+
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -103,10 +110,9 @@ class AlarmService extends ChangeNotifier {
     final updated = _alarms[index].copyWith(enabled: !_alarms[index].enabled);
     _alarms[index] = updated;
     await _saveAlarms();
+    await _cancelAlarmNotification(updated);
     if (updated.enabled) {
       await _scheduleAlarm(updated);
-    } else {
-      await _cancelAlarmNotification(updated);
     }
     notifyListeners();
   }
@@ -130,33 +136,23 @@ class AlarmService extends ChangeNotifier {
       now.day,
       alarm.hour,
       alarm.minute,
+      now.second,
+      now.millisecond,
     );
 
     if (alarm.isRepeating) {
-      for (final day in alarm.repeatDays) {
-        var nextDay = scheduledDate;
-        while (nextDay.weekday != day) {
-          nextDay = nextDay.add(const Duration(days: 1));
-        }
-        if (nextDay.isBefore(now)) {
-          nextDay = nextDay.add(const Duration(days: 7));
-        }
-        await _scheduleRepeatingNotification(alarm.id, nextDay);
-      }
+      await _scheduleRepeatingNotifications(alarm, scheduledDate, now);
     } else {
       if (scheduledDate.isBefore(now)) {
         scheduledDate = scheduledDate.add(const Duration(days: 1));
       }
-      await _scheduleOneShotNotification(alarm.id, scheduledDate);
+      await _scheduleOneShot(alarm, scheduledDate);
     }
   }
 
-  Future<void> _scheduleOneShotNotification(
-    String alarmId,
-    DateTime date,
-  ) async {
-    final hour = DateFormat('HH:mm').format(date);
-    final androidDetails = AndroidNotificationDetails(
+  AndroidNotificationDetails _buildAndroidDetails(String sound) {
+    final soundName = sound != 'default' ? 'alarm_$sound' : null;
+    return AndroidNotificationDetails(
       _channelId,
       _channelName,
       channelDescription: 'Plays when an alarm triggers',
@@ -166,73 +162,131 @@ class AlarmService extends ChangeNotifier {
       playSound: true,
       enableVibration: true,
       category: AndroidNotificationCategory.alarm,
-    );
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    final id = alarmId.hashCode;
-    await _notifications.periodicallyShow(
-      id,
-      'Tempo Alarm',
-      'Alarm set for $hour',
-      RepeatInterval.daily,
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      sound: soundName != null
+          ? RawResourceAndroidNotificationSound(soundName)
+          : null,
     );
   }
 
-  Future<void> _scheduleRepeatingNotification(
-    String alarmId,
+  Future<void> _scheduleOneShot(
+    AlarmModel alarm,
     DateTime date,
   ) async {
-    final hour = DateFormat('HH:mm').format(date);
-    final androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: 'Plays when an alarm triggers',
-      importance: Importance.high,
-      priority: Priority.high,
-      fullScreenIntent: true,
-      playSound: true,
-      enableVibration: true,
-      category: AndroidNotificationCategory.alarm,
-    );
+    final androidDetails = _buildAndroidDetails(alarm.sound);
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
     );
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    final details =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    final id = alarmId.hashCode;
-    await _notifications.periodicallyShow(
-      id,
+    await _notifications.zonedSchedule(
+      alarm.id.hashCode,
       'Tempo Alarm',
-      'Alarm set for $hour',
-      RepeatInterval.daily,
+      alarm.label.isNotEmpty ? alarm.label : 'Alarm',
+      tz.TZDateTime.from(date, tz.local),
       details,
+      payload: alarm.id,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
+  }
+
+  Future<void> _scheduleRepeatingNotifications(
+    AlarmModel alarm,
+    DateTime scheduledDate,
+    DateTime now,
+  ) async {
+    final androidDetails = _buildAndroidDetails(alarm.sound);
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    final details =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    if (alarm.repeatDays.length == 7) {
+      await _notifications.zonedSchedule(
+        alarm.id.hashCode,
+        'Tempo Alarm',
+        alarm.label.isNotEmpty ? alarm.label : 'Alarm',
+        tz.TZDateTime.from(scheduledDate.isBefore(now)
+            ? scheduledDate.add(const Duration(days: 1))
+            : scheduledDate,
+            tz.local),
+        details,
+        payload: alarm.id,
+        matchDateTimeComponents: DateTimeComponents.time,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } else {
+      for (final day in alarm.repeatDays) {
+        var nextDate = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          alarm.hour,
+          alarm.minute,
+        );
+        while (nextDate.weekday != day) {
+          nextDate = nextDate.add(const Duration(days: 1));
+        }
+        if (nextDate.isBefore(now)) {
+          nextDate = nextDate.add(const Duration(days: 7));
+        }
+        final notifId = (alarm.id.hashCode * 10) + day;
+        await _notifications.zonedSchedule(
+          notifId,
+          'Tempo Alarm',
+          alarm.label.isNotEmpty ? alarm.label : 'Alarm',
+          tz.TZDateTime.from(nextDate, tz.local),
+          details,
+          payload: alarm.id,
+          matchDateTimeComponents:
+              DateTimeComponents.dayOfWeekAndTime,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      }
+    }
   }
 
   Future<void> _cancelAlarmNotification(AlarmModel alarm) async {
     await _notifications.cancel(alarm.id.hashCode);
+    if (alarm.isRepeating) {
+      for (final day in alarm.repeatDays) {
+        final notifId = (alarm.id.hashCode * 10) + day;
+        await _notifications.cancel(notifId);
+      }
+    }
   }
 
-  void _onNotificationTap(NotificationResponse response) {}
+  void _onNotificationTap(NotificationResponse response) {
+    final alarmId = response.payload;
+    if (alarmId == null) return;
+
+    final alarm = _alarms.firstWhere(
+      (a) => a.id == alarmId,
+      orElse: () => _alarms.first,
+    );
+
+    navigatorKey?.currentState?.push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => AlarmRingScreen(alarm: alarm),
+      ),
+    );
+  }
 
   Future<void> rescheduleAll() async {
     for (final alarm in _alarms) {
+      await _cancelAlarmNotification(alarm);
       if (alarm.enabled) {
         await _scheduleAlarm(alarm);
       }

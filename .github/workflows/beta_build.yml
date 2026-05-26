@@ -25,13 +25,13 @@ jobs:
           channel: stable
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --split-debug-info=build/debug-info --obfuscate
 
       - name: Upload APK to artifact
         uses: actions/upload-artifact@v4
         with:
           name: tempo-beta-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-universal-release.apk
           retention-days: 30
 
   release:
@@ -60,6 +60,10 @@ jobs:
         with:
           name: tempo-beta-apk
           path: apk
+
+      - name: List APK artifacts
+        shell: bash
+        run: ls -la apk/
 
       - name: Generate version tag
         id: version
@@ -98,6 +102,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Beta ${{ steps.version.outputs.version }}
           body_path: RELEASE_NOTES.md
-          files: apk/app-release.apk
+          files: apk/app-universal-release.apk
           prerelease: true
           generate_release_notes: false

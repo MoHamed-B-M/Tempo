@@ -1,6 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+enum UpdateCheckResult {
+  available,
+  upToDate,
+  noReleases,
+  repoNotFound,
+  networkError,
+}
+
 class ReleaseInfo {
   final String tagName;
   final String url;
@@ -16,7 +24,8 @@ class ReleaseInfo {
     this.apkDownloadUrl,
   });
 
-  String get version => tagName.startsWith('v') ? tagName.substring(1) : tagName;
+  String get version =>
+      tagName.startsWith('v') ? tagName.substring(1) : tagName;
 
   factory ReleaseInfo.fromJson(Map<String, dynamic> json) {
     final assets = json['assets'] as List?;
@@ -40,14 +49,22 @@ class ReleaseInfo {
   }
 }
 
+class UpdateCheckResponse {
+  final UpdateCheckResult result;
+  final ReleaseInfo? release;
+
+  UpdateCheckResponse({required this.result, this.release});
+}
+
 class UpdateService {
-  static const _apiUrl = 'https://api.github.com/repos/MoHamed-B-M/Tempo/releases';
+  static const _apiUrl =
+      'https://api.github.com/repos/MoHamed-B-M/Tempo/releases';
 
   final http.Client _client;
 
   UpdateService({http.Client? client}) : _client = client ?? http.Client();
 
-  Future<ReleaseInfo?> checkForUpdate(String channel) async {
+  Future<UpdateCheckResponse> checkForUpdate(String channel) async {
     try {
       final response = await _client.get(
         Uri.parse(_apiUrl),
@@ -57,9 +74,19 @@ class UpdateService {
         },
       );
 
-      if (response.statusCode != 200) return null;
+      if (response.statusCode == 404) {
+        return UpdateCheckResponse(result: UpdateCheckResult.repoNotFound);
+      }
+
+      if (response.statusCode != 200) {
+        return UpdateCheckResponse(result: UpdateCheckResult.networkError);
+      }
 
       final List<dynamic> releases = jsonDecode(response.body) as List;
+
+      if (releases.isEmpty) {
+        return UpdateCheckResponse(result: UpdateCheckResult.noReleases);
+      }
 
       List<Map<String, dynamic>> filtered;
       if (channel == 'beta') {
@@ -74,7 +101,9 @@ class UpdateService {
             .toList();
       }
 
-      if (filtered.isEmpty) return null;
+      if (filtered.isEmpty) {
+        return UpdateCheckResponse(result: UpdateCheckResult.noReleases);
+      }
 
       filtered.sort((a, b) {
         final aTag = (a['tag_name'] as String?) ?? '';
@@ -82,9 +111,12 @@ class UpdateService {
         return _compareVersions(bTag, aTag);
       });
 
-      return ReleaseInfo.fromJson(filtered.first);
+      return UpdateCheckResponse(
+        result: UpdateCheckResult.available,
+        release: ReleaseInfo.fromJson(filtered.first),
+      );
     } catch (_) {
-      return null;
+      return UpdateCheckResponse(result: UpdateCheckResult.networkError);
     }
   }
 

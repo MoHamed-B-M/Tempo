@@ -5,6 +5,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_text_styles.dart';
 import '../models/alarm_model.dart';
 import '../services/alarm_service.dart';
+import '../widgets/sound_picker_sheet.dart';
 import '../widgets/time_picker_wheel.dart';
 import 'settings_page.dart';
 
@@ -215,7 +216,13 @@ class _MainScreenState extends State<MainScreen>
                         _BottomControl(
                           icon: Icons.music_note_outlined,
                           label: 'SOUND',
-                          onTap: () {},
+                          onTap: () => SoundPickerSheet.show(
+                            context,
+                            selectedSound: _selectedSound,
+                            onSoundSelected: (sound) {
+                              setState(() => _selectedSound = sound);
+                            },
+                          ),
                         ),
                         _BottomControl(
                           icon: Icons.repeat_outlined,
