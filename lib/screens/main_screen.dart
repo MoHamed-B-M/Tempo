@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_text_styles.dart';
@@ -14,10 +15,14 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
   late TimeOfDay _selectedTime;
   String _selectedSound = 'default';
   List<int> _selectedRepeatDays = [];
+  bool _isPickerVisible = false;
+  late AnimationController _pickerAnimController;
+  late Animation<double> _pickerAnimation;
 
   @override
   void initState() {
@@ -27,15 +32,47 @@ class _MainScreenState extends State<MainScreen> {
       hour: now.hour,
       minute: now.minute + 1 >= 60 ? 0 : now.minute + 1,
     );
+    _pickerAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _pickerAnimation = CurvedAnimation(
+      parent: _pickerAnimController,
+      curve: Curves.easeInOutCubic,
+      reverseCurve: Curves.easeInOutCubic.flipped,
+    );
   }
 
-  void _onTimeChanged(TimeOfDay time) {
+  @override
+  void dispose() {
+    _pickerAnimController.dispose();
+    super.dispose();
+  }
+
+  void _togglePicker() {
+    HapticFeedback.mediumImpact();
     setState(() {
-      _selectedTime = time;
+      _isPickerVisible = !_isPickerVisible;
+      if (_isPickerVisible) {
+        _pickerAnimController.forward();
+      } else {
+        _pickerAnimController.reverse();
+      }
     });
   }
 
+  void _hidePicker() {
+    if (!_isPickerVisible) return;
+    setState(() => _isPickerVisible = false);
+    _pickerAnimController.reverse();
+  }
+
+  void _onTimeChanged(TimeOfDay time) {
+    setState(() => _selectedTime = time);
+  }
+
   Future<void> _onConfirmAlarm() async {
+    HapticFeedback.mediumImpact();
     final service = context.read<AlarmService>();
     await service.addAlarm(
       hour: _selectedTime.hour,
@@ -43,21 +80,24 @@ class _MainScreenState extends State<MainScreen> {
       sound: _selectedSound,
       repeatDays: _selectedRepeatDays,
     );
+    _hidePicker();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Alarm set for ${_selectedTime.format(context)}',
-            style: AppTextStyles.body,
+            style: AppTextStyles.body(context),
           ),
-          backgroundColor: AppColors.surfaceCard,
+          backgroundColor: AppColors.surfaceCardOf(context),
           duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
   Future<void> _toggleAlarm(String id) async {
+    HapticFeedback.selectionClick();
     await context.read<AlarmService>().toggleAlarm(id);
   }
 
@@ -71,7 +111,7 @@ class _MainScreenState extends State<MainScreen> {
     final alarms = service.alarms;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundOf(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -84,7 +124,7 @@ class _MainScreenState extends State<MainScreen> {
                       Align(
                         child: Text(
                           _selectedTime.format(context),
-                          style: AppTextStyles.displayTime,
+                          style: AppTextStyles.displayTime(context),
                         ),
                       ),
                       Positioned(
@@ -92,7 +132,7 @@ class _MainScreenState extends State<MainScreen> {
                         top: 0,
                         child: IconButton(
                           icon: const Icon(Icons.settings_outlined, size: 22),
-                          color: AppColors.secondaryText,
+                          color: AppColors.secondaryTextOf(context),
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -108,14 +148,14 @@ class _MainScreenState extends State<MainScreen> {
                   const SizedBox(height: 4),
                   Text(
                     _getAlarmStatus(alarms),
-                    style: AppTextStyles.subheading,
+                    style: AppTextStyles.subheading(context),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 32),
             Divider(
-              color: AppColors.border,
+              color: AppColors.borderOf(context),
               height: 1,
               thickness: 0.5,
             ),
@@ -128,7 +168,102 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomSheet(),
+      bottomNavigationBar: AnimatedBuilder(
+        animation: _pickerAnimation,
+        builder: (context, child) {
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeInOutCubic,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceCardOf(context),
+              border: Border(
+                top: BorderSide(
+                    color: AppColors.borderOf(context), width: 0.5),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isPickerVisible) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.keyboard_arrow_down,
+                            color: AppColors.primaryTextOf(context)),
+                        onPressed: _hidePicker,
+                      ),
+                    ],
+                  ),
+                  TimePickerWheel(
+                    initialHour: _selectedTime.hour,
+                    initialMinute: _selectedTime.minute,
+                    onChanged: _onTimeChanged,
+                    onConfirmed: _onConfirmAlarm,
+                  ),
+                  const SizedBox(height: 16),
+                  Divider(
+                      color: AppColors.borderOf(context),
+                      height: 1,
+                      thickness: 0.5),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _BottomControl(
+                          icon: Icons.music_note_outlined,
+                          label: 'SOUND',
+                          onTap: () {},
+                        ),
+                        _BottomControl(
+                          icon: Icons.repeat_outlined,
+                          label: 'REPEAT',
+                          onTap: () => _showRepeatPicker(),
+                        ),
+                        _BottomControl(
+                          icon: Icons.short_text_outlined,
+                          label: 'LABEL',
+                          onTap: () => _showLabelDialog(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ] else ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          alarms.isEmpty
+                              ? 'TAP + TO SET ALARM'
+                              : '${alarms.length} ALARM${alarms.length == 1 ? '' : 'S'}',
+                          style: AppTextStyles.buttonLabel(context),
+                        ),
+                        FloatingActionButton(
+                          heroTag: 'add_alarm',
+                          mini: true,
+                          onPressed: _togglePicker,
+                          backgroundColor: AppColors.primaryTextOf(context),
+                          foregroundColor: AppColors.backgroundOf(context),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.add, size: 24),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -160,25 +295,25 @@ class _MainScreenState extends State<MainScreen> {
             height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.dimWhite, width: 1),
+              border:
+                  Border.all(color: AppColors.dimWhiteOf(context), width: 1),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.alarm_outlined,
-              color: AppColors.dimWhite,
+              color: AppColors.dimWhiteOf(context),
               size: 24,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             'NO ALARMS',
-            style: AppTextStyles.subheading,
+            style: AppTextStyles.subheading(context),
           ),
           const SizedBox(height: 8),
           Text(
             'Tap + to create a new alarm',
-            style: AppTextStyles.body.copyWith(
-              color: AppColors.secondaryText,
-            ),
+            style: AppTextStyles.body(context)
+                .copyWith(color: AppColors.secondaryTextOf(context)),
           ),
         ],
       ),
@@ -186,80 +321,49 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildAlarmList(List<AlarmModel> alarms) {
-    return ListView.separated(
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       itemCount: alarms.length,
-      separatorBuilder: (_, __) => Divider(
-        color: AppColors.border,
-        height: 1,
-        thickness: 0.5,
-      ),
       itemBuilder: (context, index) {
         final alarm = alarms[index];
-        return _AlarmTile(
-          alarm: alarm,
-          onToggle: () => _toggleAlarm(alarm.id),
-          onDelete: () => _deleteAlarm(alarm.id),
+        return Dismissible(
+          key: ValueKey(alarm.id),
+          direction: DismissDirection.endToStart,
+          confirmDismiss: (_) async {
+            HapticFeedback.mediumImpact();
+            return true;
+          },
+          onDismissed: (_) => _deleteAlarm(alarm.id),
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 24),
+            color: AppColors.primaryTextOf(context).withValues(alpha: 0.1),
+            child: Icon(Icons.delete_outline,
+                color: AppColors.primaryTextOf(context)),
+          ),
+          child: Column(
+            children: [
+              _AlarmTile(
+                alarm: alarm,
+                onToggle: () => _toggleAlarm(alarm.id),
+              ),
+              Divider(
+                color: AppColors.borderOf(context),
+                height: 1,
+                thickness: 0.5,
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildBottomSheet() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TimePickerWheel(
-            initialHour: _selectedTime.hour,
-            initialMinute: _selectedTime.minute,
-            onChanged: _onTimeChanged,
-            onConfirmed: _onConfirmAlarm,
-          ),
-          const SizedBox(height: 16),
-          Divider(color: AppColors.border, height: 1, thickness: 0.5),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _BottomControl(
-                  icon: Icons.music_note_outlined,
-                  label: 'SOUND',
-                  onTap: () {},
-                ),
-                _BottomControl(
-                  icon: Icons.repeat_outlined,
-                  label: 'REPEAT',
-                  onTap: () => _showRepeatPicker(),
-                ),
-                _BottomControl(
-                  icon: Icons.short_text_outlined,
-                  label: 'LABEL',
-                  onTap: () => _showLabelDialog(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-
   void _showRepeatPicker() {
-    final days = [
-      'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
-    ];
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceCard,
+      backgroundColor: AppColors.surfaceCardOf(context),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
@@ -268,7 +372,7 @@ class _MainScreenState extends State<MainScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('REPEAT', style: AppTextStyles.buttonLabel),
+                  Text('REPEAT', style: AppTextStyles.buttonLabel(context)),
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 8,
@@ -287,15 +391,15 @@ class _MainScreenState extends State<MainScreen> {
                             }
                           });
                         },
-                        selectedColor: AppColors.primaryText,
-                        backgroundColor: AppColors.background,
+                        selectedColor: AppColors.primaryTextOf(context),
+                        backgroundColor: AppColors.backgroundOf(context),
                         labelStyle: TextStyle(
-                          color: selected ? AppColors.background : AppColors.primaryText,
+                          color: selected
+                              ? AppColors.backgroundOf(context)
+                              : AppColors.primaryTextOf(context),
                           letterSpacing: 1,
                         ),
-                        side: BorderSide(
-                          color: AppColors.border,
-                        ),
+                        side: BorderSide(color: AppColors.borderOf(context)),
                       );
                     }),
                   ),
@@ -304,7 +408,8 @@ class _MainScreenState extends State<MainScreen> {
                     width: double.infinity,
                     child: TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: Text('DONE', style: AppTextStyles.buttonLabel),
+                      child:
+                          Text('DONE', style: AppTextStyles.buttonLabel(context)),
                     ),
                   ),
                 ],
@@ -321,28 +426,27 @@ class _MainScreenState extends State<MainScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surfaceCard,
+        backgroundColor: AppColors.surfaceCardOf(context),
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: AppTextStyles.body,
+          style: AppTextStyles.body(context),
           decoration: InputDecoration(
             hintText: 'Alarm label',
-            hintStyle: AppTextStyles.subheading,
+            hintStyle: AppTextStyles.subheading(context),
             border: OutlineInputBorder(
-              borderSide: BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.borderOf(context)),
             ),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.borderOf(context)),
             ),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-            },
-            child: Text('DONE', style: AppTextStyles.buttonLabel),
+            onPressed: () => Navigator.pop(ctx),
+            child:
+                Text('DONE', style: AppTextStyles.buttonLabel(context)),
           ),
         ],
       ),
@@ -353,24 +457,23 @@ class _MainScreenState extends State<MainScreen> {
 class _AlarmTile extends StatelessWidget {
   final AlarmModel alarm;
   final VoidCallback onToggle;
-  final VoidCallback onDelete;
 
   const _AlarmTile({
     required this.alarm,
     required this.onToggle,
-    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    final time = '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}';
+    final time =
+        '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}';
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final repeatText = alarm.isRepeating
         ? alarm.repeatDays.map((d) => days[d - 1]).join(' ')
         : 'Once';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
           Expanded(
@@ -379,30 +482,30 @@ class _AlarmTile extends StatelessWidget {
               children: [
                 Text(
                   time,
-                  style: AppTextStyles.alarmTime.copyWith(
+                  style: AppTextStyles.alarmTime(context).copyWith(
                     color: alarm.enabled
-                        ? AppColors.primaryText
-                        : AppColors.mediumWhite,
+                        ? AppColors.primaryTextOf(context)
+                        : AppColors.mediumWhiteOf(context),
                   ),
                 ),
                 if (alarm.label.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     alarm.label.toUpperCase(),
-                    style: AppTextStyles.alarmLabel.copyWith(
+                    style: AppTextStyles.alarmLabel(context).copyWith(
                       color: alarm.enabled
-                          ? AppColors.secondaryText
-                          : AppColors.dimWhite,
+                          ? AppColors.secondaryTextOf(context)
+                          : AppColors.dimWhiteOf(context),
                     ),
                   ),
                 ],
                 const SizedBox(height: 2),
                 Text(
                   repeatText.toUpperCase(),
-                  style: AppTextStyles.alarmLabel.copyWith(
+                  style: AppTextStyles.alarmLabel(context).copyWith(
                     color: alarm.enabled
-                        ? AppColors.secondaryText
-                        : AppColors.dimWhite,
+                        ? AppColors.secondaryTextOf(context)
+                        : AppColors.dimWhiteOf(context),
                   ),
                 ),
               ],
@@ -410,25 +513,28 @@ class _AlarmTile extends StatelessWidget {
           ),
           GestureDetector(
             onTap: onToggle,
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOutCubic,
               width: 44,
               height: 24,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: alarm.enabled
-                      ? AppColors.primaryText
-                      : AppColors.dimWhite,
+                      ? AppColors.primaryTextOf(context)
+                      : AppColors.dimWhiteOf(context),
                   width: 1.5,
                 ),
                 color: alarm.enabled
-                    ? AppColors.primaryText
+                    ? AppColors.primaryTextOf(context)
                     : Colors.transparent,
               ),
               child: Stack(
                 children: [
                   AnimatedPositioned(
-                    duration: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOutCubic,
                     left: alarm.enabled ? 22 : 2,
                     top: 2,
                     child: Container(
@@ -437,22 +543,13 @@ class _AlarmTile extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: alarm.enabled
-                            ? AppColors.background
-                            : AppColors.mediumWhite,
+                            ? AppColors.backgroundOf(context)
+                            : AppColors.mediumWhiteOf(context),
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onDelete,
-            child: const Icon(
-              Icons.close,
-              color: AppColors.mediumWhite,
-              size: 18,
             ),
           ),
         ],
@@ -482,9 +579,9 @@ class _BottomControl extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.primaryText, size: 20),
+            Icon(icon, color: AppColors.primaryTextOf(context), size: 20),
             const SizedBox(height: 4),
-            Text(label, style: AppTextStyles.buttonLabel),
+            Text(label, style: AppTextStyles.buttonLabel(context)),
           ],
         ),
       ),

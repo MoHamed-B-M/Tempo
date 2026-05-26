@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_text_styles.dart';
 
@@ -23,19 +24,20 @@ class TimePickerWheel extends StatefulWidget {
 class _TimePickerWheelState extends State<TimePickerWheel> {
   late FixedExtentScrollController _hourController;
   late FixedExtentScrollController _minuteController;
-  int _selectedHour = 0;
-  int _selectedMinute = 0;
-
-  static const _itemHeight = 56.0;
-  static const _visibleItems = 5;
+  late int _selectedHour;
+  late int _selectedMinute;
 
   @override
   void initState() {
     super.initState();
     _selectedHour = widget.initialHour;
     _selectedMinute = widget.initialMinute;
-    _hourController = FixedExtentScrollController(initialItem: widget.initialHour + (24 * 5));
-    _minuteController = FixedExtentScrollController(initialItem: widget.initialMinute + (60 * 5));
+    _hourController = FixedExtentScrollController(
+      initialItem: widget.initialHour + (24 * 5),
+    );
+    _minuteController = FixedExtentScrollController(
+      initialItem: widget.initialMinute + (60 * 5),
+    );
     _hourController.addListener(_onScroll);
     _minuteController.addListener(_onScroll);
   }
@@ -69,32 +71,48 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
     required int itemCount,
     required String Function(int) labelBuilder,
     required int selected,
+    required double wheelWidth,
   }) {
-    final wheelHeight = _itemHeight * _visibleItems;
+    final itemHeight = MediaQuery.textScalerOf(context)
+        .scale(MediaQuery.of(context).size.height * 0.065)
+        .clamp(40.0, 64.0);
+    final visibleItems = 5;
+    final wheelHeight = itemHeight * visibleItems;
 
     return ClipRect(
-      child: SizedBox(
-        width: 100,
+      clipper: _HalfWheelClipper(),
+      child: Container(
+        width: wheelWidth,
         height: wheelHeight,
+        clipBehavior: Clip.hardEdge,
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: AppColors.borderOf(context), width: 0.5),
+            bottom:
+                BorderSide(color: AppColors.borderOf(context), width: 0.5),
+          ),
+        ),
         child: Stack(
           children: [
             Positioned(
-              top: wheelHeight / 2 - _itemHeight / 2,
+              top: wheelHeight / 2 - itemHeight / 2,
               left: 0,
               right: 0,
               child: Container(
-                height: _itemHeight,
+                height: itemHeight,
                 decoration: BoxDecoration(
                   border: Border(
-                    top: BorderSide(color: AppColors.border, width: 0.5),
-                    bottom: BorderSide(color: AppColors.border, width: 0.5),
+                    top: BorderSide(
+                        color: AppColors.borderOf(context), width: 0.5),
+                    bottom: BorderSide(
+                        color: AppColors.borderOf(context), width: 0.5),
                   ),
                 ),
               ),
             ),
             ListWheelScrollView(
               controller: controller,
-              itemExtent: _itemHeight,
+              itemExtent: itemHeight,
               diameterRatio: 1.2,
               offAxisFraction: -0.35,
               useMagnifier: false,
@@ -107,8 +125,8 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
                   child: Text(
                     labelBuilder(value),
                     style: isSelected
-                        ? AppTextStyles.wheelItem
-                        : AppTextStyles.wheelItemDim,
+                        ? AppTextStyles.wheelItem(context)
+                        : AppTextStyles.wheelItemDim(context),
                   ),
                 );
               }),
@@ -120,10 +138,10 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.background,
-                      AppColors.background.withValues(alpha: 0),
-                      AppColors.background.withValues(alpha: 0),
-                      AppColors.background,
+                      AppColors.backgroundOf(context),
+                      AppColors.backgroundOf(context).withValues(alpha: 0),
+                      AppColors.backgroundOf(context).withValues(alpha: 0),
+                      AppColors.backgroundOf(context),
                     ],
                     stops: const [0.0, 0.25, 0.75, 1.0],
                   ),
@@ -138,79 +156,100 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('HOUR', style: AppTextStyles.buttonLabel),
-              Text('MIN', style: AppTextStyles.buttonLabel),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    final screenWidth = MediaQuery.of(context).size.width;
+    final wheelWidth = (screenWidth - 80) / 2;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildWheel(
-              controller: _hourController,
-              itemCount: 24 * 10,
-              labelBuilder: (v) => v.toString().padLeft(2, '0'),
-              selected: _selectedHour,
-            ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: 2,
-                    height: 4,
-                    color: AppColors.primaryText,
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 2,
-                    height: 4,
-                    color: AppColors.primaryText,
-                  ),
+                  Text('HOUR', style: AppTextStyles.buttonLabel(context)),
+                  Text('MIN', style: AppTextStyles.buttonLabel(context)),
                 ],
               ),
             ),
-            _buildWheel(
-              controller: _minuteController,
-              itemCount: 60 * 10,
-              labelBuilder: (v) => v.toString().padLeft(2, '0'),
-              selected: _selectedMinute,
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildWheel(
+                  controller: _hourController,
+                  itemCount: 24 * 10,
+                  labelBuilder: (v) => v.toString().padLeft(2, '0'),
+                  selected: _selectedHour,
+                  wheelWidth: wheelWidth,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 2,
+                        height: 4,
+                        color: AppColors.primaryTextOf(context),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 2,
+                        height: 4,
+                        color: AppColors.primaryTextOf(context),
+                      ),
+                    ],
+                  ),
+                ),
+                _buildWheel(
+                  controller: _minuteController,
+                  itemCount: 60 * 10,
+                  labelBuilder: (v) => v.toString().padLeft(2, '0'),
+                  selected: _selectedMinute,
+                  wheelWidth: wheelWidth,
+                ),
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: 56,
-          height: 56,
-          child: TextButton(
-            onPressed: () {
-              widget.onConfirmed?.call();
-            },
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
-                side: BorderSide(color: AppColors.primaryText, width: 1.5),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: 56,
+              height: 56,
+              child: TextButton(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  widget.onConfirmed?.call();
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                    side: BorderSide(
+                        color: AppColors.primaryTextOf(context), width: 1.5),
+                  ),
+                ),
+                child: Icon(
+                  Icons.check,
+                  color: AppColors.primaryTextOf(context),
+                  size: 28,
+                ),
               ),
             ),
-            child: Icon(
-              Icons.check,
-              color: AppColors.primaryText,
-              size: 28,
-            ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
+}
+
+class _HalfWheelClipper extends CustomClipper<Rect> {
+  @override
+  Rect getClip(Size size) {
+    return Rect.fromLTWH(0, 0, size.width, size.height);
+  }
+
+  @override
+  bool shouldReclip(_HalfWheelClipper oldClipper) => false;
 }
