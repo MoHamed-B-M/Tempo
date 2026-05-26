@@ -22,6 +22,11 @@
 - Made release signing config conditional on keystore file existence in build.gradle.kts
 - Fixed artifact download by uploading full flutter-apk directory and finding APK dynamically
 - Auto-generate release keystore with keytool if upload-keystore.jks doesn't exist
+- Fixed alarm scheduling by adding flutter_native_timezone for correct IANA detection
+- Added USE_FULL_SCREEN_INTENT permission for alarm heads-up notification
+- Added edit alarm feature: tap alarm tile to modify time/sound/repeat/label
+- Differentiated GitHub API rate limiting (403) from network errors in update check
+- Added _selectedLabel field for alarm label editing in the picker flow
 
 ## [1.0.2] - 2026-05-26
 - Added Nothing OS themed time picker with half-wheel effect

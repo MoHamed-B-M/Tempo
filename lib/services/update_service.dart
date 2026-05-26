@@ -6,6 +6,7 @@ enum UpdateCheckResult {
   upToDate,
   noReleases,
   repoNotFound,
+  rateLimited,
   networkError,
 }
 
@@ -76,6 +77,10 @@ class UpdateService {
 
       if (response.statusCode == 404) {
         return UpdateCheckResponse(result: UpdateCheckResult.repoNotFound);
+      }
+
+      if (response.statusCode == 403) {
+        return UpdateCheckResponse(result: UpdateCheckResult.rateLimited);
       }
 
       if (response.statusCode != 200) {

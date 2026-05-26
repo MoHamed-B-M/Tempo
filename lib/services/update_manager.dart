@@ -62,6 +62,11 @@ class UpdateManager {
           _showSnackBar(context,
               'Update check failed: repository not found');
         }
+      case UpdateCheckResult.rateLimited:
+        if (!silent) {
+          _showSnackBar(context,
+              'Rate limited. Try again later.');
+        }
       case UpdateCheckResult.networkError:
         if (!silent) {
           _showSnackBar(context,

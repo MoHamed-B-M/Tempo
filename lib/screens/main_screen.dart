@@ -21,6 +21,8 @@ class _MainScreenState extends State<MainScreen>
   late TimeOfDay _selectedTime;
   String _selectedSound = 'default';
   List<int> _selectedRepeatDays = [];
+  String _selectedLabel = '';
+  String? _editingAlarmId;
   bool _isPickerVisible = false;
   late AnimationController _pickerAnimController;
   late Animation<double> _pickerAnimation;
@@ -75,18 +77,34 @@ class _MainScreenState extends State<MainScreen>
   Future<void> _onConfirmAlarm() async {
     HapticFeedback.mediumImpact();
     final service = context.read<AlarmService>();
-    await service.addAlarm(
-      hour: _selectedTime.hour,
-      minute: _selectedTime.minute,
-      sound: _selectedSound,
-      repeatDays: _selectedRepeatDays,
-    );
+    final id = _editingAlarmId;
+    if (id != null) {
+      await service.updateAlarm(
+        id: id,
+        hour: _selectedTime.hour,
+        minute: _selectedTime.minute,
+        sound: _selectedSound,
+        repeatDays: _selectedRepeatDays,
+        label: _selectedLabel,
+      );
+    } else {
+      await service.addAlarm(
+        hour: _selectedTime.hour,
+        minute: _selectedTime.minute,
+        sound: _selectedSound,
+        repeatDays: _selectedRepeatDays,
+        label: _selectedLabel,
+      );
+    }
+    _editingAlarmId = null;
     _hidePicker();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Alarm set for ${_selectedTime.format(context)}',
+            id != null
+                ? 'Alarm updated'
+                : 'Alarm set for ${_selectedTime.format(context)}',
             style: AppTextStyles.body(context),
           ),
           backgroundColor: AppColors.surfaceCardOf(context),
@@ -100,6 +118,18 @@ class _MainScreenState extends State<MainScreen>
   Future<void> _toggleAlarm(String id) async {
     HapticFeedback.selectionClick();
     await context.read<AlarmService>().toggleAlarm(id);
+  }
+
+  void _editAlarm(AlarmModel alarm) {
+    setState(() {
+      _editingAlarmId = alarm.id;
+      _selectedTime = TimeOfDay(hour: alarm.hour, minute: alarm.minute);
+      _selectedSound = alarm.sound;
+      _selectedRepeatDays = List.from(alarm.repeatDays);
+      _selectedLabel = alarm.label;
+      _isPickerVisible = true;
+      _pickerAnimController.forward();
+    });
   }
 
   Future<void> _deleteAlarm(String id) async {
@@ -352,6 +382,7 @@ class _MainScreenState extends State<MainScreen>
             children: [
               _AlarmTile(
                 alarm: alarm,
+                onTap: () => _editAlarm(alarm),
                 onToggle: () => _toggleAlarm(alarm.id),
               ),
               Divider(
@@ -429,7 +460,7 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _showLabelDialog() {
-    final controller = TextEditingController();
+    final controller = TextEditingController(text: _selectedLabel);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -451,7 +482,10 @@ class _MainScreenState extends State<MainScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () {
+              setState(() => _selectedLabel = controller.text);
+              Navigator.pop(ctx);
+            },
             child:
                 Text('DONE', style: AppTextStyles.buttonLabel(context)),
           ),
@@ -463,10 +497,12 @@ class _MainScreenState extends State<MainScreen>
 
 class _AlarmTile extends StatelessWidget {
   final AlarmModel alarm;
+  final VoidCallback onTap;
   final VoidCallback onToggle;
 
   const _AlarmTile({
     required this.alarm,
+    required this.onTap,
     required this.onToggle,
   });
 
@@ -484,21 +520,33 @@ class _AlarmTile extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  time,
-                  style: AppTextStyles.alarmTime(context).copyWith(
-                    color: alarm.enabled
-                        ? AppColors.primaryTextOf(context)
-                        : AppColors.mediumWhiteOf(context),
+            child: GestureDetector(
+              onTap: onTap,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    time,
+                    style: AppTextStyles.alarmTime(context).copyWith(
+                      color: alarm.enabled
+                          ? AppColors.primaryTextOf(context)
+                          : AppColors.mediumWhiteOf(context),
+                    ),
                   ),
-                ),
-                if (alarm.label.isNotEmpty) ...[
+                  if (alarm.label.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      alarm.label.toUpperCase(),
+                      style: AppTextStyles.alarmLabel(context).copyWith(
+                        color: alarm.enabled
+                            ? AppColors.secondaryTextOf(context)
+                            : AppColors.dimWhiteOf(context),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 2),
                   Text(
-                    alarm.label.toUpperCase(),
+                    repeatText.toUpperCase(),
                     style: AppTextStyles.alarmLabel(context).copyWith(
                       color: alarm.enabled
                           ? AppColors.secondaryTextOf(context)
@@ -506,16 +554,7 @@ class _AlarmTile extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 2),
-                Text(
-                  repeatText.toUpperCase(),
-                  style: AppTextStyles.alarmLabel(context).copyWith(
-                    color: alarm.enabled
-                        ? AppColors.secondaryTextOf(context)
-                        : AppColors.dimWhiteOf(context),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           GestureDetector(

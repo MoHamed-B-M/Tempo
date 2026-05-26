@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -27,6 +28,7 @@ class AlarmService extends ChangeNotifier {
     if (_initialized) return;
 
     tz_data.initializeTimeZones();
+    await _detectLocalTimezone();
 
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -47,6 +49,17 @@ class AlarmService extends ChangeNotifier {
     await _createNotificationChannel();
     await _loadAlarms();
     _initialized = true;
+  }
+
+  Future<void> _detectLocalTimezone() async {
+    try {
+      final ianaName = await FlutterNativeTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(ianaName));
+    } catch (_) {
+      try {
+        tz.setLocalLocation(tz.getLocation(DateTime.now().timeZoneName));
+      } catch (_) {}
+    }
   }
 
   Future<void> _createNotificationChannel() async {
@@ -102,6 +115,32 @@ class AlarmService extends ChangeNotifier {
     await _scheduleAlarm(alarm);
     notifyListeners();
     return alarm;
+  }
+
+  Future<void> updateAlarm({
+    required String id,
+    required int hour,
+    required int minute,
+    String sound = 'default',
+    List<int> repeatDays = const [],
+    String label = '',
+  }) async {
+    final index = _alarms.indexWhere((a) => a.id == id);
+    if (index == -1) return;
+    final updated = _alarms[index].copyWith(
+      hour: hour,
+      minute: minute,
+      sound: sound,
+      repeatDays: repeatDays,
+      label: label,
+    );
+    _alarms[index] = updated;
+    await _saveAlarms();
+    await _cancelAlarmNotification(updated);
+    if (updated.enabled) {
+      await _scheduleAlarm(updated);
+    }
+    notifyListeners();
   }
 
   Future<void> toggleAlarm(String id) async {

@@ -24,12 +24,10 @@ jobs:
         with:
           channel: stable
 
-      # 1. Decode the Keystore from GitHub Secrets
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      # 2. Build the signed Release APK
       - name: Build release APK
         run: flutter build apk --release --split-debug-info=build/debug-info --obfuscate
         env:
@@ -83,12 +81,31 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$MAJOR.$MINOR.$BETA_PATCH-beta.${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
 
+      - name: Extract changelog
+        shell: bash
+        run: |
+          awk '
+            BEGIN { found = 0 }
+            /^## / {
+              if (found) exit
+              if ($0 ~ "^## \\[Unreleased\\]" || $0 ~ "^## Unreleased") found = 1
+              next
+            }
+            found { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md 2>/dev/null || true
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "Beta build from commit $(git log -1 --format='%h')" > RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+            echo "Changes:" >> RELEASE_NOTES.md
+            git log --oneline --no-decorate HEAD~5..HEAD 2>/dev/null >> RELEASE_NOTES.md || true
+          fi
+
       - name: Create Prerelease
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Beta ${{ steps.version.outputs.version }}
-          body: "Automated Beta build from commit ${{ github.sha }}"
+          body_path: RELEASE_NOTES.md
           files: ${{ steps.find-apk.outputs.path }}
           prerelease: true
-          generate_release_notes: true
+          generate_release_notes: false
