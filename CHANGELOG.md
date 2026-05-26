@@ -19,6 +19,7 @@
 - Fixed R8 release build failure with expanded proguard rules and R8 full mode disabled
 - Fixed missing Play Core classes in R8 (com.google.android.play.core.** keep + dontwarn)
 - Created assets/audio/ directory to fix missing pubspec asset entry
+- Made release signing config conditional on keystore file existence in build.gradle.kts
 
 ## [1.0.2] - 2026-05-26
 - Added Nothing OS themed time picker with half-wheel effect
