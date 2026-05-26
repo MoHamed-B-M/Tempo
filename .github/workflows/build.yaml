@@ -40,7 +40,7 @@ jobs:
         with:
           name: tempo-release-artifacts
           path: |
-            build/app/outputs/flutter-apk/app-universal-release.apk
+            build/app/outputs/flutter-apk/
             build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
 
@@ -100,11 +100,25 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
+      - name: Find APK file
+        id: find-apk
+        shell: bash
+        run: |
+          APK=$(ls build/app/outputs/flutter-apk/app-*-release.apk 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(ls build/app/outputs/flutter-apk/*.apk 2>/dev/null | head -1)
+          fi
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          echo "apk=$APK" >> $GITHUB_OUTPUT
+          echo "aab=$AAB" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK"
+          echo "AAB: $AAB"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           body_path: RELEASE_NOTES.md
           files: |
-            build/app/outputs/flutter-apk/app-universal-release.apk
-            build/app/outputs/bundle/release/app-release.aab
+            ${{ steps.find-apk.outputs.apk }}
+            ${{ steps.find-apk.outputs.aab }}
           generate_release_notes: false

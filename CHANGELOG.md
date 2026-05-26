@@ -20,6 +20,7 @@
 - Fixed missing Play Core classes in R8 (com.google.android.play.core.** keep + dontwarn)
 - Created assets/audio/ directory to fix missing pubspec asset entry
 - Made release signing config conditional on keystore file existence in build.gradle.kts
+- Fixed artifact download by uploading full flutter-apk directory and finding APK dynamically
 
 ## [1.0.2] - 2026-05-26
 - Added Nothing OS themed time picker with half-wheel effect

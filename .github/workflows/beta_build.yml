@@ -31,7 +31,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tempo-beta-apk
-          path: build/app/outputs/flutter-apk/app-universal-release.apk
+          path: build/app/outputs/flutter-apk/
           retention-days: 30
 
   release:
@@ -61,9 +61,16 @@ jobs:
           name: tempo-beta-apk
           path: apk
 
-      - name: List APK artifacts
+      - name: Find APK file
+        id: find-apk
         shell: bash
-        run: ls -la apk/
+        run: |
+          APK=$(ls apk/app-*-release.apk 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(ls apk/*.apk 2>/dev/null | head -1)
+          fi
+          echo "path=$APK" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK"
 
       - name: Generate version tag
         id: version
@@ -102,6 +109,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Beta ${{ steps.version.outputs.version }}
           body_path: RELEASE_NOTES.md
-          files: apk/app-universal-release.apk
+          files: ${{ steps.find-apk.outputs.path }}
           prerelease: true
           generate_release_notes: false
