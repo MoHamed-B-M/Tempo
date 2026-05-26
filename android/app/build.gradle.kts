@@ -20,15 +20,34 @@ android {
     }
 
     val keystoreFile = file("upload-keystore.jks")
+    if (!keystoreFile.exists()) {
+        val keytool = System.getProperty("java.home") + File.separator +
+            "bin" + File.separator + "keytool"
+        val keytoolExe = if (File(keytool).exists()) keytool else "$keytool.exe"
+        if (File(keytoolExe).exists()) {
+            keystoreFile.parentFile.mkdirs()
+            exec {
+                commandLine(
+                    keytoolExe, "-genkey", "-v",
+                    "-keystore", keystoreFile.absolutePath,
+                    "-alias", "upload",
+                    "-keyalg", "RSA",
+                    "-keysize", "2048",
+                    "-validity", "10000",
+                    "-storepass", "android",
+                    "-keypass", "android",
+                    "-dname", "CN=Developer, OU=Development, O=Tempo, L=City, ST=State, C=US"
+                )
+            }
+        }
+    }
 
     signingConfigs {
-        if (keystoreFile.exists()) {
-            create("release") {
-                storeFile = keystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
-            }
+        create("release") {
+            storeFile = keystoreFile
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "android"
+            keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
         }
     }
 
@@ -51,9 +70,7 @@ android {
 
     buildTypes {
         release {
-            if (keystoreFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

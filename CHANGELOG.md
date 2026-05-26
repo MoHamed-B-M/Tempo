@@ -21,6 +21,7 @@
 - Created assets/audio/ directory to fix missing pubspec asset entry
 - Made release signing config conditional on keystore file existence in build.gradle.kts
 - Fixed artifact download by uploading full flutter-apk directory and finding APK dynamically
+- Auto-generate release keystore with keytool if upload-keystore.jks doesn't exist
 
 ## [1.0.2] - 2026-05-26
 - Added Nothing OS themed time picker with half-wheel effect
