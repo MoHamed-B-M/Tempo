@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - '*'
     tags:
       - 'v*'
   pull_request:
@@ -26,19 +25,20 @@ jobs:
           java-version: 17
           distribution: temurin
 
-      - name: Setup Gradle 8.2
-        uses: gradle/actions/setup-gradle@v3
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          gradle-version: 8.2
+          flutter-version: 'stable'
+          channel: 'stable'
 
       - name: Build release APK
-        run: gradle assembleRelease
+        run: flutter build apk --release
 
       - name: Upload APK to artifact
         uses: actions/upload-artifact@v4
         with:
           name: tempo-release-apk
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
 
   release:
@@ -62,7 +62,8 @@ jobs:
         shell: bash
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
-          awk -v ver="$VERSION" '
+          ESCAPED_VERSION=$(printf '%s\n' "$VERSION" | sed 's/[.[\*^$()+?|\\]/\\&/g')
+          awk -v ver="$ESCAPED_VERSION" '
             BEGIN { found = 0 }
             /^## / {
               if (found) exit
@@ -79,5 +80,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           body_path: RELEASE_NOTES.md
-          files: apk/app-release-unsigned.apk
+          files: apk/app-release.apk
           generate_release_notes: false
