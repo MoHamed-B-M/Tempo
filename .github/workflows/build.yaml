@@ -32,8 +32,8 @@ jobs:
 
       - name: Build release APK & App Bundle
         run: |
-          flutter build apk --release --split-debug-info=build/debug-info --obfuscate --strip
-          flutter build appbundle --release --split-debug-info=build/debug-info --obfuscate --strip
+          flutter build apk --release --split-debug-info=build/debug-info --obfuscate
+          flutter build appbundle --release --split-debug-info=build/debug-info --obfuscate
 
       - name: Upload APK & AAB to artifact
         uses: actions/upload-artifact@v4
@@ -93,8 +93,8 @@ jobs:
 
       - name: Build signed release APK & App Bundle
         run: |
-          flutter build apk --release --split-debug-info=build/debug-info --obfuscate --strip
-          flutter build appbundle --release --split-debug-info=build/debug-info --obfuscate --strip
+          flutter build apk --release --split-debug-info=build/debug-info --obfuscate
+          flutter build appbundle --release --split-debug-info=build/debug-info --obfuscate
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}

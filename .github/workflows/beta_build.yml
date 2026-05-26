@@ -25,7 +25,7 @@ jobs:
           channel: stable
 
       - name: Build release APK
-        run: flutter build apk --release --split-debug-info=build/debug-info --obfuscate --strip
+        run: flutter build apk --release --split-debug-info=build/debug-info --obfuscate
 
       - name: Upload APK to artifact
         uses: actions/upload-artifact@v4
