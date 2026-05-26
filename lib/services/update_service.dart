@@ -99,7 +99,8 @@ class UpdateService {
 
   List<int> _parseVersion(String tag) {
     final v = tag.startsWith('v') ? tag.substring(1) : tag;
-    final parts = v.split('.');
+    final base = v.split('-')[0];
+    final parts = base.split('.');
     return [
       parts.length > 0 ? int.tryParse(parts[0]) ?? 0 : 0,
       parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
