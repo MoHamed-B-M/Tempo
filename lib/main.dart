@@ -1,29 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'constants/app_colors.dart';
+import 'services/alarm_service.dart';
+import 'services/update_manager.dart';
 import 'widgets/home_page.dart';
 
-void main() {
-  runApp(const TempoApp());
+final FlutterLocalNotificationsPlugin notificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final alarmService = AlarmService(notificationsPlugin);
+  await alarmService.initialize();
+
+  runApp(TempoApp(alarmService: alarmService));
 }
 
 class TempoApp extends StatelessWidget {
-  const TempoApp({super.key});
+  final AlarmService alarmService;
+
+  const TempoApp({super.key, required this.alarmService});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Tempo',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1C1C1E),
-          brightness: Brightness.light,
+    return ChangeNotifierProvider.value(
+      value: alarmService,
+      child: MaterialApp(
+        title: 'Tempo',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          colorScheme: const ColorScheme.dark(
+            surface: AppColors.background,
+            onSurface: AppColors.primaryText,
+            primary: AppColors.primaryText,
+            onPrimary: AppColors.background,
+          ),
+          scaffoldBackgroundColor: AppColors.background,
+          fontFamily: GoogleFonts.inter().fontFamily,
+          useMaterial3: true,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF2F2F2),
-        fontFamily: GoogleFonts.inter().fontFamily,
-        useMaterial3: true,
+        home: const _AppShell(),
       ),
-      home: const HomePage(),
     );
+  }
+}
+
+class _AppShell extends StatefulWidget {
+  const _AppShell();
+
+  @override
+  State<_AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<_AppShell> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateManager.checkAndShowUpdate(context, silent: true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const HomePage();
   }
 }
