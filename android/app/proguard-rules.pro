@@ -50,6 +50,10 @@
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
 
+# Play Core (used by Flutter's deferred component loading)
+-dontwarn com.google.android.play.core.**
+-keep class com.google.android.play.core.** { *; }
+
 # Suppress common R8 warnings
 -dontwarn com.google.common.**
 -dontwarn com.google.errorprone.**
