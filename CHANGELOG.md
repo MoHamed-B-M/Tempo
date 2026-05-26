@@ -16,6 +16,7 @@
 - Removed stale test_check.dart scratch file
 - Updated widget_test.dart to pass static analysis
 - Fixed AGP Kotlin DSL build errors: signingConfigs, isMinifyEnabled, isShrinkResources
+- Fixed R8 release build failure with expanded proguard rules and R8 full mode disabled
 
 ## [1.0.2] - 2026-05-26
 - Added Nothing OS themed time picker with half-wheel effect
