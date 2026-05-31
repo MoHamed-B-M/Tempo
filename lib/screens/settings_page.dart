@@ -1,6 +1,9 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_text_styles.dart';
 import '../services/alarm_settings.dart';
@@ -18,6 +21,25 @@ class _SettingsPageState extends State<SettingsPage> {
   String _channel = 'stable';
   String _appVersion = '';
   bool _checking = false;
+  String _currentQuote = '';
+
+  static const _quotes = [
+    'Time is what we want most, but what we use worst. — William Penn',
+    'The key is in not spending time, but in investing it. — Stephen Covey',
+    'Lost time is never found again. — Benjamin Franklin',
+    'Time flies over us, but leaves its shadow behind. — Nathaniel Hawthorne',
+    'The two most powerful warriors are patience and time. — Leo Tolstoy',
+    'Better three hours too soon than a minute too late. — William Shakespeare',
+    'Time is the wisest counselor of all. — Pericles',
+    'Punctuality is the thief of time. — Oscar Wilde',
+    'The future is something which everyone reaches at the rate of sixty minutes an hour. — C.S. Lewis',
+    'Time is what prevents everything from happening at once. — John Archibald Wheeler',
+    'Every moment is a fresh beginning. — T.S. Eliot',
+    'Yesterday is history, tomorrow is a mystery, today is a gift. — Eleanor Roosevelt',
+    'Time stays long enough for anyone who will use it. — Leonardo da Vinci',
+    'The bad news is time flies. The good news is you\'re the pilot. — Michael Altshuler',
+    'It\'s not that we have little time, but more that we waste a good deal of it. — Seneca',
+  ];
 
   @override
   void initState() {
@@ -28,9 +50,16 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadSettings() async {
     final channel = await UpdateManager.getSavedChannel();
     final version = await UpdateManager.getCurrentVersion();
+    final prefs = await SharedPreferences.getInstance();
+    final savedQuote = prefs.getString('saved_quote');
+    final quote = savedQuote ?? (_quotes[Random().nextInt(_quotes.length)]);
+    if (savedQuote == null) {
+      await prefs.setString('saved_quote', quote);
+    }
     setState(() {
       _channel = channel;
       _appVersion = version;
+      _currentQuote = quote;
     });
   }
 
@@ -192,6 +221,21 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             const SizedBox(height: 64),
+            if (_currentQuote.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '"${_currentQuote}"',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.subheading(context).copyWith(
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
             Center(
               child: Column(
                 children: [
@@ -206,6 +250,31 @@ class _SettingsPageState extends State<SettingsPage> {
                   Text(
                     'v$_appVersion',
                     style: AppTextStyles.subheading(context).copyWith(fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'by Mohamed',
+                    style: AppTextStyles.subheading(context).copyWith(
+                      fontSize: 11,
+                      color: AppColors.secondaryTextOf(context).withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () async {
+                      final uri = Uri.parse('https://github.com/MoHamed-B-M/Tempo');
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    child: Text(
+                      'github.com/MoHamed-B-M/Tempo',
+                      style: AppTextStyles.subheading(context).copyWith(
+                        fontSize: 10,
+                        color: AppColors.accentOf(context),
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
                 ],
               ),

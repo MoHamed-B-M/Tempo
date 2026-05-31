@@ -1,6 +1,12 @@
 # Changelog
 
-## [1.0.14] - 2026-05-31
+## [1.0.15] - 2026-05-31
+- Fixed notification stop button: added `_notifId()` / `_notifIdForDay()` helpers with `hashCode.abs()` for stable positive notification IDs; set `showsUserInterface: false` on stop action for silent background handling; added `_persistStopFlag()` backup persistence in foreground handler
+- Refactored alarms tab with Material 3 expressive design — `Card` with elevation, `FilledButton`, `FloatingActionButton`, `InkWell` with proper ripple, notification active icon, enhanced empty state; all theme lookups now use sheet `ctx`
+- Fixed lock screen full-screen intent: updated `MainActivity.kt` to use `setShowWhenLocked()` / `setTurnScreenOn()` (API 29+) with deprecation-safe fallback; calls `ScreenWakeHandler.enable()` before pushing routes
+- Added comprehensive README with feature list, screenshot placeholders, tech stack, about section, and full release notes history
+- Added 15 random inspirational time-themed quotes to settings page footer (persisted to SharedPreferences, changes on relaunch)
+- Added about section in settings: developer credit ("by Mohamed") with clickable source code link to github.com/MoHamed-B-M/Tempo
 - Verified no alarm-seeding logic exists in codebase — _loadAlarms only reads from SharedPreferences; removed dead code path that could have injected default alarms
 - Added clearAllAlarms() method to AlarmService for safe data reset
 - Fixed update check crash — added missing break statements in switch to prevent fall-through cascade to null release access

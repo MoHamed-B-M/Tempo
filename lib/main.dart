@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'constants/app_colors.dart';
 import 'services/alarm_service.dart';
 import 'services/alarm_settings.dart';
+import 'services/screen_wake_handler.dart';
 import 'services/stopwatch_state.dart';
 import 'services/theme_service.dart';
 import 'services/update_manager.dart';
@@ -226,6 +227,7 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
       timeNotifier.value = _formatStopwatchTime(sw.elapsedMs);
     });
 
+    ScreenWakeHandler.enable();
     navigator.push(
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -238,6 +240,7 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
           onStop: () {
             _showingStopwatchLock = false;
             sw.stop();
+            ScreenWakeHandler.disable();
             navigator.pop();
           },
         ),

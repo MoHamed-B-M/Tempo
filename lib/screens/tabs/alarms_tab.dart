@@ -16,7 +16,6 @@ class AlarmsTab extends StatefulWidget {
 }
 
 class _AlarmsTabState extends State<AlarmsTab> {
-  // Temporary editing state for bottom sheet
   TimeOfDay _selectedTime = TimeOfDay.now();
   String _selectedSound = 'default';
   List<int> _selectedRepeatDays = [];
@@ -106,7 +105,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
       isScrollControlled: true,
       backgroundColor: AppColors.backgroundOf(context),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (ctx) {
         final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -130,7 +129,8 @@ class _AlarmsTabState extends State<AlarmsTab> {
                       width: 48,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.secondaryTextOf(context).withValues(alpha: 0.3),
+                        color: AppColors.secondaryTextOf(ctx)
+                            .withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -138,7 +138,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
                   const SizedBox(height: 24),
                   Text(
                     _editingAlarmId != null ? 'EDIT ALARM' : 'NEW ALARM',
-                    style: AppTextStyles.buttonLabel(context).copyWith(fontSize: 16),
+                    style: AppTextStyles.buttonLabel(ctx).copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: 24),
                   TimePickerWheel(
@@ -149,27 +149,30 @@ class _AlarmsTabState extends State<AlarmsTab> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  // Alarm Label Input
-                  TextField(
-                    onChanged: (val) => _selectedLabel = val,
-                    controller: TextEditingController(text: _selectedLabel)
-                      ..selection = TextSelection.collapsed(offset: _selectedLabel.length),
-                    style: AppTextStyles.body(context),
-                    decoration: InputDecoration(
-                      hintText: 'Add alarm label...',
-                      hintStyle: AppTextStyles.subheading(context),
-                      filled: true,
-                      fillColor: AppColors.surfaceCardOf(context),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
+                  Card(
+                    elevation: 0,
+                    color: AppColors.surfaceCardOf(ctx),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                      child: TextField(
+                        onChanged: (val) => _selectedLabel = val,
+                        controller: TextEditingController(text: _selectedLabel)
+                          ..selection = TextSelection.collapsed(
+                              offset: _selectedLabel.length),
+                        style: AppTextStyles.body(ctx),
+                        decoration: InputDecoration(
+                          hintText: 'Add alarm label...',
+                          hintStyle: AppTextStyles.subheading(ctx),
+                          border: InputBorder.none,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Weekday selection
-                  Text('REPEAT ON', style: AppTextStyles.buttonLabel(context)),
+                  Text('REPEAT ON', style: AppTextStyles.buttonLabel(ctx)),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -188,19 +191,28 @@ class _AlarmsTabState extends State<AlarmsTab> {
                             }
                           });
                         },
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOutCubic,
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: selected ? AppColors.accentOf(context) : AppColors.surfaceCardOf(context),
-                            border: selected ? null : Border.all(color: AppColors.borderOf(context)),
+                            color: selected
+                                ? AppColors.accentOf(ctx)
+                                : AppColors.surfaceCardOf(ctx),
+                            border: selected
+                                ? null
+                                : Border.all(
+                                    color: AppColors.borderOf(ctx)),
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             days[i][0],
-                            style: AppTextStyles.buttonLabel(context).copyWith(
-                              color: selected ? Colors.white : AppColors.primaryTextOf(context),
+                            style: AppTextStyles.buttonLabel(ctx).copyWith(
+                              color: selected
+                                  ? Colors.white
+                                  : AppColors.primaryTextOf(ctx),
                             ),
                           ),
                         ),
@@ -208,7 +220,6 @@ class _AlarmsTabState extends State<AlarmsTab> {
                     }),
                   ),
                   const SizedBox(height: 24),
-                  // Alarm Sound Selector
                   InkWell(
                     onTap: () {
                       SoundPickerSheet.show(
@@ -219,37 +230,44 @@ class _AlarmsTabState extends State<AlarmsTab> {
                         },
                       );
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceCardOf(context),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Card(
+                      elevation: 0,
+                      color: AppColors.surfaceCardOf(ctx),
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.music_note_outlined, color: AppColors.accentOf(context)),
-                              const SizedBox(width: 12),
-                              Text('SOUND', style: AppTextStyles.body(context)),
-                            ],
-                          ),
-                          Text(
-                            _selectedSound.toUpperCase(),
-                            style: AppTextStyles.subheading(context).copyWith(
-                              color: AppColors.accentOf(context),
-                              fontWeight: FontWeight.bold,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.music_note_outlined,
+                                    color: AppColors.accentOf(ctx)),
+                                const SizedBox(width: 12),
+                                Text('SOUND',
+                                    style: AppTextStyles.body(ctx)),
+                              ],
                             ),
-                          ),
-                        ],
+                            Text(
+                              _selectedSound.toUpperCase(),
+                              style: AppTextStyles.subheading(ctx).copyWith(
+                                color: AppColors.accentOf(ctx),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Save Button
                   Padding(
-                    padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.06),
+                    padding: EdgeInsets.only(
+                        top: MediaQuery.of(ctx).size.height * 0.04),
                     child: Row(
                       children: [
                         Expanded(
@@ -257,25 +275,27 @@ class _AlarmsTabState extends State<AlarmsTab> {
                             onPressed: () => Navigator.pop(ctx),
                             child: Text(
                               'CANCEL',
-                              style: AppTextStyles.buttonLabel(context).copyWith(
-                                color: AppColors.secondaryTextOf(context),
+                              style:
+                                  AppTextStyles.buttonLabel(ctx).copyWith(
+                                color: AppColors.secondaryTextOf(ctx),
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: ElevatedButton(
+                          child: FilledButton(
                             onPressed: () => _saveAlarm(ctx),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accentOf(context),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.accentOf(ctx),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            child: Text('SAVE', style: AppTextStyles.buttonLabel(context)),
+                            child: Text('SAVE',
+                                style: AppTextStyles.buttonLabel(ctx)),
                           ),
                         ),
                       ],
@@ -338,32 +358,18 @@ class _AlarmsTabState extends State<AlarmsTab> {
             ],
           ),
         ),
-        // Premium squircle orange "+" button
         Positioned(
           right: 24,
           bottom: 24,
-          child: GestureDetector(
-            onTap: _createNewAlarm,
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.accentOf(context),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.accentOf(context).withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 28,
-              ),
+          child: FloatingActionButton(
+            onPressed: _createNewAlarm,
+            backgroundColor: AppColors.accentOf(context),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
             ),
+            elevation: 4,
+            child: const Icon(Icons.add, size: 28),
           ),
         ),
       ],
@@ -376,28 +382,30 @@ class _AlarmsTabState extends State<AlarmsTab> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.secondaryTextOf(context).withValues(alpha: 0.2), width: 1.5),
+              color: AppColors.accentOf(context).withValues(alpha: 0.1),
             ),
             child: Icon(
-              Icons.alarm,
-              color: AppColors.secondaryTextOf(context).withValues(alpha: 0.5),
-              size: 28,
+              Icons.alarm_add_rounded,
+              color: AppColors.accentOf(context).withValues(alpha: 0.6),
+              size: 36,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
-            'NO ACTIVE ALARMS',
+            'NO ALARMS YET',
             style: AppTextStyles.buttonLabel(context).copyWith(
               color: AppColors.secondaryTextOf(context),
+              fontSize: 14,
+              letterSpacing: 1.5,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Tap the "+" button to set one.',
+            'Tap + to create your first alarm',
             style: AppTextStyles.subheading(context),
           ),
         ],
@@ -412,7 +420,8 @@ class _AlarmsTabState extends State<AlarmsTab> {
       padding: const EdgeInsets.only(bottom: 100),
       itemBuilder: (context, index) {
         final alarm = alarms[index];
-        final timeStr = '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}';
+        final timeStr =
+            '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}';
         final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         final repeatText = alarm.isRepeating
             ? alarm.repeatDays.map((d) => days[d - 1]).join(' ')
@@ -427,95 +436,126 @@ class _AlarmsTabState extends State<AlarmsTab> {
           background: Container(
             margin: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.redAccent.withValues(alpha: 0.1),
+              color: Colors.redAccent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 24),
-            child: const Icon(Icons.delete_outline, color: Colors.redAccent),
+            child: const Icon(Icons.delete_outline_rounded,
+                color: Colors.redAccent),
           ),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
+          child: Card(
             margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            decoration: BoxDecoration(
-              color: alarm.enabled ? AppColors.accentOf(context) : AppColors.surfaceCardOf(context),
+            elevation: alarm.enabled ? 2 : 0,
+            color: alarm.enabled
+                ? AppColors.accentOf(context)
+                : AppColors.surfaceCardOf(context),
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: alarm.enabled ? Colors.transparent : AppColors.borderOf(context),
-                width: 1,
-              ),
+              side: alarm.enabled
+                  ? BorderSide.none
+                  : BorderSide(
+                      color: AppColors.borderOf(context), width: 1),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _editAlarm(alarm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          timeStr,
-                          style: AppTextStyles.alarmTime(context).copyWith(
-                            color: alarm.enabled ? Colors.white : AppColors.primaryTextOf(context),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            if (alarm.label.isNotEmpty) ...[
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => _editAlarm(alarm),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
                               Text(
-                                '${alarm.label.toUpperCase()}  •  ',
-                                style: AppTextStyles.alarmLabel(context).copyWith(
-                                  color: alarm.enabled ? Colors.white.withValues(alpha: 0.8) : AppColors.secondaryTextOf(context),
+                                timeStr,
+                                style:
+                                    AppTextStyles.alarmTime(context).copyWith(
+                                  color: alarm.enabled
+                                      ? Colors.white
+                                      : AppColors.primaryTextOf(context),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              if (alarm.enabled)
+                                Icon(
+                                  Icons.notifications_active_rounded,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  size: 20,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              if (alarm.label.isNotEmpty) ...[
+                                Text(
+                                  '${alarm.label.toUpperCase()}  •  ',
+                                  style: AppTextStyles.alarmLabel(context)
+                                      .copyWith(
+                                    color: alarm.enabled
+                                        ? Colors.white.withValues(alpha: 0.8)
+                                        : AppColors.secondaryTextOf(context),
+                                  ),
+                                ),
+                              ],
+                              Text(
+                                repeatText.toUpperCase(),
+                                style: AppTextStyles.alarmLabel(context)
+                                    .copyWith(
+                                  color: alarm.enabled
+                                      ? Colors.white.withValues(alpha: 0.8)
+                                      : AppColors.secondaryTextOf(context),
                                 ),
                               ),
                             ],
-                            Text(
-                              repeatText.toUpperCase(),
-                              style: AppTextStyles.alarmLabel(context).copyWith(
-                                color: alarm.enabled ? Colors.white.withValues(alpha: 0.8) : AppColors.secondaryTextOf(context),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    context.read<AlarmService>().toggleAlarm(alarm.id);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: alarm.enabled ? Colors.white : Colors.transparent,
-                        border: Border.all(
-                          color: alarm.enabled ? Colors.white : AppColors.borderOf(context),
-                          width: 1.5,
-                        ),
+                          ),
+                        ],
                       ),
-                      alignment: Alignment.center,
-                      child: alarm.enabled
-                          ? Icon(
-                              Icons.check,
-                              size: 18,
-                              color: AppColors.accentOf(context),
-                            )
-                          : null,
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        context
+                            .read<AlarmService>()
+                            .toggleAlarm(alarm.id);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOutCubic,
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: alarm.enabled
+                              ? Colors.white
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: alarm.enabled
+                                ? Colors.white
+                                : AppColors.borderOf(context),
+                            width: 1.5,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: alarm.enabled
+                            ? Icon(
+                                Icons.check_rounded,
+                                size: 20,
+                                color: AppColors.accentOf(context),
+                              )
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );

@@ -8,6 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 import '../models/alarm_model.dart';
 import '../screens/alarm_ring_screen.dart';
+import 'screen_wake_handler.dart';
 
 class AlarmService extends ChangeNotifier {
   static const _storageKey = 'alarms';
@@ -228,10 +229,15 @@ class AlarmService extends ChangeNotifier {
         const AndroidNotificationAction('snooze', 'Snooze 5min',
             showsUserInterface: true),
         const AndroidNotificationAction('stop', 'Stop',
-            showsUserInterface: true),
+            showsUserInterface: false),
       ],
     );
   }
+
+  int _notifId(AlarmModel alarm) => alarm.id.hashCode.abs();
+
+  int _notifIdForDay(AlarmModel alarm, int day) =>
+      (alarm.id.hashCode.abs() * 10) + day;
 
   Future<void> _scheduleOneShot(
     AlarmModel alarm,
@@ -247,7 +253,7 @@ class AlarmService extends ChangeNotifier {
         NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await _notifications.zonedSchedule(
-      alarm.id.hashCode,
+      _notifId(alarm),
       'Tempo Alarm',
       alarm.label.isNotEmpty ? alarm.label : 'Alarm',
       tz.TZDateTime.from(date, tz.local),
@@ -275,7 +281,7 @@ class AlarmService extends ChangeNotifier {
 
     if (alarm.repeatDays.length == 7) {
       await _notifications.zonedSchedule(
-        alarm.id.hashCode,
+        _notifId(alarm),
         'Tempo Alarm',
         alarm.label.isNotEmpty ? alarm.label : 'Alarm',
         tz.TZDateTime.from(scheduledDate.isBefore(now)
@@ -304,7 +310,7 @@ class AlarmService extends ChangeNotifier {
         if (nextDate.isBefore(now)) {
           nextDate = nextDate.add(const Duration(days: 7));
         }
-        final notifId = (alarm.id.hashCode * 10) + day;
+        final notifId = _notifIdForDay(alarm, day);
         await _notifications.zonedSchedule(
           notifId,
           'Tempo Alarm',
@@ -323,11 +329,10 @@ class AlarmService extends ChangeNotifier {
   }
 
   Future<void> _cancelAlarmNotification(AlarmModel alarm) async {
-    await _notifications.cancel(alarm.id.hashCode);
+    await _notifications.cancel(_notifId(alarm));
     if (alarm.isRepeating) {
       for (final day in alarm.repeatDays) {
-        final notifId = (alarm.id.hashCode * 10) + day;
-        await _notifications.cancel(notifId);
+        await _notifications.cancel(_notifIdForDay(alarm, day));
       }
     }
   }
@@ -349,6 +354,7 @@ class AlarmService extends ChangeNotifier {
 
     if (response.actionId == 'stop') {
       _stopAlarm(alarm);
+      _persistStopFlag(alarmId);
       navigatorKey?.currentState?.maybePop();
       return;
     }
@@ -362,6 +368,15 @@ class AlarmService extends ChangeNotifier {
     _showAlarmScreen(alarm);
   }
 
+  Future<void> _persistStopFlag(String alarmId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final stopped = prefs.getStringList('stopped_alarms') ?? [];
+    if (!stopped.contains(alarmId)) {
+      stopped.add(alarmId);
+      await prefs.setStringList('stopped_alarms', stopped);
+    }
+  }
+
   void _showAlarmScreen(AlarmModel alarm) {
     final navigator = navigatorKey?.currentState;
     if (navigator == null) {
@@ -369,6 +384,7 @@ class AlarmService extends ChangeNotifier {
       return;
     }
 
+    ScreenWakeHandler.enable();
     navigator.push(
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -477,7 +493,7 @@ class AlarmService extends ChangeNotifier {
     final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await _notifications.zonedSchedule(
-      alarm.id.hashCode,
+      _notifId(alarm),
       'Tempo Alarm',
       alarm.label.isNotEmpty ? alarm.label : 'Alarm',
       tz.TZDateTime.from(snoozeTime, tz.local),
