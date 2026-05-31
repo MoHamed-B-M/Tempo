@@ -22,6 +22,7 @@ class _MainScreenState extends State<MainScreen>
   int _currentIndex = 0;
   late AnimationController _slideController;
   late Animation<double> _contentFade;
+  bool _tabSwitchLock = false;
 
   final List<Widget> _tabs = const [
     AlarmsTab(),
@@ -36,10 +37,12 @@ class _MainScreenState extends State<MainScreen>
     _slideController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 350),
-    )..value = 0.0;
-    _contentFade = CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeInOutCubic,
+    );
+    _contentFade = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _slideController,
+        curve: Curves.easeInOutCubic,
+      ),
     );
   }
 
@@ -50,10 +53,14 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _switchTab(int index) {
-    if (_currentIndex == index) return;
+    if (_currentIndex == index || _tabSwitchLock) return;
+    _tabSwitchLock = true;
     HapticFeedback.selectionClick();
     _slideController.forward(from: 0.0);
     setState(() => _currentIndex = index);
+    Future.delayed(const Duration(milliseconds: 400), () {
+      _tabSwitchLock = false;
+    });
   }
 
   @override
@@ -69,6 +76,7 @@ class _MainScreenState extends State<MainScreen>
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () {
                       HapticFeedback.mediumImpact();
                       Navigator.push(
@@ -179,6 +187,7 @@ class _MainScreenState extends State<MainScreen>
     final showText = isSelected && showLabels;
     return Expanded(
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => _switchTab(index),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),

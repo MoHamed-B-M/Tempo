@@ -15,6 +15,9 @@ class LockScreen extends StatefulWidget {
   final bool showSnooze;
   final VoidCallback? onStop;
   final VoidCallback? onSnooze;
+  final int autoDismissMinutes;
+  final bool vibrateEnabled;
+  final double volume;
 
   const LockScreen({
     super.key,
@@ -26,6 +29,9 @@ class LockScreen extends StatefulWidget {
     this.showSnooze = false,
     this.onStop,
     this.onSnooze,
+    this.autoDismissMinutes = 0,
+    this.vibrateEnabled = true,
+    this.volume = 1.0,
   });
 
   @override
@@ -36,9 +42,13 @@ class _LockScreenState extends State<LockScreen>
     with TickerProviderStateMixin {
   late AnimationController _gradientController;
   late AnimationController _pulseController;
+  late AnimationController _entryController;
   late Animation<double> _pulseAnimation;
+  late Animation<double> _entryAnimation;
   double _slideOffset = 0;
   AudioPlayer? _audioPlayer;
+  Timer? _autoDismissTimer;
+  Timer? _vibrateTimer;
 
   static const _snoozeThreshold = -100.0;
   static const _dismissThreshold = 100.0;
@@ -46,6 +56,7 @@ class _LockScreenState extends State<LockScreen>
   @override
   void initState() {
     super.initState();
+
     _gradientController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -56,14 +67,29 @@ class _LockScreenState extends State<LockScreen>
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
 
+    _entryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
     _pulseAnimation = CurvedAnimation(
       parent: _pulseController,
       curve: Curves.easeInOutCubic,
     );
 
+    _entryAnimation = CurvedAnimation(
+      parent: _entryController,
+      curve: Curves.easeInOutCubic,
+    );
+
+    _entryController.forward();
+
     if (widget.mode == LockScreenMode.alarm) {
       _startAlarmSound();
-      _vibrateLoop();
+      if (widget.vibrateEnabled) {
+        _startVibrateLoop();
+      }
+      _startAutoDismissTimer();
     }
   }
 
@@ -72,7 +98,7 @@ class _LockScreenState extends State<LockScreen>
       _audioPlayer = AudioPlayer();
       await _audioPlayer!.setSource(AssetSource('audio/sound1.mp3'));
       await _audioPlayer!.setReleaseMode(ReleaseMode.loop);
-      await _audioPlayer!.setVolume(1.0);
+      await _audioPlayer!.setVolume(widget.volume);
       await _audioPlayer!.resume();
     } catch (_) {}
   }
@@ -84,31 +110,50 @@ class _LockScreenState extends State<LockScreen>
     } catch (_) {}
   }
 
-  void _vibrateLoop() async {
-    while (mounted) {
-      await Future.delayed(const Duration(milliseconds: 2000));
-      if (mounted) HapticFeedback.heavyImpact();
-    }
+  void _startVibrateLoop() {
+    _vibrateTimer = Timer.periodic(const Duration(milliseconds: 2000), (_) {
+      if (mounted) HapticFeedback.mediumImpact();
+    });
+  }
+
+  void _startAutoDismissTimer() {
+    if (widget.autoDismissMinutes <= 0) return;
+    _autoDismissTimer = Timer(
+      Duration(minutes: widget.autoDismissMinutes),
+      _autoDismiss,
+    );
+  }
+
+  void _autoDismiss() {
+    if (!mounted) return;
+    _stop();
   }
 
   @override
   void dispose() {
     _gradientController.dispose();
     _pulseController.dispose();
+    _entryController.dispose();
     _audioPlayer?.stop();
     _audioPlayer?.release();
+    _autoDismissTimer?.cancel();
+    _vibrateTimer?.cancel();
     super.dispose();
   }
 
   void _stop() {
     HapticFeedback.mediumImpact();
     _stopSound();
+    _autoDismissTimer?.cancel();
+    _vibrateTimer?.cancel();
     widget.onStop?.call();
   }
 
   void _snooze() {
     HapticFeedback.mediumImpact();
     _stopSound();
+    _autoDismissTimer?.cancel();
+    _vibrateTimer?.cancel();
     widget.onSnooze?.call();
   }
 
@@ -116,95 +161,112 @@ class _LockScreenState extends State<LockScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          AnimatedBuilder(
-            animation: Listenable.merge([_gradientController, _pulseAnimation]),
-            builder: (context, _) {
-              return Container(
-                width: double.infinity,
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: _buildGradient(),
-                ),
-                child: _buildBlurOverlay(),
-              );
-            },
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                const Spacer(flex: 2),
-                AnimatedBuilder(
-                  animation: _pulseAnimation,
-                  builder: (context, _) {
-                    return Icon(
-                      widget.mode == LockScreenMode.alarm
-                          ? Icons.alarm
-                          : Icons.timer,
-                      color: Colors.white.withValues(
-                          alpha: 0.4 + (_pulseAnimation.value * 0.4)),
-                      size: 48,
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                widget.liveTime != null
-                    ? ListenableBuilder(
-                        listenable: widget.liveTime!,
-                        builder: (context, _) => Text(
-                          widget.liveTime!.value,
-                          style: const TextStyle(
-                            fontSize: 82,
-                            fontWeight: FontWeight.w100,
-                            color: Colors.white,
-                            letterSpacing: 6,
-                            height: 1.0,
+      body: FadeTransition(
+        opacity: _entryAnimation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.06),
+            end: Offset.zero,
+          ).animate(_entryAnimation),
+          child: Stack(
+            children: [
+              AnimatedBuilder(
+                animation: Listenable.merge([_gradientController, _pulseAnimation]),
+                builder: (context, _) {
+                  return Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: _buildGradient(),
+                    ),
+                    child: _buildBlurOverlay(),
+                  );
+                },
+              ),
+              SafeArea(
+                child: Column(
+                  children: [
+                    const Spacer(flex: 2),
+                    AnimatedBuilder(
+                      animation: _pulseAnimation,
+                      builder: (context, _) {
+                        return Icon(
+                          widget.mode == LockScreenMode.alarm
+                              ? Icons.alarm
+                              : Icons.timer,
+                          color: Colors.white.withValues(
+                              alpha: 0.4 + (_pulseAnimation.value * 0.4)),
+                          size: 48,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    widget.liveTime != null
+                        ? ListenableBuilder(
+                            listenable: widget.liveTime!,
+                            builder: (context, _) => Text(
+                              widget.liveTime!.value,
+                              style: const TextStyle(
+                                fontSize: 82,
+                                fontWeight: FontWeight.w100,
+                                color: Colors.white,
+                                letterSpacing: 6,
+                                height: 1.0,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            widget.timeDisplay,
+                            style: const TextStyle(
+                              fontSize: 82,
+                              fontWeight: FontWeight.w100,
+                              color: Colors.white,
+                              letterSpacing: 6,
+                              height: 1.0,
+                            ),
                           ),
-                        ),
-                      )
-                    : Text(
-                        widget.timeDisplay,
-                        style: const TextStyle(
-                          fontSize: 82,
-                          fontWeight: FontWeight.w100,
-                          color: Colors.white,
-                          letterSpacing: 6,
-                          height: 1.0,
+                    const SizedBox(height: 8),
+                    if (widget.title.isNotEmpty)
+                      Text(
+                        widget.title.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white.withValues(alpha: 0.6),
+                          letterSpacing: 4,
                         ),
                       ),
-                const SizedBox(height: 8),
-                if (widget.title.isNotEmpty)
-                  Text(
-                    widget.title.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.white.withValues(alpha: 0.6),
-                      letterSpacing: 4,
-                    ),
-                  ),
-                if (widget.subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.subtitle!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.white.withValues(alpha: 0.4),
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ],
-                const Spacer(flex: 2),
-                _buildSlideControl(),
-                const SizedBox(height: 16),
-                _buildStopButton(),
-                const SizedBox(height: 48),
-              ],
-            ),
+                    if (widget.subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.subtitle!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white.withValues(alpha: 0.4),
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
+                    if (widget.autoDismissMinutes > 0) ...[
+                      const SizedBox(height: 16),
+                      AutoDismissIndicator(
+                        minutes: widget.autoDismissMinutes,
+                        onDismiss: _autoDismiss,
+                        key: ValueKey(widget.autoDismissMinutes),
+                      ),
+                    ],
+                    const Spacer(flex: 2),
+                    _buildSlideControl(),
+                    const SizedBox(height: 16),
+                    _buildStopButton(),
+                    const SizedBox(height: 48),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -395,6 +457,60 @@ class _LockScreenState extends State<LockScreen>
           color: Colors.white,
           size: 28,
         ),
+      ),
+    );
+  }
+}
+
+class AutoDismissIndicator extends StatefulWidget {
+  final int minutes;
+  final VoidCallback onDismiss;
+
+  const AutoDismissIndicator({
+    super.key,
+    required this.minutes,
+    required this.onDismiss,
+  });
+
+  @override
+  State<AutoDismissIndicator> createState() => _AutoDismissIndicatorState();
+}
+
+class _AutoDismissIndicatorState extends State<AutoDismissIndicator> {
+  late int _remainingSeconds;
+  Timer? _countdown;
+
+  @override
+  void initState() {
+    super.initState();
+    _remainingSeconds = widget.minutes * 60;
+    _countdown = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_remainingSeconds <= 1) {
+        _countdown?.cancel();
+        widget.onDismiss();
+        return;
+      }
+      setState(() => _remainingSeconds--);
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdown?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mins = _remainingSeconds ~/ 60;
+    final secs = _remainingSeconds % 60;
+    return Text(
+      'Auto-dismiss in $mins:${secs.toString().padLeft(2, '0')}',
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w300,
+        color: Colors.white.withValues(alpha: 0.4),
+        letterSpacing: 2,
       ),
     );
   }

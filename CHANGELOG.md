@@ -24,6 +24,13 @@
 - Created StopwatchState ChangeNotifier for shared stopwatch state across app
 - Added stopwatch lock screen: when app resumes and stopwatch is running, shows LockScreen with live elapsed time
 - Stopwatch lock screen requires slide-to-stop to dismiss, preventing accidental stopwatch interruption
+- Added AlarmSettings service with SharedPreferences persistence (auto-dismiss, vibrate, volume)
+- Enhanced LockScreen: auto-dismiss countdown timer, conditional vibrate loop, adjustable volume, easeInOutCubic entry animation
+- Enhanced SettingsPage: monochromatic alarm section with vibrate toggle, auto-dismiss picker, dot-matrix volume slider
+- Fixed GestureDetector responsiveness: added HitTestBehavior.opaque to all tap targets in scrollable contexts
+- Fixed nested GestureDetector conflict in alarm list (edit vs toggle checkmark)
+- Fixed tab-switch debouncing to prevent rapid-switch animation stutter
+- Increased small touch targets to 48px (day selector circles) for accessibility
 
 ## [1.0.6] - 2026-05-31
 - Restructured MainScreen with Scaffold bottomNavigationBar to prevent obscured buttons

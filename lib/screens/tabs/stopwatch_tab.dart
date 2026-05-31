@@ -322,7 +322,7 @@ class _StopwatchTabState extends State<StopwatchTab>
           Center(
             child: GestureDetector(
               onTap: isRunning ? null : _showEditTaskDialog,
-              behavior: HitTestBehavior.opaque,
+              behavior: isRunning ? HitTestBehavior.translucent : HitTestBehavior.opaque,
               child: Column(
                 children: [
                   Text(

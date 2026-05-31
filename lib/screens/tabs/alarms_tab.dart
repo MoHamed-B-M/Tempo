@@ -163,6 +163,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
                       final dayNum = i + 1;
                       final selected = _selectedRepeatDays.contains(dayNum);
                       return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
                         onTap: () {
                           HapticFeedback.selectionClick();
                           setModalState(() {
@@ -174,8 +175,8 @@ class _AlarmsTabState extends State<AlarmsTab> {
                           });
                         },
                         child: Container(
-                          width: 40,
-                          height: 40,
+                          width: 48,
+                          height: 48,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: selected ? AppColors.accentOf(context) : AppColors.surfaceCardOf(context),
@@ -416,23 +417,24 @@ class _AlarmsTabState extends State<AlarmsTab> {
             padding: const EdgeInsets.only(right: 24),
             child: const Icon(Icons.delete_outline, color: Colors.redAccent),
           ),
-          child: GestureDetector(
-            onTap: () => _editAlarm(alarm),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              decoration: BoxDecoration(
-                color: alarm.enabled ? AppColors.accentOf(context) : AppColors.surfaceCardOf(context),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: alarm.enabled ? Colors.transparent : AppColors.borderOf(context),
-                  width: 1,
-                ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            decoration: BoxDecoration(
+              color: alarm.enabled ? AppColors.accentOf(context) : AppColors.surfaceCardOf(context),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: alarm.enabled ? Colors.transparent : AppColors.borderOf(context),
+                width: 1,
               ),
-              child: Row(
-                children: [
-                  Expanded(
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _editAlarm(alarm),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -464,12 +466,15 @@ class _AlarmsTabState extends State<AlarmsTab> {
                       ],
                     ),
                   ),
-                  // Custom Checkmark Selector Switch
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      context.read<AlarmService>().toggleAlarm(alarm.id);
-                    },
+                ),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    context.read<AlarmService>().toggleAlarm(alarm.id);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
                       width: 32,
@@ -492,8 +497,8 @@ class _AlarmsTabState extends State<AlarmsTab> {
                           : null,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );

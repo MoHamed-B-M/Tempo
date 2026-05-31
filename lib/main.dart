@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'constants/app_colors.dart';
 import 'services/alarm_service.dart';
+import 'services/alarm_settings.dart';
 import 'services/stopwatch_state.dart';
 import 'services/theme_service.dart';
 import 'services/update_manager.dart';
@@ -25,17 +26,26 @@ void main() async {
   final themeService = ThemeService();
   await themeService.load();
 
-  runApp(TempoApp(alarmService: alarmService, themeService: themeService));
+  final alarmSettings = AlarmSettings();
+  await alarmSettings.load();
+
+  runApp(TempoApp(
+    alarmService: alarmService,
+    themeService: themeService,
+    alarmSettings: alarmSettings,
+  ));
 }
 
 class TempoApp extends StatelessWidget {
   final AlarmService alarmService;
   final ThemeService themeService;
+  final AlarmSettings alarmSettings;
 
   const TempoApp({
     super.key,
     required this.alarmService,
     required this.themeService,
+    required this.alarmSettings,
   });
 
   @override
@@ -44,6 +54,7 @@ class TempoApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: alarmService),
         ChangeNotifierProvider.value(value: themeService),
+        ChangeNotifierProvider.value(value: alarmSettings),
         ChangeNotifierProvider(create: (_) => StopwatchState()),
       ],
       child: Consumer<ThemeService>(

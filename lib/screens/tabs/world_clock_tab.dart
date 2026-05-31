@@ -308,6 +308,7 @@ class _WorldClockTabState extends State<WorldClockTab> {
                         child: const Icon(Icons.delete_outline, color: Colors.redAccent),
                       ),
                       child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
                         onTap: () {
                           HapticFeedback.selectionClick();
                           setState(() {
