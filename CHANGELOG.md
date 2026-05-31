@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.16] - 2026-05-31
+- Added `AppTheme` class using `ColorScheme.fromSeed(seedColor: #F56D3B)` generating full M3 tonal palette with warm charcoal/off-white surfaces and orange primary; replaces inline `_buildLightTheme()` / `_buildDarkTheme()` in main.dart
+- Refactored alarms tab with SliverAppBar (pinned, expanded) + SliverList via CustomScrollView, FlexibleSpaceBar header, M3 Switch replacing custom animated circle toggle, Card with `primaryContainer`/`surfaceContainerHigh` colors from theme, entrance animations (TweenAnimationBuilder with scale 0.95→1.0 + fade 0→1, easeInOutCubic), FilledButton/TextButton defaults from M3 theme
+- Created dedicated AboutPage with app icon, version, description, developer/framework info rows, and tappable GitHub source link
+- Added "About" navigation tile in settings page that opens AboutPage, styled with `surfaceContainerHigh` + `outlineVariant` from theme
+- Removed unused AppColors and AppTextStyles imports from alarms_tab and main.dart; removed dead `_defaultColorScheme` field from AppTheme
+
 ## [1.0.15] - 2026-05-31
 - Fixed notification stop button: added `_notifId()` / `_notifIdForDay()` helpers with `hashCode.abs()` for stable positive notification IDs; set `showsUserInterface: false` on stop action for silent background handling; added `_persistStopFlag()` backup persistence in foreground handler
 - Refactored alarms tab with Material 3 expressive design — `Card` with elevation, `FilledButton`, `FloatingActionButton`, `InkWell` with proper ripple, notification active icon, enhanced empty state; all theme lookups now use sheet `ctx`

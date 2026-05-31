@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,6 +10,7 @@ import '../constants/app_text_styles.dart';
 import '../services/alarm_settings.dart';
 import '../services/theme_service.dart';
 import '../services/update_manager.dart';
+import 'about_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -220,7 +222,16 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 64),
+            const SizedBox(height: 32),
+            _buildNavigationTile(
+              icon: Icons.info_outline,
+              label: 'About',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AboutPage()),
+              ),
+            ),
+            const SizedBox(height: 32),
             if (_currentQuote.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -592,6 +603,44 @@ class _SettingsPageState extends State<SettingsPage> {
                 color: isSelected ? Colors.white : AppColors.primaryTextOf(context),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationTile({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: cs.outlineVariant, width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: cs.onSurfaceVariant, size: 22),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: cs.onSurfaceVariant, size: 22),
           ],
         ),
       ),
