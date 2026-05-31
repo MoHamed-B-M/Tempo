@@ -339,19 +339,12 @@ class AlarmService extends ChangeNotifier {
     final alarm = found;
 
     if (response.actionId == 'stop') {
-      toggleAlarm(alarm.id);
-      if (alarm.isRepeating) {
-        toggleAlarm(alarm.id);
-      }
+      _stopAlarm(alarm);
       return;
     }
 
     if (response.actionId == 'snooze') {
-      toggleAlarm(alarm.id);
-      final id = alarm.id;
-      Future.delayed(const Duration(minutes: 5), () {
-        toggleAlarm(id);
-      });
+      _snoozeAlarm(alarm);
       return;
     }
 
@@ -426,11 +419,67 @@ class AlarmService extends ChangeNotifier {
       await plugin.requestExactAlarmsPermission();
     }
   }
+
+  Future<void> _stopAlarm(AlarmModel alarm) async {
+    await _cancelAlarmNotification(alarm);
+    if (alarm.isRepeating) {
+      await _scheduleAlarm(alarm);
+    } else {
+      final idx = _alarms.indexWhere((a) => a.id == alarm.id);
+      if (idx != -1) {
+        _alarms[idx] = _alarms[idx].copyWith(enabled: false);
+        await _saveAlarms();
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> _snoozeAlarm(AlarmModel alarm) async {
+    await _cancelAlarmNotification(alarm);
+
+    final snoozeTime = DateTime.now().add(const Duration(minutes: 5));
+    final androidDetails = _buildAndroidDetails(alarm.sound);
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _notifications.zonedSchedule(
+      alarm.id.hashCode,
+      'Tempo Alarm',
+      alarm.label.isNotEmpty ? alarm.label : 'Alarm',
+      tz.TZDateTime.from(snoozeTime, tz.local),
+      details,
+      payload: alarm.id,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
 }
 
 @pragma('vm:entry-point')
-void _backgroundNotificationHandler(NotificationResponse response) {
-  // Background isolate - can't access AlarmService instance directly.
-  // The notification tap is handled by the foreground callback.
-  // This prevents crashes from unhandled background callbacks.
+Future<void> _backgroundNotificationHandler(NotificationResponse response) async {
+  final plugin = FlutterLocalNotificationsPlugin();
+  await plugin.cancel(response.id ?? -1);
+
+  if (response.actionId == 'snooze') {
+    const androidDetails = AndroidNotificationDetails(
+      'tempo_alarm_channel',
+      'Alarm Notifications',
+      channelDescription: 'Plays when an alarm triggers',
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.alarm,
+    );
+    await plugin.show(
+      (response.id ?? 0) + 1000,
+      'Tempo Alarm',
+      'Snoozed — ringing in 5 min',
+      NotificationDetails(android: androidDetails),
+    );
+  }
 }

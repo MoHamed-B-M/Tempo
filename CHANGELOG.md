@@ -1,11 +1,19 @@
 # Changelog
 
+## [1.0.12] - 2026-05-31
+- Updated Android app icon — replaced launcher icons across all mipmap densities with new adaptive icon (foreground, background, monochrome)
+
 ## [1.0.11] - 2026-05-31
 - Fixed alarm notification: added foreground detection (checkMissedAlarms on resume) to show lock screen when alarm fires while app is active
 - Fixed cold-start alarm handling: getNotificationAppLaunchDetails + processPendingAlarm in HomePage post-frame callback
 - Added onDidReceiveBackgroundNotificationResponse callback to handle notification taps from background isolate
 - Removed orElse fallback to wrong alarm in _handleNotificationResponse; added proper null-safety throughout
 - Added timer finish notification: TimerTab now shows a heads-up notification via flutter_local_notifications when countdown expires
+- Replaced OrangeRingPainter solid arc/dot with glowing effect: blurred shadow arc behind ring, blurred glow circle behind position dot
+- Fixed alarm save button: SnackBar now shown before Navigator.pop using outer stable context instead of sheetContext; removed empty catch block with proper error handling
+- Fixed snooze action: now schedules a new notification 5 minutes from now instead of just re-enabling the alarm for its next scheduled time
+- Fixed stop action for repeating alarms: replaced double-toggle fragility with dedicated _stopAlarm method that cancels current ring and reschedules next occurrence
+- Added background notification handler: cancels notification sound in background isolate; schedules snooze notification 5 min ahead
 
 ## [1.0.10] - 2026-05-31
 - Added AlarmSettings service with SharedPreferences persistence (auto-dismiss, vibrate, volume)

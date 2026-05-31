@@ -73,8 +73,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
       }
       if (!mounted) return;
       if (sheetContext.mounted) {
-        Navigator.pop(sheetContext);
-        ScaffoldMessenger.of(sheetContext).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               _editingAlarmId != null ? 'Alarm updated' : 'Alarm created',
@@ -84,8 +83,21 @@ class _AlarmsTabState extends State<AlarmsTab> {
             behavior: SnackBarBehavior.floating,
           ),
         );
+        Navigator.pop(sheetContext);
       }
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to save alarm',
+            style: AppTextStyles.body(context).copyWith(color: Colors.white),
+          ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _showAlarmEditorSheet(BuildContext context) {
