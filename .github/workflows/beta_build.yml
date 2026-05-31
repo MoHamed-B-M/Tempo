@@ -69,43 +69,41 @@ jobs:
           echo "path=$APK" >> $GITHUB_OUTPUT
           echo "Found APK: $APK"
 
-      - name: Generate version tag
+      - name: Generate version tag from pubspec
         id: version
         run: |
-          CURRENT_VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
-          MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
-          MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
-          PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
-          BETA_PATCH=$((PATCH + 1))
-          TAG="v$MAJOR.$MINOR.$BETA_PATCH-beta.${GITHUB_RUN_NUMBER}"
+          FULL_VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION=$(echo "$FULL_VERSION" | sed 's/+.*//')
+          TAG="v${VERSION}-beta.${GITHUB_RUN_NUMBER}"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "version=$MAJOR.$MINOR.$BETA_PATCH-beta.${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Extract changelog
+      - name: Extract changelog for this version
         shell: bash
         run: |
-          awk '
+          VERSION="${{ steps.version.outputs.version }}"
+          awk -v ver="$VERSION" '
             BEGIN { found = 0 }
-            /^## / {
+            /^## \[/ {
               if (found) exit
-              if ($0 ~ "^## \\[Unreleased\\]" || $0 ~ "^## Unreleased") found = 1
+              if (index($0, "[" ver "]") > 0 || index($0, ver) > 0) found = 1
               next
             }
             found { print }
           ' CHANGELOG.md > RELEASE_NOTES.md 2>/dev/null || true
           if [ ! -s RELEASE_NOTES.md ]; then
-            echo "Beta build from commit $(git log -1 --format='%h')" > RELEASE_NOTES.md
+            echo "No changelog section found for v$VERSION. Generating from commits." > RELEASE_NOTES.md
             echo "" >> RELEASE_NOTES.md
-            echo "Changes:" >> RELEASE_NOTES.md
-            git log --oneline --no-decorate HEAD~5..HEAD 2>/dev/null >> RELEASE_NOTES.md || true
+            git log --oneline --no-decorate -20 2>/dev/null >> RELEASE_NOTES.md || true
           fi
 
       - name: Create Prerelease
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: Beta ${{ steps.version.outputs.version }}
+          name: Beta ${{ steps.version.outputs.tag }}
           body_path: RELEASE_NOTES.md
           files: ${{ steps.find-apk.outputs.path }}
           prerelease: true
-          generate_release_notes: false
+          generate_release_notes: true

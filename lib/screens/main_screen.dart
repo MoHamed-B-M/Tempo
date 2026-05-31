@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_text_styles.dart';
+import '../services/theme_service.dart';
 import 'settings_page.dart';
 import 'tabs/alarms_tab.dart';
 import 'tabs/world_clock_tab.dart';
 import 'tabs/stopwatch_tab.dart';
-import 'tabs/sleep_timer_tab.dart';
+import 'tabs/timer_tab.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -15,15 +17,44 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
+  late AnimationController _slideController;
+  late Animation<double> _contentFade;
 
   final List<Widget> _tabs = const [
     AlarmsTab(),
     WorldClockTab(),
     StopwatchTab(),
-    SleepTimerTab(),
+    TimerTab(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    )..value = 0.0;
+    _contentFade = CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    super.dispose();
+  }
+
+  void _switchTab(int index) {
+    if (_currentIndex == index) return;
+    HapticFeedback.selectionClick();
+    _slideController.forward(from: 0.0);
+    setState(() => _currentIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,9 +101,12 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             Expanded(
-              child: IndexedStack(
-                index: _currentIndex,
-                children: _tabs,
+              child: FadeTransition(
+                opacity: _contentFade,
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: _tabs,
+                ),
               ),
             ),
           ],
@@ -104,58 +138,73 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildBottomNavItem(0, Icons.alarm_outlined, 'Alarms'),
-            _buildBottomNavItem(1, Icons.public_outlined, 'Clock'),
-            _buildBottomNavItem(2, Icons.timer_outlined, 'Timer'),
-            _buildBottomNavItem(3, Icons.bed_outlined, 'Bedtimes'),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = (constraints.maxWidth) / 4;
+            return Stack(
+              children: [
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOutCubic,
+                  left: _currentIndex * itemWidth,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: itemWidth,
+                    decoration: BoxDecoration(
+                      color: AppColors.accentOf(context),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    _buildNavItem(0, Icons.alarm_outlined, 'Alarms'),
+                    _buildNavItem(1, Icons.public_outlined, 'Clock'),
+                    _buildNavItem(2, Icons.timer_outlined, 'Stopwatch'),
+                    _buildNavItem(3, Icons.hourglass_bottom, 'Timer'),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildBottomNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
-    return GestureDetector(
-      onTap: () {
-        if (_currentIndex != index) {
-          HapticFeedback.selectionClick();
-          setState(() {
-            _currentIndex = index;
-          });
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.accentOf(context) : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : AppColors.secondaryTextOf(context),
-              size: 22,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: AppTextStyles.buttonLabel(context).copyWith(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
+    final showLabels = context.watch<ThemeService>().showNavLabels;
+    final showText = isSelected && showLabels;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _switchTab(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? Colors.white : AppColors.secondaryTextOf(context),
+                size: 22,
               ),
+              if (showText) ...[
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: AppTextStyles.buttonLabel(context).copyWith(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

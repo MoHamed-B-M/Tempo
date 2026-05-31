@@ -6,6 +6,7 @@ import '../../constants/app_text_styles.dart';
 import '../../models/alarm_model.dart';
 import '../../services/alarm_service.dart';
 import '../../widgets/sound_picker_sheet.dart';
+import '../../widgets/time_picker_wheel.dart';
 
 class AlarmsTab extends StatefulWidget {
   const AlarmsTab({super.key});
@@ -123,56 +124,12 @@ class _AlarmsTabState extends State<AlarmsTab> {
                     style: AppTextStyles.buttonLabel(context).copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: 24),
-                  // Time Selector (Plus / Minus Design)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setModalState(() {
-                            int totalMin = _selectedTime.hour * 60 + _selectedTime.minute - 15;
-                            if (totalMin < 0) totalMin += 1440;
-                            _selectedTime = TimeOfDay(hour: totalMin ~/ 60, minute: totalMin % 60);
-                          });
-                        },
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.surfaceCardOf(context),
-                            border: Border.all(color: AppColors.borderOf(context), width: 1.5),
-                          ),
-                          child: Icon(Icons.remove, color: AppColors.primaryTextOf(context)),
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      Text(
-                        _selectedTime.format(context),
-                        style: AppTextStyles.displayTime(context).copyWith(fontSize: 48),
-                      ),
-                      const SizedBox(width: 24),
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setModalState(() {
-                            int totalMin = _selectedTime.hour * 60 + _selectedTime.minute + 15;
-                            if (totalMin >= 1440) totalMin -= 1440;
-                            _selectedTime = TimeOfDay(hour: totalMin ~/ 60, minute: totalMin % 60);
-                          });
-                        },
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.accentOf(context),
-                          ),
-                          child: const Icon(Icons.add, color: Colors.white),
-                        ),
-                      ),
-                    ],
+                  TimePickerWheel(
+                    initialHour: _selectedTime.hour,
+                    initialMinute: _selectedTime.minute,
+                    onChanged: (time) {
+                      setModalState(() => _selectedTime = time);
+                    },
                   ),
                   const SizedBox(height: 24),
                   // Alarm Label Input

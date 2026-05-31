@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.8] - 2026-05-31
+- Fixed alarm not ringing — replaced inexact with exact alarm scheduling
+- Copied sound1.mp3 to Android raw resources for notification sound
+- Added persistent looping alarm sound via audioplayers in AlarmRingScreen
+- Added AudioAttributesUsage.alarm and Importance.max for proper alarm priority
+- Replaced +/- 15min alarm time buttons with Nothing OS scroll-wheel TimePickerWheel
+- Extracted OrangeRingPainter to shared widget, reused by StopwatchTab and TimerTab
+- Fixed orange ring dot to always render at 12 o'clock position at 0ms
+- Renamed bottom nav "Timer" → "Stopwatch" and replaced "Bedtimes" with "Timer"
+- Created TimerTab — countdown timer with H/M/S input, circular ring, and finish sound
+- Added "Show Nav Labels" setting to toggle icon-only / icon+label in bottom nav
+- Added smooth sliding orange pill animation between nav items (Curves.easeInOutCubic)
+- Added fade transition on tab content switching
+- Fixed GitHub Actions release tag to follow pubspec.yaml version exactly
+- Fixed GitHub Actions release notes to use current version's changelog section
+
 ## [1.0.6] - 2026-05-31
 - Restructured MainScreen with Scaffold bottomNavigationBar to prevent obscured buttons
 - Redesigned StopwatchTab with orange ring CustomPainter — track arc plus adaptive position dot

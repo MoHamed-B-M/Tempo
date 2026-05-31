@@ -87,6 +87,16 @@ class _SettingsPageState extends State<SettingsPage> {
                 );
               },
             ),
+            const SizedBox(height: 12),
+            _buildCustomSettingToggle(
+              icon: Icons.tab,
+              label: 'Show Nav Labels',
+              enabled: themeService.showNavLabels,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                themeService.setShowNavLabels(!themeService.showNavLabels);
+              },
+            ),
             const SizedBox(height: 32),
             _buildSectionTitle('APP VERSION'),
             const SizedBox(height: 12),
