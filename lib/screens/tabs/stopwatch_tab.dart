@@ -1,11 +1,11 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../../services/stopwatch_state.dart';
-import '../../widgets/orange_ring_painter.dart';
 
 class StopwatchTab extends StatefulWidget {
   const StopwatchTab({super.key});
@@ -209,62 +209,65 @@ class _StopwatchTabState extends State<StopwatchTab>
           ),
           const Spacer(),
           Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 260,
-                  height: 260,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.surfaceCardOf(context).withValues(alpha: 0.3),
-                  ),
-                ),
-                CustomPaint(
-                  size: const Size(270, 270),
-                  painter: OrangeRingPainter(
-                    progress: progressRatio,
-                    trackColor: AppColors.surfaceCardOf(context),
-                    ringColor: AppColors.accentOf(context),
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 180),
-                      child: Text(
-                        _formatTime(elapsedMs),
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.alarmTime(context).copyWith(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
+            child: ColoredBox(
+              color: Colors.transparent,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 220,
+                    height: 220,
+                    child: ClipRect(
+                      child: BackdropFilter(
+                        filter: ui.ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.accentOf(context)
+                                .withValues(alpha: isRunning ? 0.2 : 0.05),
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isRunning ? 'ELAPSED' : 'STOPPED',
-                      style: AppTextStyles.subheading(context).copyWith(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 180),
+                        child: Text(
+                          _formatTime(elapsedMs),
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.alarmTime(context).copyWith(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
-                    ),
-                    if (_laps.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
-                        'Lap ${_formatTime(_laps.first)}',
-                        style: AppTextStyles.body(context).copyWith(
-                          fontSize: 13,
-                          color: AppColors.accentOf(context),
-                          fontWeight: FontWeight.w700,
+                        isRunning ? 'ELAPSED' : 'STOPPED',
+                        style: AppTextStyles.subheading(context).copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
                         ),
                       ),
+                      if (_laps.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Lap ${_formatTime(_laps.first)}',
+                          style: AppTextStyles.body(context).copyWith(
+                            fontSize: 13,
+                            color: AppColors.accentOf(context),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
           SizedBox(

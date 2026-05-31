@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.13] - 2026-05-31
+- Replaced stopwatch OrangeRingPainter and circular container with animated BackdropFilter glow behind clock text
+- Pushed save/cancel buttons up in alarm editor bottom sheet with top padding for better reachability
+- Changed alarm editor default time from hardcoded 7:00 AM to TimeOfDay.now()
+- Rewrote update checker to use /releases/latest endpoint — single release object, simpler parsing
+- Replaced AlertDialog with bottom sheet for update available (version, release notes, Download button)
+- Added floating snackbar for up-to-date status; improved error handling for all update check failure modes
+
 ## [1.0.12] - 2026-05-31
 - Updated Android app icon — replaced launcher icons across all mipmap densities with new adaptive icon (foreground, background, monochrome)
 

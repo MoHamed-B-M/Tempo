@@ -17,7 +17,7 @@ class AlarmsTab extends StatefulWidget {
 
 class _AlarmsTabState extends State<AlarmsTab> {
   // Temporary editing state for bottom sheet
-  TimeOfDay _selectedTime = const TimeOfDay(hour: 7, minute: 0);
+  TimeOfDay _selectedTime = TimeOfDay.now();
   String _selectedSound = 'default';
   List<int> _selectedRepeatDays = [];
   String _selectedLabel = '';
@@ -244,37 +244,40 @@ class _AlarmsTabState extends State<AlarmsTab> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   // Save Button
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: Text(
-                            'CANCEL',
-                            style: AppTextStyles.buttonLabel(context).copyWith(
-                              color: AppColors.secondaryTextOf(context),
+                  Padding(
+                    padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.06),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: Text(
+                              'CANCEL',
+                              style: AppTextStyles.buttonLabel(context).copyWith(
+                                color: AppColors.secondaryTextOf(context),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => _saveAlarm(ctx),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.accentOf(context),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => _saveAlarm(ctx),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accentOf(context),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
+                            child: Text('SAVE', style: AppTextStyles.buttonLabel(context)),
                           ),
-                          child: Text('SAVE', style: AppTextStyles.buttonLabel(context)),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),

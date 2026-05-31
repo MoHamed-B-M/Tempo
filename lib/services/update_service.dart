@@ -59,13 +59,13 @@ class UpdateCheckResponse {
 
 class UpdateService {
   static const _apiUrl =
-      'https://api.github.com/repos/MoHamed-B-M/Tempo/releases';
+      'https://api.github.com/repos/MoHamed-B-M/Tempo/releases/latest';
 
   final http.Client _client;
 
   UpdateService({http.Client? client}) : _client = client ?? http.Client();
 
-  Future<UpdateCheckResponse> checkForUpdate(String channel) async {
+  Future<UpdateCheckResponse> checkForUpdate() async {
     try {
       final response = await _client.get(
         Uri.parse(_apiUrl),
@@ -87,62 +87,15 @@ class UpdateService {
         return UpdateCheckResponse(result: UpdateCheckResult.networkError);
       }
 
-      final List<dynamic> releases = jsonDecode(response.body) as List;
-
-      if (releases.isEmpty) {
-        return UpdateCheckResponse(result: UpdateCheckResult.noReleases);
-      }
-
-      List<Map<String, dynamic>> filtered;
-      if (channel == 'beta') {
-        filtered = releases
-            .where((r) => r['prerelease'] == true)
-            .map((r) => r as Map<String, dynamic>)
-            .toList();
-      } else {
-        filtered = releases
-            .where((r) => r['prerelease'] == false)
-            .map((r) => r as Map<String, dynamic>)
-            .toList();
-      }
-
-      if (filtered.isEmpty) {
-        return UpdateCheckResponse(result: UpdateCheckResult.noReleases);
-      }
-
-      filtered.sort((a, b) {
-        final aTag = (a['tag_name'] as String?) ?? '';
-        final bTag = (b['tag_name'] as String?) ?? '';
-        return _compareVersions(bTag, aTag);
-      });
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       return UpdateCheckResponse(
         result: UpdateCheckResult.available,
-        release: ReleaseInfo.fromJson(filtered.first),
+        release: ReleaseInfo.fromJson(json),
       );
     } catch (_) {
       return UpdateCheckResponse(result: UpdateCheckResult.networkError);
     }
-  }
-
-  int _compareVersions(String a, String b) {
-    final aParts = _parseVersion(a);
-    final bParts = _parseVersion(b);
-    for (var i = 0; i < 3; i++) {
-      if (aParts[i] != bParts[i]) return aParts[i].compareTo(bParts[i]);
-    }
-    return 0;
-  }
-
-  List<int> _parseVersion(String tag) {
-    final v = tag.startsWith('v') ? tag.substring(1) : tag;
-    final base = v.split('-')[0];
-    final parts = base.split('.');
-    return [
-      parts.length > 0 ? int.tryParse(parts[0]) ?? 0 : 0,
-      parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
-      parts.length > 2 ? int.tryParse(parts[2]) ?? 0 : 0,
-    ];
   }
 
   void dispose() {

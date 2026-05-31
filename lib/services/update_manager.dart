@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../constants/app_colors.dart';
+import '../constants/app_text_styles.dart';
 import 'update_service.dart';
 
 class UpdateManager {
@@ -49,9 +51,8 @@ class UpdateManager {
     BuildContext context, {
     bool silent = false,
   }) async {
-    final channel = await getSavedChannel();
     final service = UpdateService();
-    final response = await service.checkForUpdate(channel);
+    final response = await service.checkForUpdate();
     service.dispose();
 
     if (!context.mounted) return;
@@ -59,22 +60,22 @@ class UpdateManager {
     switch (response.result) {
       case UpdateCheckResult.repoNotFound:
         if (!silent) {
-          _showSnackBar(context,
-              'Update check failed: repository not found');
+          _showSnackBar(context, 'Update check failed: repository not found');
         }
       case UpdateCheckResult.rateLimited:
         if (!silent) {
-          _showSnackBar(context,
-              'Rate limited. Try again later.');
+          _showSnackBar(context, 'Rate limited. Try again later.');
         }
       case UpdateCheckResult.networkError:
         if (!silent) {
-          _showSnackBar(context,
-              'Could not check for updates. Check your connection.');
+          _showSnackBar(
+            context,
+            'Could not check for updates. Check your connection.',
+          );
         }
       case UpdateCheckResult.noReleases:
         if (!silent) {
-          _showSnackBar(context, 'No releases found on this channel');
+          _showSnackBar(context, 'No releases found');
         }
       case UpdateCheckResult.upToDate:
         if (!silent) {
@@ -93,102 +94,156 @@ class UpdateManager {
         }
 
         if (context.mounted) {
-          _showUpdateDialog(context, release);
+          _showUpdateSheet(context, release);
         }
     }
   }
 
   static void _showSnackBar(BuildContext context, String message) {
-    final brightness = Theme.of(context).brightness;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: brightness == Brightness.dark
-            ? const Color(0xFF0E0E0E)
-            : const Color(0xFFF2F2F2),
+        backgroundColor: AppColors.surfaceCardOf(context),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  static void _showUpdateDialog(BuildContext context, ReleaseInfo release) {
-    final brightness = Theme.of(context).brightness;
-    final bgColor = brightness == Brightness.dark
-        ? const Color(0xFF0E0E0E)
-        : const Color(0xFFFFFFFF);
-    final textColor = brightness == Brightness.dark
-        ? Colors.white
-        : Colors.black;
-    final dimColor = brightness == Brightness.dark
-        ? Colors.white.withValues(alpha: 0.5)
-        : Colors.black.withValues(alpha: 0.5);
-
-    showDialog(
+  static void _showUpdateSheet(BuildContext context, ReleaseInfo release) {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: bgColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: brightness == Brightness.dark
-                ? const Color(0xFF1A1A1A)
-                : const Color(0xFFE5E5EA),
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundOf(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            MediaQuery.of(ctx).viewInsets.bottom + 24,
           ),
-        ),
-        title: Text(
-          'Update Available',
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Version ${release.version}',
-              style: TextStyle(
-                color: textColor.withValues(alpha: 0.7),
-                letterSpacing: 0.5,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryTextOf(context)
+                        .withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
-            ),
-            if (release.body.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.accentOf(context)
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.system_update_alt_rounded,
+                      color: AppColors.accentOf(context),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'UPDATE AVAILABLE',
+                        style: AppTextStyles.buttonLabel(context).copyWith(
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Version ${release.version}',
+                        style: AppTextStyles.body(context).copyWith(
+                          fontSize: 13,
+                          color: AppColors.secondaryTextOf(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              if (release.body.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceCardOf(context),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    release.body,
+                    style: AppTextStyles.body(context).copyWith(
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                    maxLines: 8,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _launchReleaseUrl(release.url);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accentOf(context),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'DOWNLOAD',
+                    style: AppTextStyles.buttonLabel(context).copyWith(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
-              Text(
-                release.body,
-                style: TextStyle(color: dimColor, fontSize: 13),
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis,
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    'NOT NOW',
+                    style: AppTextStyles.buttonLabel(context).copyWith(
+                      color: AppColors.secondaryTextOf(context),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
               ),
             ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: dimColor, letterSpacing: 1),
-            ),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _launchReleaseUrl(release.url);
-            },
-            child: Text(
-              'Update Now',
-              style: TextStyle(
-                color: textColor,
-                letterSpacing: 1,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
