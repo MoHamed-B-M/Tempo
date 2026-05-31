@@ -176,6 +176,15 @@ class AlarmService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> clearAllAlarms() async {
+    for (final alarm in _alarms) {
+      await _cancelAlarmNotification(alarm);
+    }
+    _alarms.clear();
+    await _saveAlarms();
+    notifyListeners();
+  }
+
   Future<void> _scheduleAlarm(AlarmModel alarm) async {
     if (!alarm.enabled) return;
 
@@ -340,11 +349,13 @@ class AlarmService extends ChangeNotifier {
 
     if (response.actionId == 'stop') {
       _stopAlarm(alarm);
+      navigatorKey?.currentState?.maybePop();
       return;
     }
 
     if (response.actionId == 'snooze') {
       _snoozeAlarm(alarm);
+      navigatorKey?.currentState?.maybePop();
       return;
     }
 
@@ -380,13 +391,32 @@ class AlarmService extends ChangeNotifier {
     }
   }
 
+  Future<void> processStoppedAlarms() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stopped = prefs.getStringList('stopped_alarms') ?? [];
+    if (stopped.isEmpty) return;
+
+    bool changed = false;
+    for (final id in stopped) {
+      final idx = _alarms.indexWhere((a) => a.id == id);
+      if (idx != -1 && _alarms[idx].enabled) {
+        _alarms[idx] = _alarms[idx].copyWith(enabled: false);
+        changed = true;
+      }
+    }
+    await prefs.remove('stopped_alarms');
+    if (changed) {
+      await _saveAlarms();
+      notifyListeners();
+    }
+  }
+
   void checkMissedAlarms() {
     final now = DateTime.now();
 
     for (final alarm in _alarms) {
       if (!alarm.enabled) continue;
 
-      // Skip repeating alarms — they are handled by rescheduleAll
       if (alarm.isRepeating) continue;
 
       final alarmDateTime = DateTime(
@@ -481,5 +511,15 @@ Future<void> _backgroundNotificationHandler(NotificationResponse response) async
       'Snoozed — ringing in 5 min',
       NotificationDetails(android: androidDetails),
     );
+  }
+
+  if (response.actionId == 'stop' || response.actionId == 'snooze') {
+    final prefs = await SharedPreferences.getInstance();
+    final stopped = prefs.getStringList('stopped_alarms') ?? [];
+    final id = response.payload;
+    if (id != null && !stopped.contains(id)) {
+      stopped.add(id);
+      await prefs.setStringList('stopped_alarms', stopped);
+    }
   }
 }

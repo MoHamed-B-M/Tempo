@@ -25,8 +25,12 @@ class ReleaseInfo {
     this.apkDownloadUrl,
   });
 
-  String get version =>
-      tagName.startsWith('v') ? tagName.substring(1) : tagName;
+  String get version {
+    final stripped = tagName.startsWith(RegExp(r'[vV]'))
+        ? tagName.substring(1)
+        : tagName;
+    return stripped.toLowerCase();
+  }
 
   factory ReleaseInfo.fromJson(Map<String, dynamic> json) {
     final assets = json['assets'] as List?;
@@ -67,13 +71,15 @@ class UpdateService {
 
   Future<UpdateCheckResponse> checkForUpdate() async {
     try {
-      final response = await _client.get(
-        Uri.parse(_apiUrl),
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Tempo-App',
-        },
-      );
+      final response = await _client
+          .get(
+            Uri.parse(_apiUrl),
+            headers: {
+              'Accept': 'application/vnd.github.v3+json',
+              'User-Agent': 'Tempo-App',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 404) {
         return UpdateCheckResponse(result: UpdateCheckResult.repoNotFound);
@@ -87,12 +93,25 @@ class UpdateService {
         return UpdateCheckResponse(result: UpdateCheckResult.networkError);
       }
 
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final body = response.body;
+      if (body.isEmpty) {
+        return UpdateCheckResponse(result: UpdateCheckResult.noReleases);
+      }
+
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      final tagName = json['tag_name'] as String?;
+      if (tagName == null || tagName.isEmpty) {
+        return UpdateCheckResponse(result: UpdateCheckResult.noReleases);
+      }
 
       return UpdateCheckResponse(
         result: UpdateCheckResult.available,
         release: ReleaseInfo.fromJson(json),
       );
+    } on http.ClientException {
+      return UpdateCheckResponse(result: UpdateCheckResult.networkError);
+    } on FormatException {
+      return UpdateCheckResponse(result: UpdateCheckResult.networkError);
     } catch (_) {
       return UpdateCheckResponse(result: UpdateCheckResult.networkError);
     }

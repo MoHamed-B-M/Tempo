@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/screen_wake_handler.dart';
 
 enum LockScreenMode { alarm, stopwatch }
 
@@ -83,6 +84,7 @@ class _LockScreenState extends State<LockScreen>
     );
 
     _entryController.forward();
+    ScreenWakeHandler.enable();
 
     if (widget.mode == LockScreenMode.alarm) {
       _startAlarmSound();
@@ -138,6 +140,7 @@ class _LockScreenState extends State<LockScreen>
     _audioPlayer?.release();
     _autoDismissTimer?.cancel();
     _vibrateTimer?.cancel();
+    ScreenWakeHandler.disable();
     super.dispose();
   }
 

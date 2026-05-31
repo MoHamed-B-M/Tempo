@@ -196,7 +196,6 @@ class _StopwatchTabState extends State<StopwatchTab>
     final sw = context.watch<StopwatchState>();
     final elapsedMs = sw.elapsedMs;
     final isRunning = sw.isRunning;
-    final progressRatio = _progressAnim.value;
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -214,17 +213,23 @@ class _StopwatchTabState extends State<StopwatchTab>
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  SizedBox(
-                    width: 220,
-                    height: 220,
-                    child: ClipRect(
-                      child: BackdropFilter(
-                        filter: ui.ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.accentOf(context)
-                                .withValues(alpha: isRunning ? 0.2 : 0.05),
+                  RepaintBoundary(
+                    child: SizedBox(
+                      width: 220,
+                      height: 220,
+                      child: ClipRect(
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                          child: AnimatedContainer(
+                            duration:
+                                const Duration(milliseconds: 400),
+                            curve: Curves.easeInOutCubic,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.grey.withValues(
+                                alpha: isRunning ? 0.12 : 0.03,
+                              ),
+                            ),
                           ),
                         ),
                       ),

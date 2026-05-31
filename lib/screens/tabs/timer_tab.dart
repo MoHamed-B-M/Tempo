@@ -107,6 +107,10 @@ class _TimerTabState extends State<TimerTab> {
       fullScreenIntent: true,
       category: AndroidNotificationCategory.alarm,
       audioAttributesUsage: AudioAttributesUsage.alarm,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction('stop', 'Stop',
+            showsUserInterface: true),
+      ],
     );
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,

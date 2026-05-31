@@ -1,8 +1,17 @@
 # Changelog
 
-## [1.0.13] - 2026-05-31
-- Replaced stopwatch OrangeRingPainter and circular container with animated BackdropFilter glow behind clock text
-- Pushed save/cancel buttons up in alarm editor bottom sheet with top padding for better reachability
+## [1.0.14] - 2026-05-31
+- Verified no alarm-seeding logic exists in codebase — _loadAlarms only reads from SharedPreferences; removed dead code path that could have injected default alarms
+- Added clearAllAlarms() method to AlarmService for safe data reset
+- Fixed update check crash — added missing break statements in switch to prevent fall-through cascade to null release access
+- Made version comparison case-insensitive for v/V prefix in tag_name
+- Fixed bottom sheet using wrong BuildContext (ctx vs captured outer context)
+- Added 15s timeout, explicit exception catching, and empty tag_name guard to update API call
+- Adjusted alarm editor bottom sheet padding (viewInsets.bottom + padding.bottom + 80) to keep save button above floating nav bar
+- Replaced glitchy stopwatch glow with soft grey animated pulse — reduced blur sigma 50→18, wrapped in RepaintBoundary, used AnimatedContainer for opacity transitions
+- Added proper 'stop' action for notifications: background handler persists stop flags to SharedPreferences; foreground handler pops LockScreen via maybePop; processStoppedAlarms() applied on app resume
+- Added 'Stop' action button to timer finish notification
+- Added ScreenWakeHandler with method channel for FLAG_SHOW_WHEN_LOCKED / FLAG_TURN_SCREEN_ON / FLAG_KEEP_SCREEN_ON — LockScreen enables on init, disables on dispose
 - Changed alarm editor default time from hardcoded 7:00 AM to TimeOfDay.now()
 - Rewrote update checker to use /releases/latest endpoint — single release object, simpler parsing
 - Replaced AlertDialog with bottom sheet for update available (version, release notes, Download button)

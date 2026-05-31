@@ -117,7 +117,9 @@ class _AlarmsTabState extends State<AlarmsTab> {
                 24,
                 24,
                 24,
-                MediaQuery.of(ctx).viewInsets.bottom + 40,
+                MediaQuery.of(ctx).viewInsets.bottom +
+                    MediaQuery.of(ctx).padding.bottom +
+                    80,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

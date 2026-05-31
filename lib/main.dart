@@ -204,6 +204,7 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       final alarmService = context.read<AlarmService>();
       alarmService.rescheduleAll();
+      alarmService.processStoppedAlarms();
       alarmService.checkMissedAlarms();
 
       final sw = context.read<StopwatchState>();

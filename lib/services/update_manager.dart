@@ -25,7 +25,8 @@ class UpdateManager {
   }
 
   static String stripV(String tag) {
-    return tag.startsWith('v') ? tag.substring(1) : tag;
+    final stripped = tag.startsWith(RegExp(r'[vV]')) ? tag.substring(1) : tag;
+    return stripped.toLowerCase();
   }
 
   static List<int> parseVersion(String v) {
@@ -62,10 +63,12 @@ class UpdateManager {
         if (!silent) {
           _showSnackBar(context, 'Update check failed: repository not found');
         }
+        break;
       case UpdateCheckResult.rateLimited:
         if (!silent) {
           _showSnackBar(context, 'Rate limited. Try again later.');
         }
+        break;
       case UpdateCheckResult.networkError:
         if (!silent) {
           _showSnackBar(
@@ -73,14 +76,17 @@ class UpdateManager {
             'Could not check for updates. Check your connection.',
           );
         }
+        break;
       case UpdateCheckResult.noReleases:
         if (!silent) {
           _showSnackBar(context, 'No releases found');
         }
+        break;
       case UpdateCheckResult.upToDate:
         if (!silent) {
           _showSnackBar(context, 'You are on the latest version');
         }
+        break;
       case UpdateCheckResult.available:
         final release = response.release!;
         final currentVersion = await getCurrentVersion();
@@ -96,6 +102,7 @@ class UpdateManager {
         if (context.mounted) {
           _showUpdateSheet(context, release);
         }
+        break;
     }
   }
 
@@ -134,7 +141,7 @@ class UpdateManager {
                   width: 48,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.secondaryTextOf(context)
+                    color: AppColors.secondaryTextOf(ctx)
                         .withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
@@ -147,13 +154,13 @@ class UpdateManager {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.accentOf(context)
+                      color: AppColors.accentOf(ctx)
                           .withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       Icons.system_update_alt_rounded,
-                      color: AppColors.accentOf(context),
+                      color: AppColors.accentOf(ctx),
                       size: 24,
                     ),
                   ),
@@ -163,16 +170,16 @@ class UpdateManager {
                     children: [
                       Text(
                         'UPDATE AVAILABLE',
-                        style: AppTextStyles.buttonLabel(context).copyWith(
+                        style: AppTextStyles.buttonLabel(ctx).copyWith(
                           fontSize: 14,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Version ${release.version}',
-                        style: AppTextStyles.body(context).copyWith(
+                        style: AppTextStyles.body(ctx).copyWith(
                           fontSize: 13,
-                          color: AppColors.secondaryTextOf(context),
+                          color: AppColors.secondaryTextOf(ctx),
                         ),
                       ),
                     ],
@@ -185,12 +192,12 @@ class UpdateManager {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceCardOf(context),
+                    color: AppColors.surfaceCardOf(ctx),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     release.body,
-                    style: AppTextStyles.body(context).copyWith(
+                    style: AppTextStyles.body(ctx).copyWith(
                       fontSize: 13,
                       height: 1.5,
                     ),
@@ -209,7 +216,7 @@ class UpdateManager {
                     _launchReleaseUrl(release.url);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accentOf(context),
+                    backgroundColor: AppColors.accentOf(ctx),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -218,7 +225,7 @@ class UpdateManager {
                   ),
                   child: Text(
                     'DOWNLOAD',
-                    style: AppTextStyles.buttonLabel(context).copyWith(
+                    style: AppTextStyles.buttonLabel(ctx).copyWith(
                       color: Colors.white,
                       fontSize: 14,
                     ),
@@ -233,8 +240,8 @@ class UpdateManager {
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
                     'NOT NOW',
-                    style: AppTextStyles.buttonLabel(context).copyWith(
-                      color: AppColors.secondaryTextOf(context),
+                    style: AppTextStyles.buttonLabel(ctx).copyWith(
+                      color: AppColors.secondaryTextOf(ctx),
                       fontSize: 13,
                     ),
                   ),
