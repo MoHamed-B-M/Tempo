@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -53,8 +53,8 @@ class AlarmService extends ChangeNotifier {
 
   Future<void> _detectLocalTimezone() async {
     try {
-      final ianaName = await FlutterNativeTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(ianaName));
+      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
     } catch (_) {
       try {
         tz.setLocalLocation(tz.getLocation(DateTime.now().timeZoneName));

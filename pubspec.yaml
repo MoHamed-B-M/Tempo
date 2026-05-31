@@ -21,7 +21,7 @@ dependencies:
   url_launcher: ^6.3.0
   audioplayers: ^6.1.0
   timezone: ^0.9.4
-  flutter_native_timezone: ^2.0.0
+  flutter_timezone: ^5.1.0
 
 dev_dependencies:
   flutter_test:
