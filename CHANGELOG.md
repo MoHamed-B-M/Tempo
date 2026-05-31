@@ -1,32 +1,49 @@
 # Changelog
 
-## [Unreleased]
+## [1.0.6] - 2026-05-31
+- Restructured MainScreen with Scaffold bottomNavigationBar to prevent obscured buttons
+- Redesigned StopwatchTab with orange ring CustomPainter — track arc plus adaptive position dot
+- Replaced wavy circle with orange progress ring that follows current time position
+- Added AnimationController for smooth ring transitions using Curves.easeInOutCubic
+- Added lap recording functionality with horizontal scrollable lap list
+- Fixed layout stability — all buttons use fixed SizedBox dimensions, no jumping on animation
+- Added proper safe-area padding (MediaQuery bottom inset) for notched devices
+- Removed stale test_check.dart scratch file
+- Updated widget_test.dart to pass static analysis
+
+## [1.0.5] - 2026-05-30
+- Skipped — version aligned to match workflow iteration cadence
+
+## [1.0.4] - 2026-05-29
+- Redesigned the whole app with Nothing OS aesthetic (warm charcoal / off-white palette)
 - Added alarm ring screen with animated gradient background
 - Added sound picker bottom sheet with selection UI
 - Added slide-to-snooze and slide-to-dismiss gesture control
-- Fixed alarm toggle enable/disable not persisting
+- Fixed alarm toggle enable/disable not persisting across restarts
 - Fixed alarm scheduling using zonedSchedule instead of periodicallyShow
 - Added timezone database initialization for exact alarm scheduling
+- Fixed notification tap handler — now navigates to alarm ring screen
+- Added USE_FULL_SCREEN_INTENT permission for alarm heads-up notification
+- Added edit alarm feature: tap alarm tile to modify time, sound, repeat, and label
+- Added _selectedLabel field for alarm label editing in the picker flow
+- Fixed alarm scheduling by adding flutter_native_timezone for correct IANA detection
+
+## [1.0.3] - 2026-05-28
 - Enabled ProGuard/R8 minification and resource shrinking
 - Added ABI splits for smaller per-architecture APKs
 - Added App Bundle (.aab) build alongside APK in CI
 - Added --split-debug-info and --obfuscate to release builds
 - Added proguard-rules.pro with Flutter-specific keep rules
-- Fixed notification tap handler navigates to alarm ring screen
-- Removed stale test_check.dart scratch file
-- Updated widget_test.dart to pass static analysis
 - Fixed AGP Kotlin DSL build errors: signingConfigs, isMinifyEnabled, isShrinkResources
 - Fixed R8 release build failure with expanded proguard rules and R8 full mode disabled
 - Fixed missing Play Core classes in R8 (com.google.android.play.core.** keep + dontwarn)
 - Created assets/audio/ directory to fix missing pubspec asset entry
 - Made release signing config conditional on keystore file existence in build.gradle.kts
+- Auto-generate release keystore with keytool if upload-keystore.jks does not exist
 - Fixed artifact download by uploading full flutter-apk directory and finding APK dynamically
-- Auto-generate release keystore with keytool if upload-keystore.jks doesn't exist
-- Fixed alarm scheduling by adding flutter_native_timezone for correct IANA detection
-- Added USE_FULL_SCREEN_INTENT permission for alarm heads-up notification
-- Added edit alarm feature: tap alarm tile to modify time/sound/repeat/label
 - Differentiated GitHub API rate limiting (403) from network errors in update check
-- Added _selectedLabel field for alarm label editing in the picker flow
+- Fixed beta and release GitHub Actions workflows
+- Fixed --strip flag in flutter build apk
 
 ## [1.0.2] - 2026-05-26
 - Added Nothing OS themed time picker with half-wheel effect

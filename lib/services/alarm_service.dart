@@ -67,7 +67,7 @@ class AlarmService extends ChangeNotifier {
       _channelId,
       _channelName,
       description: 'Plays when an alarm triggers',
-      importance: Importance.high,
+      importance: Importance.max,
       playSound: true,
       enableVibration: true,
       enableLights: true,
@@ -190,20 +190,20 @@ class AlarmService extends ChangeNotifier {
   }
 
   AndroidNotificationDetails _buildAndroidDetails(String sound) {
-    final soundName = sound != 'default' ? 'alarm_$sound' : null;
+    final soundName =
+        sound != 'default' && sound != 'sound1' ? 'alarm_$sound' : 'sound1';
     return AndroidNotificationDetails(
       _channelId,
       _channelName,
       channelDescription: 'Plays when an alarm triggers',
-      importance: Importance.high,
-      priority: Priority.high,
+      importance: Importance.max,
+      priority: Priority.max,
       fullScreenIntent: true,
       playSound: true,
       enableVibration: true,
       category: AndroidNotificationCategory.alarm,
-      sound: soundName != null
-          ? RawResourceAndroidNotificationSound(soundName)
-          : null,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      sound: RawResourceAndroidNotificationSound(soundName),
     );
   }
 
@@ -227,7 +227,7 @@ class AlarmService extends ChangeNotifier {
       tz.TZDateTime.from(date, tz.local),
       details,
       payload: alarm.id,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
@@ -259,7 +259,7 @@ class AlarmService extends ChangeNotifier {
         details,
         payload: alarm.id,
         matchDateTimeComponents: DateTimeComponents.time,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
@@ -288,7 +288,7 @@ class AlarmService extends ChangeNotifier {
           payload: alarm.id,
           matchDateTimeComponents:
               DateTimeComponents.dayOfWeekAndTime,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
         );

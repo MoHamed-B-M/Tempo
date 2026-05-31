@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,7 @@ class _AlarmRingScreenState extends State<AlarmRingScreen>
   late Animation<double> _pulseAnimation;
   double _slideOffset = 0;
   bool _isSnoozing = false;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   static const _snoozeThreshold = -100.0;
   static const _dismissThreshold = 100.0;
@@ -45,6 +47,23 @@ class _AlarmRingScreenState extends State<AlarmRingScreen>
 
     HapticFeedback.heavyImpact();
     _vibrateLoop();
+    _startAlarmSound();
+  }
+
+  Future<void> _startAlarmSound() async {
+    try {
+      await _audioPlayer.setSource(AssetSource('audio/sound1.mp3'));
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      await _audioPlayer.setVolume(1.0);
+      await _audioPlayer.resume();
+    } catch (_) {}
+  }
+
+  Future<void> _stopAlarmSound() async {
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.release();
+    } catch (_) {}
   }
 
   void _vibrateLoop() async {
@@ -60,12 +79,15 @@ class _AlarmRingScreenState extends State<AlarmRingScreen>
   void dispose() {
     _gradientController.dispose();
     _pulseController.dispose();
+    _audioPlayer.stop();
+    _audioPlayer.release();
     super.dispose();
   }
 
   void _snooze() {
     setState(() => _isSnoozing = true);
     HapticFeedback.mediumImpact();
+    _stopAlarmSound();
     final service = context.read<AlarmService>();
     service.toggleAlarm(widget.alarm.id);
     Future.delayed(const Duration(minutes: 5), () {
@@ -76,6 +98,7 @@ class _AlarmRingScreenState extends State<AlarmRingScreen>
 
   void _dismiss() {
     HapticFeedback.mediumImpact();
+    _stopAlarmSound();
     context.read<AlarmService>().toggleAlarm(widget.alarm.id);
     if (widget.alarm.isRepeating) {
       context.read<AlarmService>().toggleAlarm(widget.alarm.id);
