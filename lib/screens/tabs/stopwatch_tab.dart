@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
+import '../../services/stopwatch_state.dart';
 import '../../widgets/orange_ring_painter.dart';
 
 class StopwatchTab extends StatefulWidget {
@@ -15,8 +17,6 @@ class StopwatchTab extends StatefulWidget {
 class _StopwatchTabState extends State<StopwatchTab>
     with SingleTickerProviderStateMixin {
   Timer? _timer;
-  int _milliseconds = 0;
-  bool _isRunning = false;
   late AnimationController _progressAnim;
 
   List<int> _laps = [];
@@ -43,21 +43,21 @@ class _StopwatchTabState extends State<StopwatchTab>
 
   void _toggleStopwatch() {
     HapticFeedback.mediumImpact();
-    if (_isRunning) {
+    final sw = context.read<StopwatchState>();
+    if (sw.isRunning) {
       _timer?.cancel();
-      setState(() => _isRunning = false);
+      sw.stop();
       _progressAnim.animateTo(
         _customProgressPercent / 100.0,
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOutCubic,
       );
     } else {
-      setState(() => _isRunning = true);
+      sw.start();
       _timer = Timer.periodic(const Duration(milliseconds: 10), (_) {
-        setState(() {
-          _milliseconds += 10;
-          _progressAnim.value = (_milliseconds % 60000) / 60000.0;
-        });
+        final s = context.read<StopwatchState>();
+        s.tick();
+        _progressAnim.value = (s.elapsedMs % 60000) / 60000.0;
       });
     }
   }
@@ -65,9 +65,8 @@ class _StopwatchTabState extends State<StopwatchTab>
   void _resetStopwatch() {
     HapticFeedback.mediumImpact();
     _timer?.cancel();
+    context.read<StopwatchState>().reset();
     setState(() {
-      _isRunning = false;
-      _milliseconds = 0;
       _laps = [];
     });
     _progressAnim.animateTo(
@@ -79,28 +78,21 @@ class _StopwatchTabState extends State<StopwatchTab>
 
   void _recordLap() {
     HapticFeedback.selectionClick();
+    final sw = context.read<StopwatchState>();
     setState(() {
-      _laps.insert(0, _milliseconds);
+      _laps.insert(0, sw.elapsedMs);
     });
   }
 
-  String _formatElapsedTime() {
-    final minutes = (_milliseconds ~/ 60000) % 60;
-    final seconds = (_milliseconds ~/ 1000) % 60;
-    final hundredths = (_milliseconds ~/ 10) % 100;
-
-    final hours = _milliseconds ~/ 3600000;
-    if (hours > 0) {
-      final mins = (_milliseconds ~/ 60000) % 60;
-      return '${hours}h ${mins.toString().padLeft(2, '0')}m';
-    }
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
-  }
-
-  String _formatLapTime(int ms) {
+  static String _formatTime(int ms) {
     final minutes = (ms ~/ 60000) % 60;
     final seconds = (ms ~/ 1000) % 60;
     final hundredths = (ms ~/ 10) % 100;
+    final hours = ms ~/ 3600000;
+    if (hours > 0) {
+      final mins = (ms ~/ 60000) % 60;
+      return '${hours}h ${mins.toString().padLeft(2, '0')}m';
+    }
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
   }
 
@@ -201,6 +193,9 @@ class _StopwatchTabState extends State<StopwatchTab>
 
   @override
   Widget build(BuildContext context) {
+    final sw = context.watch<StopwatchState>();
+    final elapsedMs = sw.elapsedMs;
+    final isRunning = sw.isRunning;
     final progressRatio = _progressAnim.value;
 
     return Padding(
@@ -239,7 +234,7 @@ class _StopwatchTabState extends State<StopwatchTab>
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 180),
                       child: Text(
-                        _formatElapsedTime(),
+                        _formatTime(elapsedMs),
                         textAlign: TextAlign.center,
                         style: AppTextStyles.alarmTime(context).copyWith(
                           fontSize: 36,
@@ -249,7 +244,7 @@ class _StopwatchTabState extends State<StopwatchTab>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _isRunning ? 'ELAPSED' : 'STOPPED',
+                      isRunning ? 'ELAPSED' : 'STOPPED',
                       style: AppTextStyles.subheading(context).copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -259,7 +254,7 @@ class _StopwatchTabState extends State<StopwatchTab>
                     if (_laps.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'Lap ${_formatLapTime(_laps.first)}',
+                        'Lap ${_formatTime(_laps.first)}',
                         style: AppTextStyles.body(context).copyWith(
                           fontSize: 13,
                           color: AppColors.accentOf(context),
@@ -310,7 +305,7 @@ class _StopwatchTabState extends State<StopwatchTab>
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                _formatLapTime(lapMs),
+                                _formatTime(lapMs),
                                 style: AppTextStyles.body(context).copyWith(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -326,7 +321,7 @@ class _StopwatchTabState extends State<StopwatchTab>
           ),
           Center(
             child: GestureDetector(
-              onTap: _isRunning ? null : _showEditTaskDialog,
+              onTap: isRunning ? null : _showEditTaskDialog,
               behavior: HitTestBehavior.opaque,
               child: Column(
                 children: [
@@ -348,7 +343,7 @@ class _StopwatchTabState extends State<StopwatchTab>
                   const SizedBox(height: 8),
                   AnimatedOpacity(
                     duration: const Duration(milliseconds: 200),
-                    opacity: _isRunning ? 0.0 : 1.0,
+                    opacity: isRunning ? 0.0 : 1.0,
                     child: Text(
                       '${_customProgressPercent.round()}% work done  (Tap to edit)',
                       style: AppTextStyles.body(context).copyWith(
@@ -369,22 +364,22 @@ class _StopwatchTabState extends State<StopwatchTab>
                 width: 84,
                 height: 56,
                 child: GestureDetector(
-                  onTap: _isRunning ? _recordLap : _resetStopwatch,
+                  onTap: isRunning ? _recordLap : _resetStopwatch,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeInOutCubic,
                     decoration: BoxDecoration(
-                      color: _isRunning
+                      color: isRunning
                           ? AppColors.surfaceCardOf(context)
                           : AppColors.accentOf(context),
                       borderRadius: BorderRadius.circular(18),
-                      border: _isRunning
+                      border: isRunning
                           ? Border.all(
                               color: AppColors.borderOf(context),
                               width: 1,
                             )
                           : null,
-                      boxShadow: _isRunning
+                      boxShadow: isRunning
                           ? null
                           : [
                               BoxShadow(
@@ -396,8 +391,8 @@ class _StopwatchTabState extends State<StopwatchTab>
                             ],
                     ),
                     child: Icon(
-                      _isRunning ? Icons.flag_outlined : Icons.stop,
-                      color: _isRunning
+                      isRunning ? Icons.flag_outlined : Icons.stop,
+                      color: isRunning
                           ? AppColors.primaryTextOf(context)
                           : Colors.white,
                       size: 24,
@@ -415,17 +410,17 @@ class _StopwatchTabState extends State<StopwatchTab>
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeInOutCubic,
                     decoration: BoxDecoration(
-                      color: _isRunning
+                      color: isRunning
                           ? AppColors.surfaceCardOf(context)
                           : AppColors.accentOf(context),
                       borderRadius: BorderRadius.circular(18),
-                      border: _isRunning
+                      border: isRunning
                           ? Border.all(
                               color: AppColors.borderOf(context),
                               width: 1,
                             )
                           : null,
-                      boxShadow: _isRunning
+                      boxShadow: isRunning
                           ? null
                           : [
                               BoxShadow(
@@ -440,17 +435,17 @@ class _StopwatchTabState extends State<StopwatchTab>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          _isRunning ? Icons.pause : Icons.play_arrow,
-                          color: _isRunning
+                          isRunning ? Icons.pause : Icons.play_arrow,
+                          color: isRunning
                               ? AppColors.primaryTextOf(context)
                               : Colors.white,
                           size: 24,
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          _isRunning ? 'PAUSE' : 'START',
+                          isRunning ? 'PAUSE' : 'START',
                           style: AppTextStyles.buttonLabel(context).copyWith(
-                            color: _isRunning
+                            color: isRunning
                                 ? AppColors.primaryTextOf(context)
                                 : Colors.white,
                             fontSize: 12,
@@ -470,5 +465,3 @@ class _StopwatchTabState extends State<StopwatchTab>
     );
   }
 }
-
-

@@ -49,40 +49,43 @@ class _AlarmsTabState extends State<AlarmsTab> {
     _showAlarmEditorSheet(context);
   }
 
-  Future<void> _saveAlarm() async {
+  Future<void> _saveAlarm(BuildContext sheetContext) async {
     HapticFeedback.mediumImpact();
     final service = context.read<AlarmService>();
-    if (_editingAlarmId != null) {
-      await service.updateAlarm(
-        id: _editingAlarmId!,
-        hour: _selectedTime.hour,
-        minute: _selectedTime.minute,
-        sound: _selectedSound,
-        repeatDays: _selectedRepeatDays,
-        label: _selectedLabel,
-      );
-    } else {
-      await service.addAlarm(
-        hour: _selectedTime.hour,
-        minute: _selectedTime.minute,
-        sound: _selectedSound,
-        repeatDays: _selectedRepeatDays,
-        label: _selectedLabel,
-      );
-    }
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _editingAlarmId != null ? 'Alarm updated' : 'Alarm created',
-            style: AppTextStyles.body(context).copyWith(color: Colors.white),
+    try {
+      if (_editingAlarmId != null) {
+        await service.updateAlarm(
+          id: _editingAlarmId!,
+          hour: _selectedTime.hour,
+          minute: _selectedTime.minute,
+          sound: _selectedSound,
+          repeatDays: _selectedRepeatDays,
+          label: _selectedLabel,
+        );
+      } else {
+        await service.addAlarm(
+          hour: _selectedTime.hour,
+          minute: _selectedTime.minute,
+          sound: _selectedSound,
+          repeatDays: _selectedRepeatDays,
+          label: _selectedLabel,
+        );
+      }
+      if (!mounted) return;
+      if (sheetContext.mounted) {
+        Navigator.pop(sheetContext);
+        ScaffoldMessenger.of(sheetContext).showSnackBar(
+          SnackBar(
+            content: Text(
+              _editingAlarmId != null ? 'Alarm updated' : 'Alarm created',
+              style: AppTextStyles.body(context).copyWith(color: Colors.white),
+            ),
+            backgroundColor: AppColors.accentOf(context),
+            behavior: SnackBarBehavior.floating,
           ),
-          backgroundColor: AppColors.accentOf(context),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+        );
+      }
+    } catch (_) {}
   }
 
   void _showAlarmEditorSheet(BuildContext context) {
@@ -234,7 +237,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
                     children: [
                       Expanded(
                         child: TextButton(
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () => Navigator.pop(ctx),
                           child: Text(
                             'CANCEL',
                             style: AppTextStyles.buttonLabel(context).copyWith(
@@ -246,7 +249,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: _saveAlarm,
+                          onPressed: () => _saveAlarm(ctx),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.accentOf(context),
                             foregroundColor: Colors.white,

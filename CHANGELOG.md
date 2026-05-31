@@ -15,6 +15,15 @@
 - Added fade transition on tab content switching
 - Fixed GitHub Actions release tag to follow pubspec.yaml version exactly
 - Fixed GitHub Actions release notes to use current version's changelog section
+- Added unified LockScreen widget with animated blur gradient background
+- Added iOS-style slide-to-snooze / slide-to-stop control on lock screen
+- Added circular stop button on lock screen for tap-to-dismiss
+- Added notification action buttons: "Snooze 5min" and "Stop" for alarm notifications
+- Added handler for notification action responses to support stop/snooze from notification shade
+- Refactored AlarmRingScreen to use shared LockScreen widget
+- Created StopwatchState ChangeNotifier for shared stopwatch state across app
+- Added stopwatch lock screen: when app resumes and stopwatch is running, shows LockScreen with live elapsed time
+- Stopwatch lock screen requires slide-to-stop to dismiss, preventing accidental stopwatch interruption
 
 ## [1.0.6] - 2026-05-31
 - Restructured MainScreen with Scaffold bottomNavigationBar to prevent obscured buttons

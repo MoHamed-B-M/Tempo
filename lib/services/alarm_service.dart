@@ -204,6 +204,12 @@ class AlarmService extends ChangeNotifier {
       category: AndroidNotificationCategory.alarm,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       sound: RawResourceAndroidNotificationSound(soundName),
+      actions: <AndroidNotificationAction>[
+        const AndroidNotificationAction('snooze', 'Snooze 5min',
+            showsUserInterface: true),
+        const AndroidNotificationAction('stop', 'Stop',
+            showsUserInterface: true),
+      ],
     );
   }
 
@@ -314,6 +320,22 @@ class AlarmService extends ChangeNotifier {
       (a) => a.id == alarmId,
       orElse: () => _alarms.first,
     );
+
+    if (response.actionId == 'stop') {
+      toggleAlarm(alarm.id);
+      if (alarm.isRepeating) {
+        toggleAlarm(alarm.id);
+      }
+      return;
+    }
+
+    if (response.actionId == 'snooze') {
+      toggleAlarm(alarm.id);
+      Future.delayed(const Duration(minutes: 5), () {
+        toggleAlarm(alarm.id);
+      });
+      return;
+    }
 
     navigatorKey?.currentState?.push(
       MaterialPageRoute(

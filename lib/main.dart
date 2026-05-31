@@ -4,9 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'constants/app_colors.dart';
 import 'services/alarm_service.dart';
+import 'services/stopwatch_state.dart';
 import 'services/theme_service.dart';
 import 'services/update_manager.dart';
 import 'widgets/home_page.dart';
+import 'widgets/lock_screen.dart';
 
 final FlutterLocalNotificationsPlugin notificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -42,6 +44,7 @@ class TempoApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: alarmService),
         ChangeNotifierProvider.value(value: themeService),
+        ChangeNotifierProvider(create: (_) => StopwatchState()),
       ],
       child: Consumer<ThemeService>(
         builder: (context, themeService, _) {
@@ -168,6 +171,8 @@ class _AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
+  bool _showingStopwatchLock = false;
+
   @override
   void initState() {
     super.initState();
@@ -187,7 +192,56 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       context.read<AlarmService>().rescheduleAll();
+      final sw = context.read<StopwatchState>();
+      if (sw.isRunning && !_showingStopwatchLock) {
+        _showStopwatchLockScreen();
+      }
     }
+  }
+
+  void _showStopwatchLockScreen() {
+    _showingStopwatchLock = true;
+    final sw = context.read<StopwatchState>();
+    final navigator = Navigator.of(context);
+    final timeNotifier = ValueNotifier<String>(
+      _formatStopwatchTime(sw.elapsedMs),
+    );
+
+    sw.addListener(() {
+      timeNotifier.value = _formatStopwatchTime(sw.elapsedMs);
+    });
+
+    navigator.push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => LockScreen(
+          mode: LockScreenMode.stopwatch,
+          title: 'Stopwatch',
+          timeDisplay: _formatStopwatchTime(sw.elapsedMs),
+          liveTime: timeNotifier,
+          showSnooze: false,
+          onStop: () {
+            _showingStopwatchLock = false;
+            sw.stop();
+            navigator.pop();
+          },
+        ),
+      ),
+    ).then((_) {
+      _showingStopwatchLock = false;
+    });
+  }
+
+  static String _formatStopwatchTime(int ms) {
+    final minutes = (ms ~/ 60000) % 60;
+    final seconds = (ms ~/ 1000) % 60;
+    final hundredths = (ms ~/ 10) % 100;
+    final hours = ms ~/ 3600000;
+    if (hours > 0) {
+      final mins = (ms ~/ 60000) % 60;
+      return '${hours}h ${mins.toString().padLeft(2, '0')}m';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
   }
 
   @override
