@@ -79,7 +79,7 @@ class TempoApp extends StatelessWidget {
       brightness: Brightness.light,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.backgroundLight,
-      fontFamily: GoogleFonts.inter().fontFamily,
+      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       useMaterial3: true,
       pageTransitionsTheme: _pageTransitionsTheme,
       appBarTheme: AppBarTheme(
@@ -113,7 +113,7 @@ class TempoApp extends StatelessWidget {
       brightness: Brightness.dark,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.backgroundDark,
-      fontFamily: GoogleFonts.inter().fontFamily,
+      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       useMaterial3: true,
       pageTransitionsTheme: _pageTransitionsTheme,
       appBarTheme: AppBarTheme(
