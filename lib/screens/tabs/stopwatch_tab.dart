@@ -12,64 +12,104 @@ class StopwatchTab extends StatefulWidget {
   State<StopwatchTab> createState() => _StopwatchTabState();
 }
 
-class _StopwatchTabState extends State<StopwatchTab> {
+class _StopwatchTabState extends State<StopwatchTab>
+    with SingleTickerProviderStateMixin {
   Timer? _timer;
   int _milliseconds = 0;
   bool _isRunning = false;
+  late AnimationController _progressAnim;
 
-  // Task details customizable to match mockup Screen 2
+  List<int> _laps = [];
+
   String _taskTitle = 'Wash and dry';
   String _taskStatus = 'Currently drying';
   double _customProgressPercent = 65.0;
 
   @override
+  void initState() {
+    super.initState();
+    _progressAnim = AnimationController(
+      vsync: this,
+      value: _customProgressPercent / 100.0,
+    );
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
+    _progressAnim.dispose();
     super.dispose();
   }
 
   void _toggleStopwatch() {
     HapticFeedback.mediumImpact();
-    setState(() {
-      if (_isRunning) {
-        _timer?.cancel();
-        _isRunning = false;
-      } else {
-        _isRunning = true;
-        _timer = Timer.periodic(const Duration(milliseconds: 10), (timer) {
-          setState(() {
-            _milliseconds += 10;
-          });
+    if (_isRunning) {
+      _timer?.cancel();
+      setState(() => _isRunning = false);
+      _progressAnim.animateTo(
+        _customProgressPercent / 100.0,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOutCubic,
+      );
+    } else {
+      setState(() => _isRunning = true);
+      _timer = Timer.periodic(const Duration(milliseconds: 10), (_) {
+        setState(() {
+          _milliseconds += 10;
+          _progressAnim.value = (_milliseconds % 60000) / 60000.0;
         });
-      }
-    });
+      });
+    }
   }
 
   void _resetStopwatch() {
     HapticFeedback.mediumImpact();
+    _timer?.cancel();
     setState(() {
-      _timer?.cancel();
       _isRunning = false;
       _milliseconds = 0;
+      _laps = [];
+    });
+    _progressAnim.animateTo(
+      _customProgressPercent / 100.0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  void _recordLap() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _laps.insert(0, _milliseconds);
     });
   }
 
   String _formatElapsedTime() {
-    final seconds = (_milliseconds ~/ 1000) % 60;
     final minutes = (_milliseconds ~/ 60000) % 60;
-    final hours = _milliseconds ~/ 3600000;
+    final seconds = (_milliseconds ~/ 1000) % 60;
+    final hundredths = (_milliseconds ~/ 10) % 100;
 
+    final hours = _milliseconds ~/ 3600000;
     if (hours > 0) {
-      return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
-    } else {
-      return '${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s';
+      final mins = (_milliseconds ~/ 60000) % 60;
+      return '${hours}h ${mins.toString().padLeft(2, '0')}m';
     }
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
+  }
+
+  String _formatLapTime(int ms) {
+    final minutes = (ms ~/ 60000) % 60;
+    final seconds = (ms ~/ 1000) % 60;
+    final hundredths = (ms ~/ 10) % 100;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
   }
 
   void _showEditTaskDialog() {
     final titleController = TextEditingController(text: _taskTitle);
     final statusController = TextEditingController(text: _taskStatus);
-    final progressController = TextEditingController(text: _customProgressPercent.round().toString());
+    final progressController = TextEditingController(
+      text: _customProgressPercent.round().toString(),
+    );
 
     showDialog(
       context: context,
@@ -89,7 +129,9 @@ class _StopwatchTabState extends State<StopwatchTab> {
               decoration: InputDecoration(
                 labelText: 'TASK NAME',
                 labelStyle: AppTextStyles.subheading(context),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.borderOf(context))),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.borderOf(context)),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -99,7 +141,9 @@ class _StopwatchTabState extends State<StopwatchTab> {
               decoration: InputDecoration(
                 labelText: 'TASK STATUS',
                 labelStyle: AppTextStyles.subheading(context),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.borderOf(context))),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.borderOf(context)),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -110,7 +154,9 @@ class _StopwatchTabState extends State<StopwatchTab> {
               decoration: InputDecoration(
                 labelText: 'PROGRESS PERCENT (%)',
                 labelStyle: AppTextStyles.subheading(context),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.borderOf(context))),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.borderOf(context)),
+                ),
               ),
             ),
           ],
@@ -118,18 +164,35 @@ class _StopwatchTabState extends State<StopwatchTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('CANCEL', style: AppTextStyles.buttonLabel(context).copyWith(color: AppColors.secondaryTextOf(context))),
+            child: Text(
+              'CANCEL',
+              style: AppTextStyles.buttonLabel(context).copyWith(
+                color: AppColors.secondaryTextOf(context),
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
+              final newPercent =
+                  double.tryParse(progressController.text) ?? 65.0;
               setState(() {
                 _taskTitle = titleController.text;
                 _taskStatus = statusController.text;
-                _customProgressPercent = double.tryParse(progressController.text) ?? 65.0;
+                _customProgressPercent = newPercent;
               });
+              _progressAnim.animateTo(
+                newPercent / 100.0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOutCubic,
+              );
               Navigator.pop(ctx);
             },
-            child: Text('SAVE', style: AppTextStyles.buttonLabel(context).copyWith(color: AppColors.accentOf(context))),
+            child: Text(
+              'SAVE',
+              style: AppTextStyles.buttonLabel(context).copyWith(
+                color: AppColors.accentOf(context),
+              ),
+            ),
           ),
         ],
       ),
@@ -138,13 +201,7 @@ class _StopwatchTabState extends State<StopwatchTab> {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate a dynamic progress ratio for the painter
-    // If running, we loop around, otherwise we use the user's custom progress percent (e.g. 65% = 0.65)
-    double progressRatio = _customProgressPercent / 100.0;
-    if (_isRunning) {
-      // Loop the progress circle every 60 seconds
-      progressRatio = (_milliseconds % 60000) / 60000.0;
-    }
+    final progressRatio = _progressAnim.value;
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -156,65 +213,120 @@ class _StopwatchTabState extends State<StopwatchTab> {
             style: AppTextStyles.heading(context),
           ),
           const Spacer(),
-          // Wavy Progress Circle in Center
           Center(
             child: Stack(
               alignment: Alignment.center,
               children: [
                 Container(
-                  width: 250,
-                  height: 250,
+                  width: 260,
+                  height: 260,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.surfaceCardOf(context).withValues(alpha: 0.3),
                   ),
                 ),
                 CustomPaint(
-                  size: const Size(260, 260),
-                  painter: WavyCirclePainter(
+                  size: const Size(270, 270),
+                  painter: OrangeRingPainter(
                     progress: progressRatio,
-                    baseColor: AppColors.surfaceCardOf(context),
-                    waveColor: AppColors.accentOf(context),
+                    trackColor: AppColors.surfaceCardOf(context),
+                    ringColor: AppColors.accentOf(context),
                   ),
                 ),
-                // Inner Text Display
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      _formatElapsedTime(),
-                      style: AppTextStyles.alarmTime(context).copyWith(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 180),
+                      child: Text(
+                        _formatElapsedTime(),
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.alarmTime(context).copyWith(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _isRunning ? 'ELAPSED' : 'REMAINING',
+                      _isRunning ? 'ELAPSED' : 'STOPPED',
                       style: AppTextStyles.subheading(context).copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _isRunning ? 'Ticking...' : '${(_customProgressPercent).round()}% complete',
-                      style: AppTextStyles.body(context).copyWith(
-                        fontSize: 13,
-                        color: AppColors.secondaryTextOf(context),
+                    if (_laps.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Lap ${_formatLapTime(_laps.first)}',
+                        style: AppTextStyles.body(context).copyWith(
+                          fontSize: 13,
+                          color: AppColors.accentOf(context),
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ],
             ),
           ),
-          const Spacer(),
-          // Editable Task Description Area (Screen 2 style)
+          SizedBox(
+            height: 84,
+            child: _laps.length > 1
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _laps.length - 1,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final lapIndex = index + 1;
+                        final lapMs = _laps[lapIndex];
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceCardOf(context),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.borderOf(context),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Lap ${lapIndex + 1}',
+                                style: AppTextStyles.subheading(context)
+                                    .copyWith(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _formatLapTime(lapMs),
+                                style: AppTextStyles.body(context).copyWith(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
           Center(
             child: GestureDetector(
-              onTap: _showEditTaskDialog,
+              onTap: _isRunning ? null : _showEditTaskDialog,
               behavior: HitTestBehavior.opaque,
               child: Column(
                 children: [
@@ -234,11 +346,15 @@ class _StopwatchTabState extends State<StopwatchTab> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    '${_customProgressPercent.round()}% work done already  (Tap to edit)',
-                    style: AppTextStyles.body(context).copyWith(
-                      fontSize: 12,
-                      color: AppColors.secondaryTextOf(context),
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: _isRunning ? 0.0 : 1.0,
+                    child: Text(
+                      '${_customProgressPercent.round()}% work done  (Tap to edit)',
+                      style: AppTextStyles.body(context).copyWith(
+                        fontSize: 12,
+                        color: AppColors.secondaryTextOf(context),
+                      ),
                     ),
                   ),
                 ],
@@ -246,50 +362,103 @@ class _StopwatchTabState extends State<StopwatchTab> {
             ),
           ),
           const Spacer(),
-          // Controller Buttons (Grey Play/Pause, Orange Stop/Reset)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Play / Pause Button
-              GestureDetector(
-                onTap: _toggleStopwatch,
-                child: Container(
-                  width: 72,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceCardOf(context),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.borderOf(context), width: 1),
-                  ),
-                  child: Icon(
-                    _isRunning ? Icons.pause : Icons.play_arrow,
-                    color: AppColors.primaryTextOf(context),
-                    size: 24,
+              SizedBox(
+                width: 84,
+                height: 56,
+                child: GestureDetector(
+                  onTap: _isRunning ? _recordLap : _resetStopwatch,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOutCubic,
+                    decoration: BoxDecoration(
+                      color: _isRunning
+                          ? AppColors.surfaceCardOf(context)
+                          : AppColors.accentOf(context),
+                      borderRadius: BorderRadius.circular(18),
+                      border: _isRunning
+                          ? Border.all(
+                              color: AppColors.borderOf(context),
+                              width: 1,
+                            )
+                          : null,
+                      boxShadow: _isRunning
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: AppColors.accentOf(context)
+                                    .withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                    ),
+                    child: Icon(
+                      _isRunning ? Icons.flag_outlined : Icons.stop,
+                      color: _isRunning
+                          ? AppColors.primaryTextOf(context)
+                          : Colors.white,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
-              // Stop / Reset Button
-              GestureDetector(
-                onTap: _resetStopwatch,
-                child: Container(
-                  width: 72,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppColors.accentOf(context),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.accentOf(context).withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.stop,
-                    color: Colors.white,
-                    size: 24,
+              const SizedBox(width: 20),
+              SizedBox(
+                width: 112,
+                height: 56,
+                child: GestureDetector(
+                  onTap: _toggleStopwatch,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOutCubic,
+                    decoration: BoxDecoration(
+                      color: _isRunning
+                          ? AppColors.surfaceCardOf(context)
+                          : AppColors.accentOf(context),
+                      borderRadius: BorderRadius.circular(18),
+                      border: _isRunning
+                          ? Border.all(
+                              color: AppColors.borderOf(context),
+                              width: 1,
+                            )
+                          : null,
+                      boxShadow: _isRunning
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: AppColors.accentOf(context)
+                                    .withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _isRunning ? Icons.pause : Icons.play_arrow,
+                          color: _isRunning
+                              ? AppColors.primaryTextOf(context)
+                              : Colors.white,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _isRunning ? 'PAUSE' : 'START',
+                          style: AppTextStyles.buttonLabel(context).copyWith(
+                            color: _isRunning
+                                ? AppColors.primaryTextOf(context)
+                                : Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -302,68 +471,66 @@ class _StopwatchTabState extends State<StopwatchTab> {
   }
 }
 
-// Highly precise CustomPainter for hand-drawn style wavy progress track
-class WavyCirclePainter extends CustomPainter {
-  final double progress; // Range: 0.0 to 1.0
-  final Color baseColor;
-  final Color waveColor;
+class OrangeRingPainter extends CustomPainter {
+  final double progress;
+  final Color trackColor;
+  final Color ringColor;
 
-  WavyCirclePainter({
+  OrangeRingPainter({
     required this.progress,
-    required this.baseColor,
-    required this.waveColor,
+    required this.trackColor,
+    required this.ringColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final double radius = size.width / 2 - 12;
+    final radius = size.width / 2 - 14;
+    const strokeWidth = 8.0;
 
-    // 1. Draw solid thin base circle track
-    final basePaint = Paint()
-      ..color = baseColor
+    final trackPaint = Paint()
+      ..color = trackColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
+      ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
-    canvas.drawCircle(center, radius, basePaint);
+    canvas.drawCircle(center, radius, trackPaint);
 
     if (progress <= 0) return;
 
-    // 2. Draw progress orange wavy track
-    final wavePaint = Paint()
-      ..color = waveColor
+    final ringPaint = Paint()
+      ..color = ringColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6.5
+      ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    final path = Path();
-    const double frequency = 32.0;  // Number of wavy peaks around circle
-    const double amplitude = 3.5;   // Scale of the wave ripples
+    final sweepAngle = 2 * math.pi * progress;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      sweepAngle,
+      false,
+      ringPaint,
+    );
 
-    final int steps = (360 * progress).round();
-    for (int i = 0; i <= steps; i++) {
-      // Convert degrees to radians, starting at top (-pi/2)
-      final double angle = (i * (math.pi / 180.0)) - (math.pi / 2.0);
-      
-      // Perturb the radius with a sine wave based on the angle
-      final double currentRadius = radius + amplitude * math.sin(angle * frequency);
-      
-      final double x = center.dx + currentRadius * math.cos(angle);
-      final double y = center.dy + currentRadius * math.sin(angle);
+    final dotAngle = -math.pi / 2 + sweepAngle;
+    final dotX = center.dx + radius * math.cos(dotAngle);
+    final dotY = center.dy + radius * math.sin(dotAngle);
 
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    canvas.drawPath(path, wavePaint);
+    final dotOuterPaint = Paint()
+      ..color = ringColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(dotX, dotY), 7, dotOuterPaint);
+
+    final dotInnerPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(dotX, dotY), 3.5, dotInnerPaint);
   }
 
   @override
-  bool shouldRepaint(covariant WavyCirclePainter oldDelegate) {
+  bool shouldRepaint(covariant OrangeRingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
-        oldDelegate.baseColor != baseColor ||
-        oldDelegate.waveColor != waveColor;
+        oldDelegate.trackColor != trackColor ||
+        oldDelegate.ringColor != ringColor;
   }
 }

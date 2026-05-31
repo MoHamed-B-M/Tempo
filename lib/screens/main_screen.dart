@@ -30,97 +30,89 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundOf(context),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Column(
-              children: [
-                // Top Global Settings Header Button
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.mediumImpact();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SettingsPage(),
-                            ),
-                          );
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.surfaceCardOf(context),
-                            border: Border.all(
-                              color: AppColors.borderOf(context),
-                              width: 1,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.settings_outlined,
-                            size: 20,
-                            color: AppColors.primaryTextOf(context),
-                          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsPage(),
+                        ),
+                      );
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOutCubic,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.surfaceCardOf(context),
+                        border: Border.all(
+                          color: AppColors.borderOf(context),
+                          width: 1,
                         ),
                       ),
-                    ],
+                      child: Icon(
+                        Icons.settings_outlined,
+                        size: 20,
+                        color: AppColors.primaryTextOf(context),
+                      ),
+                    ),
                   ),
-                ),
-                // Core tabs content stack
-                Expanded(
-                  child: IndexedStack(
-                    index: _currentIndex,
-                    children: _tabs,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-            // Floating Rounded Capsule Bottom Navigation Bar
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _buildFloatingBottomBar(),
+            Expanded(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: _tabs,
+              ),
             ),
           ],
         ),
       ),
+      bottomNavigationBar: _buildFloatingBottomBar(),
     );
   }
 
   Widget _buildFloatingBottomBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(
-          color: AppColors.borderOf(context),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 0, 24, bottomInset + 24),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceCardDark : Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(
+            color: AppColors.borderOf(context),
+            width: 1,
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildBottomNavItem(0, Icons.alarm_outlined, 'Alarms'),
-          _buildBottomNavItem(1, Icons.public_outlined, 'Clock'),
-          _buildBottomNavItem(2, Icons.timer_outlined, 'Timer'),
-          _buildBottomNavItem(3, Icons.bed_outlined, 'Bedtimes'),
-        ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildBottomNavItem(0, Icons.alarm_outlined, 'Alarms'),
+            _buildBottomNavItem(1, Icons.public_outlined, 'Clock'),
+            _buildBottomNavItem(2, Icons.timer_outlined, 'Timer'),
+            _buildBottomNavItem(3, Icons.bed_outlined, 'Bedtimes'),
+          ],
+        ),
       ),
     );
   }
