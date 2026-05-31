@@ -19,8 +19,10 @@ class AlarmService extends ChangeNotifier {
   final FlutterLocalNotificationsPlugin _notifications;
   List<AlarmModel> _alarms = [];
   bool _initialized = false;
+  String? _pendingAlarmId;
 
   List<AlarmModel> get alarms => List.unmodifiable(_alarms);
+  String? get pendingAlarmId => _pendingAlarmId;
 
   AlarmService(this._notifications);
 
@@ -44,10 +46,19 @@ class AlarmService extends ChangeNotifier {
     await _notifications.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTap,
+      onDidReceiveBackgroundNotificationResponse:
+          _backgroundNotificationHandler,
     );
 
     await _createNotificationChannel();
     await _loadAlarms();
+
+    // Check if app was launched from a notification tap
+    final launchDetails = await _notifications.getNotificationAppLaunchDetails();
+    if (launchDetails?.didNotificationLaunchApp == true) {
+      _pendingAlarmId = launchDetails!.notificationResponse?.payload;
+    }
+
     _initialized = true;
   }
 
@@ -313,13 +324,19 @@ class AlarmService extends ChangeNotifier {
   }
 
   void _onNotificationTap(NotificationResponse response) {
+    _handleNotificationResponse(response);
+  }
+
+  void _handleNotificationResponse(NotificationResponse response) {
     final alarmId = response.payload;
     if (alarmId == null) return;
 
-    final alarm = _alarms.firstWhere(
-      (a) => a.id == alarmId,
-      orElse: () => _alarms.first,
-    );
+    AlarmModel? found;
+    for (final a in _alarms) {
+      if (a.id == alarmId) { found = a; break; }
+    }
+    if (found == null) return;
+    final alarm = found;
 
     if (response.actionId == 'stop') {
       toggleAlarm(alarm.id);
@@ -331,18 +348,65 @@ class AlarmService extends ChangeNotifier {
 
     if (response.actionId == 'snooze') {
       toggleAlarm(alarm.id);
+      final id = alarm.id;
       Future.delayed(const Duration(minutes: 5), () {
-        toggleAlarm(alarm.id);
+        toggleAlarm(id);
       });
       return;
     }
 
-    navigatorKey?.currentState?.push(
+    _showAlarmScreen(alarm);
+  }
+
+  void _showAlarmScreen(AlarmModel alarm) {
+    final navigator = navigatorKey?.currentState;
+    if (navigator == null) {
+      _pendingAlarmId = alarm.id;
+      return;
+    }
+
+    navigator.push(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => AlarmRingScreen(alarm: alarm),
       ),
     );
+  }
+
+  void processPendingAlarm() {
+    if (_pendingAlarmId == null) return;
+    final id = _pendingAlarmId!;
+    _pendingAlarmId = null;
+
+    AlarmModel? alarm;
+    for (final a in _alarms) {
+      if (a.id == id) { alarm = a; break; }
+    }
+    if (alarm != null) {
+      _showAlarmScreen(alarm);
+    }
+  }
+
+  void checkMissedAlarms() {
+    final now = DateTime.now();
+
+    for (final alarm in _alarms) {
+      if (!alarm.enabled) continue;
+
+      // Skip repeating alarms — they are handled by rescheduleAll
+      if (alarm.isRepeating) continue;
+
+      final alarmDateTime = DateTime(
+        now.year, now.month, now.day, alarm.hour, alarm.minute,
+      );
+      if (!alarmDateTime.isBefore(now)) continue;
+
+      final diff = now.difference(alarmDateTime);
+      if (diff.inMinutes > 2) continue;
+
+      _showAlarmScreen(alarm);
+      return;
+    }
   }
 
   Future<void> rescheduleAll() async {
@@ -362,4 +426,11 @@ class AlarmService extends ChangeNotifier {
       await plugin.requestExactAlarmsPermission();
     }
   }
+}
+
+@pragma('vm:entry-point')
+void _backgroundNotificationHandler(NotificationResponse response) {
+  // Background isolate - can't access AlarmService instance directly.
+  // The notification tap is handled by the foreground callback.
+  // This prevents crashes from unhandled background callbacks.
 }

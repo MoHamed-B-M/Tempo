@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
+import '../../main.dart' show notificationsPlugin;
 import '../../widgets/orange_ring_painter.dart';
 
 class TimerTab extends StatefulWidget {
@@ -91,6 +93,31 @@ class _TimerTabState extends State<TimerTab> {
       await _audioPlayer.setVolume(1.0);
       await _audioPlayer.resume();
     } catch (_) {}
+
+    _showTimerNotification();
+  }
+
+  void _showTimerNotification() {
+    const androidDetails = AndroidNotificationDetails(
+      'tempo_alarm_channel',
+      'Alarm Notifications',
+      channelDescription: 'Plays when an alarm triggers',
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.alarm,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentSound: true,
+    );
+    notificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch.hashCode,
+      'Timer Finished',
+      'Your countdown timer has ended.',
+      NotificationDetails(android: androidDetails, iOS: iosDetails),
+    );
   }
 
   String _formatTime(int ms) {

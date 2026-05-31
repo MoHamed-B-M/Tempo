@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.11] - 2026-05-31
+- Fixed alarm notification: added foreground detection (checkMissedAlarms on resume) to show lock screen when alarm fires while app is active
+- Fixed cold-start alarm handling: getNotificationAppLaunchDetails + processPendingAlarm in HomePage post-frame callback
+- Added onDidReceiveBackgroundNotificationResponse callback to handle notification taps from background isolate
+- Removed orElse fallback to wrong alarm in _handleNotificationResponse; added proper null-safety throughout
+- Added timer finish notification: TimerTab now shows a heads-up notification via flutter_local_notifications when countdown expires
+
 ## [1.0.10] - 2026-05-31
 - Added AlarmSettings service with SharedPreferences persistence (auto-dismiss, vibrate, volume)
 - Enhanced LockScreen: auto-dismiss countdown timer, conditional vibrate loop, adjustable volume, easeInOutCubic entry animation

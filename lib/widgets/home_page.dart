@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import '../screens/main_screen.dart';
 import '../services/alarm_service.dart';
-
-final FlutterLocalNotificationsPlugin notificationsPlugin =
-    FlutterLocalNotificationsPlugin();
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,6 +15,9 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _initAlarmService();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AlarmService>().processPendingAlarm();
+    });
   }
 
   Future<void> _initAlarmService() async {

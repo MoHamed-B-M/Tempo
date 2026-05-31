@@ -202,7 +202,10 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      context.read<AlarmService>().rescheduleAll();
+      final alarmService = context.read<AlarmService>();
+      alarmService.rescheduleAll();
+      alarmService.checkMissedAlarms();
+
       final sw = context.read<StopwatchState>();
       if (sw.isRunning && !_showingStopwatchLock) {
         _showStopwatchLockScreen();
