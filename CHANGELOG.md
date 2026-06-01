@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.18] - 2026-06-01
+## [1.0.17] - 2026-06-01
 - Added `m3e_core: ^0.1.0` dependency — Material 3 Expressive component library with spring animations, expressive shapes, and enhanced interaction patterns
 - Rewrote AlarmsTab with M3E expandable card items (`buildM3EExpandableItem`) — spring‑powered expand/collapse animations, animated border‑radius morphing on hover/press, M3E expressive shape containers for empty state
 - Replaced manual `FilledButton`, `OutlinedButton`, and `FloatingActionButton` with `M3EFilledButton`, `M3EOutlinedButton.icon`, and `M3EButton.icon` variants across AlarmsTab, SettingsPage, TimerTab, StopwatchTab, SleepTimerTab — M3E buttons feature spring‑driven radius morphing, configurable haptic feedback, and consistent M3 sizing tokens (xs/sm/md/lg/xl)
@@ -9,8 +9,6 @@
 - Updated StopwatchTab: flag/reset and start/pause buttons replaced with `M3EOutlinedButton` / `M3EFilledButton.icon` — dynamic background/border states for running vs. stopped
 - Updated SleepTimerTab: "Skip" and "Next" buttons replaced with `M3EOutlinedButton` / `M3EFilledButton` — unified 16px border radius with theme accent color
 - Verified with `flutter analyze` — 0 errors, 0 warnings
-
-## [1.0.17] - 2026-05-31
 - Removed "by Mohamed" and GitHub source link from settings page footer; developer credit and repo link now live exclusively in the dedicated AboutPage
 - Added release notes section to AboutPage showing the latest changelog entries inline
 - Bumped version to 1.0.17
