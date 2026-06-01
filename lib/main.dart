@@ -1,3 +1,4 @@
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +25,7 @@ void main() async {
   AlarmService.navigatorKey = navigatorKey;
   await alarmService.initialize();
 
-  final alarmNotifier = AlarmNotifier(alarmService);
+  final alarmNotifier = AlarmStateNotifier(alarmService);
   await alarmNotifier.load();
   alarmService.onStopFromNotification = alarmNotifier.disableAlarm;
 
@@ -44,7 +45,7 @@ void main() async {
 
 class TempoApp extends StatelessWidget {
   final AlarmService alarmService;
-  final AlarmNotifier alarmNotifier;
+  final AlarmStateNotifier alarmNotifier;
   final ThemeService themeService;
   final AlarmSettings alarmSettings;
 
@@ -66,16 +67,20 @@ class TempoApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: alarmSettings),
         ChangeNotifierProvider(create: (_) => StopwatchState()),
       ],
-      child: Consumer<ThemeService>(
-        builder: (context, themeService, _) {
-          return MaterialApp(
-            title: 'Tempo',
-            debugShowCheckedModeBanner: false,
-            navigatorKey: navigatorKey,
-            themeMode: themeService.mode,
-            theme: AppTheme.light(),
-            darkTheme: AppTheme.dark(),
-            home: const _AppShell(),
+      child: DynamicColorBuilder(
+        builder: (lightDynamic, darkDynamic) {
+          return Consumer<ThemeService>(
+            builder: (context, themeService, _) {
+              return MaterialApp(
+                title: 'Tempo',
+                debugShowCheckedModeBanner: false,
+                navigatorKey: navigatorKey,
+                themeMode: themeService.mode,
+                theme: AppTheme.light(dynamicColor: lightDynamic),
+                darkTheme: AppTheme.dark(dynamicColor: darkDynamic),
+                home: const _AppShell(),
+              );
+            },
           );
         },
       ),
@@ -116,7 +121,7 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
   }
 
   Future<void> _onResume() async {
-    final alarmNotifier = context.read<AlarmNotifier>();
+    final alarmNotifier = context.read<AlarmStateNotifier>();
     await alarmNotifier.scheduleAll();
 
     final stoppedIds = await context.read<AlarmService>().fetchAndClearStoppedAlarms();

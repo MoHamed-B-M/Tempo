@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.0.19] - 2026-06-01
+- Added `dynamic_color: ^1.8.0` dependency — Material You dynamic color theming with wallpaper-derived light/dark color schemes
+- Added `state_notifier: ^1.0.0` dependency for state-layer alarm architecture (used as ChangeNotifier pattern for Provider compatibility)
+- Rewrote `main.dart` with `DynamicColorBuilder` wrapping `MaterialApp` — color schemes passed to `AppTheme` and `MaterialApp.theme` / `darkTheme`
+- Refactored `AppTheme` to accept optional `ColorScheme? dynamicColor` parameter — falls back to seeded `Color(0xFFF56D3B)` when dynamic colors unavailable
+- Updated `ThemeService.toggle()` to cycle through light → dark → system modes, persisted via `SharedPreferences`
+- Created `AlarmStateNotifier` (`lib/services/alarm_notifier.dart`) as a `ChangeNotifier` with `state`/`alarms` getters and full CRUD — replaces direct `AlarmService` mutation with a Provider-compatible state layer
+- Rewrote `AlarmsTab` with `SliverM3EDismissibleCardList` + `buildM3EExpandableItem` — spring-powered expand/collapse, neighbor-pull swipe-to-dismiss, `M3EContainer.gem` FAB, `M3EDropdownMenu` for inline sound selection
+- Replaced old sound picker bottom sheet in alarms tab with `M3EDropdownMenu<String>` — single-select, spring animations, haptic feedback
+- Removed all `AppColors` references from `timer_tab.dart`, `stopwatch_tab.dart`, `sleep_timer_tab.dart`, and `settings_page.dart` — all containers, icons, and text now use `Theme.of(context).colorScheme` with dynamic palette
+- Fixed alarm scheduling bug in `alarm_service.dart` — `DateTime.now()` seconds/milliseconds set to `0` so alarm triggers at the exact scheduled minute
+- Fixed `flutter analyze` errors: replaced `BorderSide` with `Border.all()` in `BoxDecoration.border` across alarms tab, sleep timer tab, and settings page; replaced invalid `M3EHapticFeedback.selection` with `.light`
+- Updated `AlarmRingScreen` to use `AlarmStateNotifier` for dismiss and disable actions
+- Verified with `flutter analyze` — 0 errors, 0 warnings
+
 ## [1.0.17] - 2026-06-01
 - Added `m3e_core: ^0.1.0` dependency — Material 3 Expressive component library with spring animations, expressive shapes, and enhanced interaction patterns
 - Rewrote AlarmsTab with M3E expandable card items (`buildM3EExpandableItem`) — spring‑powered expand/collapse animations, animated border‑radius morphing on hover/press, M3E expressive shape containers for empty state

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:m3e_core/m3e_core.dart';
-import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../../main.dart' show notificationsPlugin;
 import '../../widgets/orange_ring_painter.dart';
@@ -146,6 +145,7 @@ class _TimerTabState extends State<TimerTab> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final hasDuration = _initialMs > 0;
 
     return Padding(
@@ -158,31 +158,31 @@ class _TimerTabState extends State<TimerTab> {
             style: AppTextStyles.heading(context),
           ),
           const Spacer(),
-          if (!hasDuration) _buildInputSection() else _buildTimerSection(),
+          if (!hasDuration) _buildInputSection(cs) else _buildTimerSection(cs),
           const Spacer(),
         ],
       ),
     );
   }
 
-  Widget _buildInputSection() {
+  Widget _buildInputSection(ColorScheme cs) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildTimeInput('HOUR', _inputHours, (v) => _inputHours = v.clamp(0, 99), 99),
+            _buildTimeInput('HOUR', _inputHours, (v) => _inputHours = v.clamp(0, 99), 99, cs),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(':', style: AppTextStyles.displayTime(context).copyWith(fontSize: 36)),
             ),
-            _buildTimeInput('MIN', _inputMinutes, (v) => _inputMinutes = v.clamp(0, 59), 59),
+            _buildTimeInput('MIN', _inputMinutes, (v) => _inputMinutes = v.clamp(0, 59), 59, cs),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(':', style: AppTextStyles.displayTime(context).copyWith(fontSize: 36)),
             ),
-            _buildTimeInput('SEC', _inputSeconds, (v) => _inputSeconds = v.clamp(0, 59), 59),
+            _buildTimeInput('SEC', _inputSeconds, (v) => _inputSeconds = v.clamp(0, 59), 59, cs),
           ],
         ),
         const SizedBox(height: 32),
@@ -192,7 +192,6 @@ class _TimerTabState extends State<TimerTab> {
             onPressed: _setDuration,
             size: M3EButtonSize.md,
             decoration: M3EButtonDecoration(
-              backgroundColor: WidgetStatePropertyAll(AppColors.accentOf(context)),
               borderRadius: 18,
             ),
             child: const Text(
@@ -209,7 +208,7 @@ class _TimerTabState extends State<TimerTab> {
     );
   }
 
-  Widget _buildTimeInput(String label, int value, ValueChanged<int> onChanged, int max) {
+  Widget _buildTimeInput(String label, int value, ValueChanged<int> onChanged, int max, ColorScheme cs) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -226,23 +225,23 @@ class _TimerTabState extends State<TimerTab> {
               padding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: BorderSide(color: AppColors.borderOf(context)),
+                side: BorderSide(color: cs.outlineVariant),
               ),
             ),
-            child: Icon(Icons.add, size: 16, color: AppColors.primaryTextOf(context)),
+            child: Icon(Icons.add, size: 16, color: cs.onSurface),
           ),
         ),
         const SizedBox(height: 8),
         GestureDetector(
-          onTap: () => _showNumberPicker(context, label, value, onChanged, max),
+          onTap: () => _showNumberPicker(context, label, value, onChanged, max, cs),
           child: Container(
             width: 72,
             height: 56,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.surfaceCardOf(context),
+              color: cs.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderOf(context)),
+              border: Border.all(color: cs.outlineVariant),
             ),
             child: Text(
               value.toString().padLeft(2, '0'),
@@ -264,10 +263,10 @@ class _TimerTabState extends State<TimerTab> {
               padding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: BorderSide(color: AppColors.borderOf(context)),
+                side: BorderSide(color: cs.outlineVariant),
               ),
             ),
-            child: Icon(Icons.remove, size: 16, color: AppColors.primaryTextOf(context)),
+            child: Icon(Icons.remove, size: 16, color: cs.onSurface),
           ),
         ),
         const SizedBox(height: 4),
@@ -276,12 +275,12 @@ class _TimerTabState extends State<TimerTab> {
     );
   }
 
-  void _showNumberPicker(BuildContext context, String label, int current, ValueChanged<int> onChanged, int max) {
+  void _showNumberPicker(BuildContext context, String label, int current, ValueChanged<int> onChanged, int max, ColorScheme cs) {
     final controller = TextEditingController(text: current.toString());
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surfaceCardOf(context),
+        backgroundColor: cs.surfaceContainerHigh,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(label, style: AppTextStyles.buttonLabel(context)),
         content: TextField(
@@ -296,7 +295,7 @@ class _TimerTabState extends State<TimerTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('CANCEL', style: AppTextStyles.buttonLabel(context).copyWith(color: AppColors.secondaryTextOf(context))),
+            child: Text('CANCEL', style: AppTextStyles.buttonLabel(context).copyWith(color: cs.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () {
@@ -305,14 +304,14 @@ class _TimerTabState extends State<TimerTab> {
               setState(() {});
               Navigator.pop(ctx);
             },
-            child: Text('SET', style: AppTextStyles.buttonLabel(context).copyWith(color: AppColors.accentOf(context))),
+            child: Text('SET', style: AppTextStyles.buttonLabel(context).copyWith(color: cs.primary)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTimerSection() {
+  Widget _buildTimerSection(ColorScheme cs) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -324,15 +323,15 @@ class _TimerTabState extends State<TimerTab> {
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.surfaceCardOf(context).withValues(alpha: 0.3),
+                color: cs.surfaceContainerHigh.withValues(alpha: 0.3),
               ),
             ),
             CustomPaint(
               size: const Size(270, 270),
               painter: OrangeRingPainter(
                 progress: _progress,
-                trackColor: AppColors.surfaceCardOf(context),
-                ringColor: _isFinished ? Colors.green : AppColors.accentOf(context),
+                trackColor: cs.surfaceContainerHigh,
+                ringColor: _isFinished ? Colors.green : cs.primary,
               ),
             ),
             Column(
@@ -371,25 +370,24 @@ class _TimerTabState extends State<TimerTab> {
               onPressed: _resetTimer,
               size: M3EButtonSize.md,
               decoration: M3EButtonDecoration(
-                backgroundColor: WidgetStatePropertyAll(AppColors.surfaceCardOf(context)),
-                side: WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context))),
+                side: WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant)),
                 borderRadius: 18,
                 fixedSize: const Size(84, 56),
               ),
-              child: const Icon(Icons.refresh, color: Colors.white, size: 24),
+              child: Icon(Icons.refresh, color: cs.onSurface, size: 24),
             ),
             const SizedBox(width: 20),
             M3EFilledButton.icon(
               onPressed: _toggleTimer,
               icon: Icon(
                 _isFinished ? Icons.refresh : (_isRunning ? Icons.pause : Icons.play_arrow),
-                color: Colors.white,
+                color: cs.onPrimary,
                 size: 24,
               ),
               label: Text(
                 _isFinished ? 'RESET' : (_isRunning ? 'PAUSE' : 'START'),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: cs.onPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
@@ -397,7 +395,7 @@ class _TimerTabState extends State<TimerTab> {
               size: M3EButtonSize.md,
               decoration: M3EButtonDecoration(
                 backgroundColor: WidgetStatePropertyAll(
-                  _isFinished ? Colors.green : AppColors.accentOf(context),
+                  _isFinished ? Colors.green : cs.primary,
                 ),
                 borderRadius: 18,
                 fixedSize: const Size(112, 56),

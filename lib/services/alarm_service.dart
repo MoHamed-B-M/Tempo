@@ -125,8 +125,8 @@ class AlarmService {
       now.day,
       alarm.hour,
       alarm.minute,
-      now.second,
-      now.millisecond,
+      0,
+      0,
     );
 
     if (alarm.isRepeating) {

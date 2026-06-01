@@ -25,7 +25,7 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
     final service = context.read<AlarmService>();
     service.stopAlarm(widget.alarm);
     if (!widget.alarm.isRepeating) {
-      context.read<AlarmNotifier>().disableAlarm(widget.alarm.id);
+      context.read<AlarmStateNotifier>().disableAlarm(widget.alarm.id);
     }
     Navigator.of(context).pop();
   }

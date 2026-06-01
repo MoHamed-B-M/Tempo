@@ -1,35 +1,40 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/alarm_model.dart';
 import 'alarm_service.dart';
 
-class AlarmNotifier extends ChangeNotifier {
+class AlarmStateNotifier extends ChangeNotifier {
   static const _storageKey = 'alarms';
 
   final AlarmService _service;
-  List<AlarmModel> _alarms = [];
+  List<AlarmModel> _state = [];
 
-  List<AlarmModel> get alarms => _alarms;
+  List<AlarmModel> get state => _state;
+  List<AlarmModel> get alarms => _state;
 
-  AlarmNotifier(this._service);
+  set state(List<AlarmModel> value) {
+    _state = value;
+    notifyListeners();
+  }
+
+  AlarmStateNotifier(this._service);
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString(_storageKey);
     if (data != null) {
       final list = jsonDecode(data) as List;
-      _alarms = list
+      state = list
           .map((e) => AlarmModel.fromJson(e as Map<String, dynamic>))
           .toList();
     }
-    notifyListeners();
   }
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = jsonEncode(_alarms.map((a) => a.toJson()).toList());
+    final data = jsonEncode(state.map((a) => a.toJson()).toList());
     await prefs.setString(_storageKey, data);
   }
 
@@ -48,12 +53,11 @@ class AlarmNotifier extends ChangeNotifier {
       repeatDays: repeatDays,
       label: label,
     );
-    _alarms.add(alarm);
+    state = [...state, alarm];
     await _persist();
     if (alarm.enabled) {
       await _service.scheduleAlarm(alarm);
     }
-    notifyListeners();
     return alarm;
   }
 
@@ -65,101 +69,107 @@ class AlarmNotifier extends ChangeNotifier {
     List<int> repeatDays = const [],
     String label = '',
   }) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
+    final index = state.indexWhere((a) => a.id == id);
     if (index == -1) return;
-    final updated = _alarms[index].copyWith(
+    final updated = state[index].copyWith(
       hour: hour,
       minute: minute,
       sound: sound,
       repeatDays: repeatDays,
       label: label,
     );
-    _alarms[index] = updated;
+    final newList = [...state];
+    newList[index] = updated;
+    state = newList;
     await _persist();
-    await _service.cancelAlarm(_alarms[index]);
+    await _service.cancelAlarm(state[index]);
     if (updated.enabled) {
       await _service.scheduleAlarm(updated);
     }
-    notifyListeners();
   }
 
   Future<void> removeAlarm(String id) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
+    final index = state.indexWhere((a) => a.id == id);
     if (index == -1) return;
-    await _service.cancelAlarm(_alarms[index]);
-    _alarms.removeAt(index);
+    await _service.cancelAlarm(state[index]);
+    state = [...state.take(index), ...state.skip(index + 1)];
     await _persist();
-    notifyListeners();
   }
 
   Future<void> toggleAlarm(String id) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
+    final index = state.indexWhere((a) => a.id == id);
     if (index == -1) return;
-    final updated = _alarms[index].copyWith(enabled: !_alarms[index].enabled);
-    _alarms[index] = updated;
+    final updated = state[index].copyWith(enabled: !state[index].enabled);
+    final newList = [...state];
+    newList[index] = updated;
+    state = newList;
     await _persist();
-    await _service.cancelAlarm(_alarms[index]);
+    await _service.cancelAlarm(state[index]);
     if (updated.enabled) {
       await _service.scheduleAlarm(updated);
     }
-    notifyListeners();
   }
 
   Future<void> disableAlarm(String id) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
-    if (index == -1 || !_alarms[index].enabled) return;
-    _alarms[index] = _alarms[index].copyWith(enabled: false);
+    final index = state.indexWhere((a) => a.id == id);
+    if (index == -1 || !state[index].enabled) return;
+    final newList = [...state];
+    newList[index] = state[index].copyWith(enabled: false);
+    state = newList;
     await _persist();
-    notifyListeners();
   }
 
   Future<void> updateAlarmLabel(String id, String label) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
+    final index = state.indexWhere((a) => a.id == id);
     if (index == -1) return;
-    _alarms[index] = _alarms[index].copyWith(label: label);
+    final newList = [...state];
+    newList[index] = state[index].copyWith(label: label);
+    state = newList;
     await _persist();
-    notifyListeners();
   }
 
   Future<void> updateAlarmRepeatDays(String id, List<int> days) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
+    final index = state.indexWhere((a) => a.id == id);
     if (index == -1) return;
-    _alarms[index] = _alarms[index].copyWith(repeatDays: days);
+    final updated = state[index].copyWith(repeatDays: days);
+    final newList = [...state];
+    newList[index] = updated;
+    state = newList;
     await _persist();
-    await _service.cancelAlarm(_alarms[index]);
-    if (_alarms[index].enabled) {
-      await _service.scheduleAlarm(_alarms[index]);
+    await _service.cancelAlarm(updated);
+    if (updated.enabled) {
+      await _service.scheduleAlarm(updated);
     }
-    notifyListeners();
   }
 
   Future<void> updateAlarmSound(String id, String sound) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
+    final index = state.indexWhere((a) => a.id == id);
     if (index == -1) return;
-    _alarms[index] = _alarms[index].copyWith(sound: sound);
+    final updated = state[index].copyWith(sound: sound);
+    final newList = [...state];
+    newList[index] = updated;
+    state = newList;
     await _persist();
-    await _service.cancelAlarm(_alarms[index]);
-    if (_alarms[index].enabled) {
-      await _service.scheduleAlarm(_alarms[index]);
+    await _service.cancelAlarm(updated);
+    if (updated.enabled) {
+      await _service.scheduleAlarm(updated);
     }
-    notifyListeners();
   }
 
   Future<void> clearAllAlarms() async {
-    for (final alarm in _alarms) {
+    for (final alarm in state) {
       await _service.cancelAlarm(alarm);
     }
-    _alarms.clear();
+    state = [];
     await _persist();
-    notifyListeners();
   }
 
   Future<void> scheduleAll() async {
-    await _service.scheduleAll(_alarms);
+    await _service.scheduleAll(state);
   }
 
   void checkMissedAlarms() {
-    _service.checkMissedAlarms(_alarms);
+    _service.checkMissedAlarms(state);
   }
 
   Future<List<String>> fetchAndClearStoppedAlarms() {

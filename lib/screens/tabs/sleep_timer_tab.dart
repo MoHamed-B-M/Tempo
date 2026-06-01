@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:provider/provider.dart';
-import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../../services/alarm_notifier.dart';
 import '../../widgets/sound_picker_sheet.dart';
@@ -16,11 +15,10 @@ class SleepTimerTab extends StatefulWidget {
 
 class _SleepTimerTabState extends State<SleepTimerTab> {
   TimeOfDay _selectedTime = const TimeOfDay(hour: 7, minute: 0);
-  List<int> _selectedDays = [4]; // Pre-select Thursday (T) to match mockup Screen 3
-  
-  // Settings card states
+  List<int> _selectedDays = [4];
+
   bool _sunriseAlarm = false;
-  bool _vibrate = true; // Pre-enable Vibrate to match mockup Screen 3 (orange card)
+  bool _vibrate = true;
   String _selectedSound = 'default';
 
   final List<String> _days = ['S', 'S', 'M', 'T', 'W', 'T', 'F'];
@@ -49,8 +47,9 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
 
   Future<void> _saveSleepSchedule() async {
     HapticFeedback.mediumImpact();
-    final service = context.read<AlarmNotifier>();
-    
+    final cs = Theme.of(context).colorScheme;
+    final service = context.read<AlarmStateNotifier>();
+
     await service.addAlarm(
       hour: _selectedTime.hour,
       minute: _selectedTime.minute,
@@ -66,7 +65,7 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
             'Sleep alarm scheduled for ${_selectedTime.format(context)}',
             style: AppTextStyles.body(context).copyWith(color: Colors.white),
           ),
-          backgroundColor: AppColors.accentOf(context),
+          backgroundColor: cs.primary,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -86,6 +85,8 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -104,12 +105,10 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
             ),
           ),
           const Spacer(),
-          // Large Time Display with Plus / Minus buttons
           Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Minus Button
                 GestureDetector(
                   onTap: () => _incrementTime(-15),
                   child: Container(
@@ -117,19 +116,18 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                     height: 56,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.surfaceCardOf(context),
-                      border: Border.all(color: AppColors.borderOf(context), width: 1.5),
+                      color: cs.surfaceContainerHigh,
+                      border: Border.all(color: cs.outlineVariant, width: 1.5),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
                       Icons.remove,
-                      color: AppColors.primaryTextOf(context),
+                      color: cs.onSurface,
                       size: 24,
                     ),
                   ),
                 ),
                 const SizedBox(width: 24),
-                // Time Text
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
@@ -148,7 +146,6 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                   ],
                 ),
                 const SizedBox(width: 24),
-                // Plus Button
                 GestureDetector(
                   onTap: () => _incrementTime(15),
                   child: Container(
@@ -156,10 +153,10 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                     height: 56,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.accentOf(context),
+                      color: cs.primary,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.accentOf(context).withValues(alpha: 0.2),
+                          color: cs.primary.withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -177,7 +174,6 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
             ),
           ),
           const Spacer(),
-          // Weekdays selector row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (index) {
@@ -190,14 +186,14 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                   height: 42,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isSelected ? AppColors.accentOf(context) : AppColors.surfaceCardOf(context),
-                    border: isSelected ? null : Border.all(color: AppColors.borderOf(context), width: 1),
+                    color: isSelected ? cs.primary : cs.surfaceContainerHigh,
+                    border: isSelected ? null : Border.all(color: cs.outlineVariant, width: 1),
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     _days[index],
                     style: AppTextStyles.buttonLabel(context).copyWith(
-                      color: isSelected ? Colors.white : AppColors.primaryTextOf(context),
+                      color: isSelected ? cs.onPrimary : cs.onSurface,
                     ),
                   ),
                 ),
@@ -205,39 +201,38 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
             }),
           ),
           const Spacer(),
-          // Toggle Settings Cards
           Column(
             children: [
-              // Sunrise Alarm Card
               _buildSettingCard(
                 icon: Icons.wb_sunny_outlined,
                 title: 'Sunrise alarm',
                 subtitle: 'Slowly brighten screen before alarm',
                 enabled: _sunriseAlarm,
+                cs: cs,
                 onTap: () {
                   HapticFeedback.selectionClick();
                   setState(() => _sunriseAlarm = !_sunriseAlarm);
                 },
               ),
               const SizedBox(height: 12),
-              // Vibrate Card (Pre-enabled, matches mockup 3)
               _buildSettingCard(
                 icon: Icons.vibration_outlined,
                 title: 'Vibrate',
                 subtitle: null,
                 enabled: _vibrate,
+                cs: cs,
                 onTap: () {
                   HapticFeedback.selectionClick();
                   setState(() => _vibrate = !_vibrate);
                 },
               ),
               const SizedBox(height: 12),
-              // Sound Card
               _buildSettingCard(
                 icon: Icons.music_note_outlined,
                 title: 'Sound',
                 subtitle: 'Default (${_selectedSound == 'default' ? 'miui_week_ringtone.ogg' : _selectedSound})',
-                enabled: false, // Solid sound card stays white
+                enabled: false,
+                cs: cs,
                 onTap: () {
                   SoundPickerSheet.show(
                     context,
@@ -251,7 +246,6 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
             ],
           ),
           const Spacer(),
-          // Bottom Navigation / Action buttons
           Row(
             children: [
               Expanded(
@@ -259,14 +253,13 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                   onPressed: _resetFields,
                   size: M3EButtonSize.md,
                   decoration: M3EButtonDecoration(
-                    backgroundColor: WidgetStatePropertyAll(AppColors.surfaceCardOf(context)),
-                    side: WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context))),
+                    side: WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant)),
                     borderRadius: 16,
                   ),
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: AppColors.secondaryTextOf(context),
+                      color: cs.onSurfaceVariant,
                       fontSize: 14,
                     ),
                   ),
@@ -278,12 +271,11 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                   onPressed: _saveSleepSchedule,
                   size: M3EButtonSize.md,
                   decoration: M3EButtonDecoration(
-                    backgroundColor: WidgetStatePropertyAll(AppColors.accentOf(context)),
                     borderRadius: 16,
                   ),
-                  child: Text(
+                  child: const Text(
                     'Next',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
                     ),
@@ -302,6 +294,7 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
     required String title,
     required String? subtitle,
     required bool enabled,
+    required ColorScheme cs,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -310,10 +303,10 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: enabled ? AppColors.accentOf(context) : AppColors.surfaceCardOf(context),
+          color: enabled ? cs.primary : cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: enabled ? Colors.transparent : AppColors.borderOf(context),
+            color: enabled ? Colors.transparent : cs.outlineVariant,
             width: 1,
           ),
         ),
@@ -321,7 +314,7 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
           children: [
             Icon(
               icon,
-              color: enabled ? Colors.white : AppColors.primaryTextOf(context),
+              color: enabled ? cs.onPrimary : cs.onSurface,
               size: 22,
             ),
             const SizedBox(width: 16),
@@ -332,7 +325,7 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                   Text(
                     title,
                     style: AppTextStyles.body(context).copyWith(
-                      color: enabled ? Colors.white : AppColors.primaryTextOf(context),
+                      color: enabled ? cs.onPrimary : cs.onSurface,
                     ),
                   ),
                   if (subtitle != null) ...[
@@ -340,7 +333,7 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                     Text(
                       subtitle,
                       style: AppTextStyles.alarmLabel(context).copyWith(
-                        color: enabled ? Colors.white.withValues(alpha: 0.7) : AppColors.secondaryTextOf(context),
+                        color: enabled ? cs.onPrimary.withValues(alpha: 0.7) : cs.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -348,15 +341,14 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
               ),
             ),
             const SizedBox(width: 8),
-            // Custom Radio/Check Circle on the Right
             Container(
               width: 22,
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: enabled ? Colors.white : Colors.transparent,
+                color: enabled ? cs.onPrimary : Colors.transparent,
                 border: Border.all(
-                  color: enabled ? Colors.white : AppColors.secondaryTextOf(context).withValues(alpha: 0.4),
+                  color: enabled ? cs.onPrimary : cs.onSurfaceVariant.withValues(alpha: 0.4),
                   width: 1.5,
                 ),
               ),
@@ -365,7 +357,7 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                   ? Icon(
                       Icons.check,
                       size: 14,
-                      color: AppColors.accentOf(context),
+                      color: cs.primary,
                     )
                   : null,
             ),

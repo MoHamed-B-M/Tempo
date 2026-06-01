@@ -6,20 +6,24 @@ class AppTheme {
 
   static const Color seedColor = Color(0xFFF56D3B);
 
-  static ThemeData light() => _build(Brightness.light);
-  static ThemeData dark() => _build(Brightness.dark);
+  static ThemeData light({ColorScheme? dynamicColor}) =>
+      _build(dynamicColor ?? ColorScheme.fromSeed(
+        seedColor: seedColor,
+        brightness: Brightness.light,
+      ));
 
-  static ThemeData _build(Brightness brightness) {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: seedColor,
-      brightness: brightness,
-    );
+  static ThemeData dark({ColorScheme? dynamicColor}) =>
+      _build(dynamicColor ?? ColorScheme.fromSeed(
+        seedColor: seedColor,
+        brightness: Brightness.dark,
+      ));
 
+  static ThemeData _build(ColorScheme cs) {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: colorScheme,
+      colorScheme: cs,
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
-      scaffoldBackgroundColor: colorScheme.surface,
+      scaffoldBackgroundColor: cs.surface,
       pageTransitionsTheme: PageTransitionsTheme(
         builders: {
           TargetPlatform.android: _FadeSlidePageTransitionBuilder(),
@@ -27,18 +31,18 @@ class AppTheme {
         },
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
+        backgroundColor: cs.surface,
+        foregroundColor: cs.onSurface,
         elevation: 0,
         centerTitle: true,
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: colorScheme.surfaceContainerHigh,
-        contentTextStyle: GoogleFonts.inter(color: colorScheme.onSurface),
+        backgroundColor: cs.surfaceContainerHigh,
+        contentTextStyle: GoogleFonts.inter(color: cs.onSurface),
         behavior: SnackBarBehavior.floating,
       ),
       dividerTheme: DividerThemeData(
-        color: colorScheme.outlineVariant,
+        color: cs.outlineVariant,
         thickness: 0.5,
       ),
       cardTheme: CardThemeData(
@@ -50,8 +54,8 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -59,8 +63,8 @@ class AppTheme {
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),
@@ -69,20 +73,19 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return colorScheme.onPrimaryContainer;
+            return cs.onPrimaryContainer;
           }
-          return colorScheme.onSurfaceVariant;
+          return cs.onSurfaceVariant;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return colorScheme.primaryContainer;
+            return cs.primaryContainer;
           }
-          return colorScheme.surfaceContainerHighest;
+          return cs.surfaceContainerHighest;
         }),
       ),
     );
   }
-
 }
 
 class _FadeSlidePageTransitionBuilder extends PageTransitionsBuilder {

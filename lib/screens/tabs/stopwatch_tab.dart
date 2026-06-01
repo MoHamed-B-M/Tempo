@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:provider/provider.dart';
-import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../../services/stopwatch_state.dart';
 
@@ -98,6 +97,7 @@ class _StopwatchTabState extends State<StopwatchTab>
   }
 
   void _showEditTaskDialog() {
+    final cs = Theme.of(context).colorScheme;
     final titleController = TextEditingController(text: _taskTitle);
     final statusController = TextEditingController(text: _taskStatus);
     final progressController = TextEditingController(
@@ -107,7 +107,7 @@ class _StopwatchTabState extends State<StopwatchTab>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surfaceCardOf(context),
+        backgroundColor: cs.surfaceContainerHigh,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           'EDIT TASK DETAILS',
@@ -123,7 +123,7 @@ class _StopwatchTabState extends State<StopwatchTab>
                 labelText: 'TASK NAME',
                 labelStyle: AppTextStyles.subheading(context),
                 enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.borderOf(context)),
+                  borderSide: BorderSide(color: cs.outlineVariant),
                 ),
               ),
             ),
@@ -135,7 +135,7 @@ class _StopwatchTabState extends State<StopwatchTab>
                 labelText: 'TASK STATUS',
                 labelStyle: AppTextStyles.subheading(context),
                 enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.borderOf(context)),
+                  borderSide: BorderSide(color: cs.outlineVariant),
                 ),
               ),
             ),
@@ -148,7 +148,7 @@ class _StopwatchTabState extends State<StopwatchTab>
                 labelText: 'PROGRESS PERCENT (%)',
                 labelStyle: AppTextStyles.subheading(context),
                 enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.borderOf(context)),
+                  borderSide: BorderSide(color: cs.outlineVariant),
                 ),
               ),
             ),
@@ -160,7 +160,7 @@ class _StopwatchTabState extends State<StopwatchTab>
             child: Text(
               'CANCEL',
               style: AppTextStyles.buttonLabel(context).copyWith(
-                color: AppColors.secondaryTextOf(context),
+                color: cs.onSurfaceVariant,
               ),
             ),
           ),
@@ -183,7 +183,7 @@ class _StopwatchTabState extends State<StopwatchTab>
             child: Text(
               'SAVE',
               style: AppTextStyles.buttonLabel(context).copyWith(
-                color: AppColors.accentOf(context),
+                color: cs.primary,
               ),
             ),
           ),
@@ -194,6 +194,7 @@ class _StopwatchTabState extends State<StopwatchTab>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final sw = context.watch<StopwatchState>();
     final elapsedMs = sw.elapsedMs;
     final isRunning = sw.isRunning;
@@ -265,7 +266,7 @@ class _StopwatchTabState extends State<StopwatchTab>
                           'Lap ${_formatTime(_laps.first)}',
                           style: AppTextStyles.body(context).copyWith(
                             fontSize: 13,
-                            color: AppColors.accentOf(context),
+                            color: cs.primary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -294,10 +295,10 @@ class _StopwatchTabState extends State<StopwatchTab>
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceCardOf(context),
+                            color: cs.surfaceContainerHigh,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppColors.borderOf(context),
+                              color: cs.outlineVariant,
                               width: 1,
                             ),
                           ),
@@ -357,7 +358,7 @@ class _StopwatchTabState extends State<StopwatchTab>
                       '${_customProgressPercent.round()}% work done  (Tap to edit)',
                       style: AppTextStyles.body(context).copyWith(
                         fontSize: 12,
-                        color: AppColors.secondaryTextOf(context),
+                        color: cs.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -374,17 +375,17 @@ class _StopwatchTabState extends State<StopwatchTab>
                 size: M3EButtonSize.md,
                 decoration: M3EButtonDecoration(
                   backgroundColor: WidgetStatePropertyAll(
-                    isRunning ? AppColors.surfaceCardOf(context) : AppColors.accentOf(context),
+                    isRunning ? cs.surfaceContainerHigh : cs.primary,
                   ),
                   side: isRunning
-                      ? WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context)))
+                      ? WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant))
                       : null,
                   borderRadius: 18,
                   fixedSize: const Size(84, 56),
                 ),
                 child: Icon(
                   isRunning ? Icons.flag_outlined : Icons.stop,
-                  color: isRunning ? AppColors.primaryTextOf(context) : Colors.white,
+                  color: isRunning ? cs.onSurface : cs.onPrimary,
                   size: 24,
                 ),
               ),
@@ -393,13 +394,13 @@ class _StopwatchTabState extends State<StopwatchTab>
                 onPressed: _toggleStopwatch,
                 icon: Icon(
                   isRunning ? Icons.pause : Icons.play_arrow,
-                  color: isRunning ? AppColors.primaryTextOf(context) : Colors.white,
+                  color: isRunning ? cs.onSurface : cs.onPrimary,
                   size: 24,
                 ),
                 label: Text(
                   isRunning ? 'PAUSE' : 'START',
                   style: TextStyle(
-                    color: isRunning ? AppColors.primaryTextOf(context) : Colors.white,
+                    color: isRunning ? cs.onSurface : cs.onPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
@@ -407,10 +408,10 @@ class _StopwatchTabState extends State<StopwatchTab>
                 size: M3EButtonSize.md,
                 decoration: M3EButtonDecoration(
                   backgroundColor: WidgetStatePropertyAll(
-                    isRunning ? AppColors.surfaceCardOf(context) : AppColors.accentOf(context),
+                    isRunning ? cs.surfaceContainerHigh : cs.primary,
                   ),
                   side: isRunning
-                      ? WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context)))
+                      ? WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant))
                       : null,
                   borderRadius: 18,
                   fixedSize: const Size(112, 56),

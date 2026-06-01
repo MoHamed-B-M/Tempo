@@ -15,10 +15,13 @@ class ThemeService extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_themeKey);
-    if (stored == 'light') {
-      _mode = ThemeMode.light;
-    } else {
-      _mode = ThemeMode.dark;
+    switch (stored) {
+      case 'light':
+        _mode = ThemeMode.light;
+      case 'system':
+        _mode = ThemeMode.system;
+      default:
+        _mode = ThemeMode.dark;
     }
     _showNavLabels = prefs.getBool(_navLabelsKey) ?? true;
     notifyListeners();
@@ -28,11 +31,22 @@ class ThemeService extends ChangeNotifier {
     _mode = mode;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_themeKey, mode == ThemeMode.light ? 'light' : 'dark');
+    final value = switch (mode) {
+      ThemeMode.light => 'light',
+      ThemeMode.system => 'system',
+      _ => 'dark',
+    };
+    await prefs.setString(_themeKey, value);
   }
 
   void toggle() {
-    setMode(isDark ? ThemeMode.light : ThemeMode.dark);
+    if (_mode == ThemeMode.dark) {
+      setMode(ThemeMode.light);
+    } else if (_mode == ThemeMode.light) {
+      setMode(ThemeMode.system);
+    } else {
+      setMode(ThemeMode.dark);
+    }
   }
 
   Future<void> setShowNavLabels(bool value) async {

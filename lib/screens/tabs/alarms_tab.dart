@@ -5,7 +5,6 @@ import 'package:m3e_core/m3e_core.dart';
 import 'package:provider/provider.dart';
 import '../../models/alarm_model.dart';
 import '../../services/alarm_notifier.dart';
-import '../../widgets/sound_picker_sheet.dart';
 import '../../widgets/time_picker_wheel.dart';
 
 class AlarmsTab extends StatefulWidget {
@@ -102,7 +101,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
                       onPressed: () {
                         HapticFeedback.mediumImpact();
                         context
-                            .read<AlarmNotifier>()
+                            .read<AlarmStateNotifier>()
                             .addAlarm(hour: hour, minute: minute);
                         Navigator.pop(ctx);
                       },
@@ -148,7 +147,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final notifier = context.watch<AlarmNotifier>();
+    final notifier = context.watch<AlarmStateNotifier>();
     final alarms = notifier.alarms;
     final cs = Theme.of(context).colorScheme;
 
@@ -199,11 +198,35 @@ class _AlarmsTabState extends State<AlarmsTab> {
                 child: _buildEmptyState(cs),
               )
             else
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) =>
-                      _buildAlarmCard(alarms, index, cs, notifier),
-                  childCount: alarms.length,
+              SliverM3EDismissibleCardList(
+                itemCount: alarms.length,
+                itemBuilder: (context, index) =>
+                    _buildAlarmCard(alarms, index, cs, notifier),
+                onDismiss: (index, direction) async {
+                  notifier.removeAlarm(alarms[index].id);
+                  return true;
+                },
+                style: M3EDismissibleCardStyle(
+                  outerRadius: 20,
+                  innerRadius: 6,
+                  gap: 0,
+                  color: cs.surfaceContainerHigh,
+                  border: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: EdgeInsets.zero,
+                  neighbourPull: 8,
+                  neighbourReach: 3,
+                  neighbourMotion: const M3EMotion.custom(stiffness: 800, damping: 0.7),
+                  snapBackMotion: const M3EMotion.custom(stiffness: 380, damping: 0.6),
+                  flyMotion: const M3EMotion.custom(stiffness: 400, damping: 0.8),
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 24),
+                    child: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 26),
+                  ),
+                  backgroundBorderRadius: 20,
                 ),
               ),
             const SliverToBoxAdapter(child: SizedBox(height: 96)),
@@ -214,13 +237,21 @@ class _AlarmsTabState extends State<AlarmsTab> {
           right: 0,
           bottom: 24,
           child: Center(
-            child: M3EFilledButton(
-              onPressed: _showCreateSheet,
-              size: M3EButtonSize.md,
-              decoration: M3EButtonDecoration(
-                borderRadius: 28,
+            child: GestureDetector(
+              onTap: _showCreateSheet,
+              child: M3EContainer.gem(
+                color: cs.primary,
+                width: 64,
+                height: 64,
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.primary.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                child: const Icon(Icons.add, color: Colors.white, size: 28),
               ),
-              child: const Icon(Icons.add, size: 28),
             ),
           ),
         ),
@@ -267,7 +298,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
   }
 
   Widget _buildAlarmCard(
-      List<AlarmModel> alarms, int index, ColorScheme cs, AlarmNotifier notifier) {
+      List<AlarmModel> alarms, int index, ColorScheme cs, AlarmStateNotifier notifier) {
     final alarm = alarms[index];
     final timeStr =
         '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}';
@@ -291,119 +322,100 @@ class _AlarmsTabState extends State<AlarmsTab> {
         ? cs.onSurfaceVariant
         : cs.onSurfaceVariant.withValues(alpha: 0.4);
 
-    return Dismissible(
-      key: ValueKey(alarm.id),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) {
-        HapticFeedback.mediumImpact();
-        notifier.removeAlarm(alarm.id);
-      },
-      background: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(
-          color: cs.error.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        child: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 26),
+    return buildM3EExpandableItem(
+      index: index,
+      totalCount: alarms.length,
+      isExpanded: _isExpanded(index, alarms),
+      decoration: M3EExpandableStyle(
+        outerRadius: 20,
+        innerRadius: 6,
+        gap: 0,
+        expandedRadius: 20,
+        color: Colors.transparent,
+        border: BorderSide.none,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        headerPadding: EdgeInsets.zero,
+        bodyPadding: EdgeInsets.zero,
+        useInkWell: true,
+        tapHeaderToToggle: true,
+        tapBodyToExpand: false,
+        tapBodyToCollapse: false,
+        expandIcon: null,
+        collapseIcon: null,
       ),
-      child: buildM3EExpandableItem(
-        index: index,
-        totalCount: alarms.length,
-        isExpanded: _isExpanded(index, alarms),
-        decoration: M3EExpandableStyle(
-          outerRadius: 20,
-          innerRadius: 6,
-          gap: 0,
-          expandedRadius: 20,
-          color: enabled ? cs.surfaceContainerHigh : cs.surfaceContainerLow,
-          border: BorderSide(
-            color: cs.outlineVariant.withValues(alpha: 0.5),
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          headerPadding: EdgeInsets.zero,
-          bodyPadding: EdgeInsets.zero,
-          useInkWell: true,
-          tapHeaderToToggle: true,
-          tapBodyToExpand: false,
-          tapBodyToCollapse: false,
-          expandIcon: null,
-          collapseIcon: null,
-        ),
-        expandMotion: M3EMotion.expressiveSpatialFast,
-        collapseMotion: M3EMotion.standardSpatialFast,
-        onToggle: () => _toggleExpand(index, alarms),
-        headerBuilder: (context, idx, progress) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 8, 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+      expandMotion: M3EMotion.expressiveSpatialFast,
+      collapseMotion: M3EMotion.standardSpatialFast,
+      onToggle: () => _toggleExpand(index, alarms),
+      headerBuilder: (context, idx, progress) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 8, 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      timeStr,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                        letterSpacing: -1,
+                        height: 1.1,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 4),
                       Text(
-                        timeStr,
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
-                          letterSpacing: -1,
-                          height: 1.1,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: subtitleColor,
                         ),
                       ),
-                      if (subtitle.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: subtitleColor,
-                          ),
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
-                Switch(
-                  value: enabled,
-                  onChanged: (val) {
-                    HapticFeedback.mediumImpact();
-                    notifier.toggleAlarm(alarm.id);
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-        bodyBuilder: (context, idx, progress) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Divider(height: 1, indent: 20, endIndent: 20),
-              _ExpandedAlarmPanel(
-                alarm: alarm,
-                notifier: notifier,
-                cs: cs,
-                onDelete: () => notifier.removeAlarm(alarm.id),
+              ),
+              Switch(
+                value: enabled,
+                onChanged: (val) {
+                  HapticFeedback.mediumImpact();
+                  notifier.toggleAlarm(alarm.id);
+                },
               ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
+      bodyBuilder: (context, idx, progress) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Divider(height: 1, indent: 20, endIndent: 20),
+            _ExpandedAlarmPanel(
+              alarm: alarm,
+              notifier: notifier,
+              cs: cs,
+              onDelete: () => notifier.removeAlarm(alarm.id),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
 class _ExpandedAlarmPanel extends StatefulWidget {
   final AlarmModel alarm;
-  final AlarmNotifier notifier;
+  final AlarmStateNotifier notifier;
   final ColorScheme cs;
   final VoidCallback onDelete;
 
@@ -425,8 +437,17 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
   bool _labelChanged = false;
   bool _repeatChanged = false;
   bool _soundChanged = false;
+  late final M3EDropdownController<String> _soundController;
 
   static const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  static const _sounds = [
+    ('default', 'Default'),
+    ('radar', 'Radar'),
+    ('crystal', 'Crystal'),
+    ('pulse', 'Pulse'),
+    ('echo', 'Echo'),
+    ('ripple', 'Ripple'),
+  ];
 
   @override
   void initState() {
@@ -434,6 +455,18 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
     _label = widget.alarm.label;
     _repeatDays = List.from(widget.alarm.repeatDays);
     _sound = widget.alarm.sound;
+    _soundController = M3EDropdownController<String>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final match = _sounds.firstWhere((s) => s.$1 == _sound, orElse: () => _sounds.first);
+      _soundController.toggleOnly(M3EDropdownItem<String>(label: match.$2, value: match.$1));
+    });
+  }
+
+  @override
+  void dispose() {
+    _soundController.dispose();
+    _commitChanges();
+    super.dispose();
   }
 
   void _commitChanges() {
@@ -449,12 +482,6 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
   }
 
   @override
-  void dispose() {
-    _commitChanges();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final cs = widget.cs;
 
@@ -464,7 +491,6 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Label field
           TextField(
             controller: TextEditingController(text: _label)
               ..selection = TextSelection.collapsed(offset: _label.length),
@@ -504,7 +530,6 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
           ),
           const SizedBox(height: 20),
 
-          // Repeat days
           Text(
             'REPEAT',
             style: GoogleFonts.plusJakartaSans(
@@ -560,63 +585,39 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
           ),
           const SizedBox(height: 20),
 
-          // Sound picker
-          InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              SoundPickerSheet.show(
-                context,
-                selectedSound: _sound,
-                onSoundSelected: (sound) {
-                  setState(() {
-                    _sound = sound;
-                    _soundChanged = true;
-                  });
-                },
-              );
+          M3EDropdownMenu<String>(
+            controller: _soundController,
+            singleSelect: true,
+            items: _sounds
+                .map((s) => M3EDropdownItem(label: s.$2, value: s.$1))
+                .toList(),
+            onSelectionChanged: (items) {
+              if (items.isNotEmpty && items.first.value != _sound) {
+                setState(() {
+                  _sound = items.first.value;
+                  _soundChanged = true;
+                });
+              }
             },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: cs.outlineVariant),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.music_note_outlined,
-                      color: cs.onSurfaceVariant, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Sound',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    _sound.toUpperCase(),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: cs.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right,
-                      color: cs.onSurfaceVariant, size: 20),
-                ],
-              ),
+            fieldStyle: M3EDropdownFieldStyle(
+              hintText: 'Sound',
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              borderRadius: BorderRadius.circular(12),
+              backgroundColor: cs.surfaceContainerHigh,
+              border: BorderSide(color: cs.outlineVariant),
             ),
+            dropdownStyle: const M3EDropdownStyle(
+              containerRadius: 12,
+              maxHeight: 300,
+            ),
+            itemStyle: M3EDropdownItemStyle(
+              outerRadius: 8,
+              innerRadius: 4,
+            ),
+            haptic: M3EHapticFeedback.light,
           ),
           const SizedBox(height: 20),
 
-          // Delete button
           SizedBox(
             width: double.infinity,
             child: M3EOutlinedButton.icon(

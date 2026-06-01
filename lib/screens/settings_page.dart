@@ -5,8 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_text_styles.dart';
 import '../services/alarm_settings.dart';
 import '../services/theme_service.dart';
 import '../services/update_manager.dart';
@@ -95,21 +93,27 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final themeService = context.watch<ThemeService>();
     final alarmSettings = context.watch<AlarmSettings>();
+    final cs = Theme.of(context).colorScheme;
     final isDark = themeService.isDark;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundOf(context),
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: AppColors.primaryTextOf(context),
+        foregroundColor: cs.onSurface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, size: 20, color: AppColors.primaryTextOf(context)),
+          icon: Icon(Icons.arrow_back_ios_new, size: 20, color: cs.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'SETTINGS',
-          style: AppTextStyles.buttonLabel(context).copyWith(fontSize: 14, letterSpacing: 1),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: cs.onSurface,
+            letterSpacing: 1,
+          ),
         ),
         centerTitle: true,
       ),
@@ -119,39 +123,41 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('ALARM'),
+            _buildSectionTitle(cs, 'ALARM'),
             const SizedBox(height: 12),
             _buildMonochromaticToggle(
+              cs: cs,
               icon: Icons.vibration_outlined,
               label: 'Vibrate on alarm',
               enabled: alarmSettings.vibrateOnAlarm,
               onTap: () => alarmSettings.setVibrateOnAlarm(!alarmSettings.vibrateOnAlarm),
             ),
             const SizedBox(height: 12),
-            _buildAutoDismissTile(alarmSettings),
+            _buildAutoDismissTile(cs, alarmSettings),
             const SizedBox(height: 12),
             _buildMonochromaticSlider(
+              cs: cs,
               icon: Icons.volume_up_outlined,
               label: 'Alarm volume',
               value: alarmSettings.volume,
               onChanged: (v) => alarmSettings.setVolume(v),
             ),
             const SizedBox(height: 32),
-            _buildSectionTitle('APPEARANCE'),
+            _buildSectionTitle(cs, 'APPEARANCE'),
             const SizedBox(height: 12),
             _buildCustomSettingToggle(
+              cs: cs,
               icon: Icons.dark_mode_outlined,
-              label: 'Dark Mode',
+              label: isDark ? 'Dark Mode' : (themeService.mode == ThemeMode.light ? 'Light Mode' : 'System Theme'),
               enabled: isDark,
               onTap: () {
                 HapticFeedback.selectionClick();
-                themeService.setMode(
-                  isDark ? ThemeMode.light : ThemeMode.dark,
-                );
+                themeService.toggle();
               },
             ),
             const SizedBox(height: 12),
             _buildCustomSettingToggle(
+              cs: cs,
               icon: Icons.tab,
               label: 'Show Nav Labels',
               enabled: themeService.showNavLabels,
@@ -161,15 +167,12 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
             const SizedBox(height: 32),
-            _buildSectionTitle('APP VERSION'),
+            _buildSectionTitle(cs, 'APP VERSION'),
             const SizedBox(height: 12),
-            _buildInfoTile(
-              Icons.info_outline,
-              'Current Version',
-              _appVersion.isNotEmpty ? 'v$_appVersion' : 'Loading...',
-            ),
+            _buildInfoTile(cs, Icons.info_outline, 'Current Version',
+                _appVersion.isNotEmpty ? 'v$_appVersion' : 'Loading...'),
             const SizedBox(height: 32),
-            _buildSectionTitle('UPDATE CHANNEL'),
+            _buildSectionTitle(cs, 'UPDATE CHANNEL'),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -190,11 +193,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     size: M3EButtonSize.md,
                     decoration: M3EButtonDecoration(
                       backgroundColor: _channel == 'stable'
-                          ? WidgetStatePropertyAll(AppColors.accentOf(context))
+                          ? WidgetStatePropertyAll(cs.primary)
                           : null,
                       side: _channel == 'stable'
                           ? null
-                          : WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context))),
+                          : WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant)),
                     ),
                   ),
                 ),
@@ -216,11 +219,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     size: M3EButtonSize.md,
                     decoration: M3EButtonDecoration(
                       backgroundColor: _channel == 'beta'
-                          ? WidgetStatePropertyAll(AppColors.accentOf(context))
+                          ? WidgetStatePropertyAll(cs.primary)
                           : null,
                       side: _channel == 'beta'
                           ? null
-                          : WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context))),
+                          : WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant)),
                     ),
                   ),
                 ),
@@ -233,7 +236,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 _channel == 'stable'
                     ? 'Only stable releases will be shown.'
                     : 'Pre-release versions will be included.',
-                style: AppTextStyles.subheading(context).copyWith(fontSize: 12),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: cs.onSurfaceVariant,
+                ),
               ),
             ),
             const SizedBox(height: 48),
@@ -256,20 +263,16 @@ class _SettingsPageState extends State<SettingsPage> {
               style: M3EButtonStyle.filled,
               size: M3EButtonSize.md,
               decoration: M3EButtonDecoration(
-                backgroundColor: WidgetStatePropertyAll(AppColors.accentOf(context)),
+                backgroundColor: WidgetStatePropertyAll(cs.primary),
                 foregroundColor: const WidgetStatePropertyAll(Colors.white),
                 borderRadius: 18,
               ),
             ),
             const SizedBox(height: 32),
-            _buildNavigationTile(
-              icon: Icons.info_outline,
-              label: 'About',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AboutPage()),
-              ),
-            ),
+            _buildNavigationTile(cs, Icons.info_outline, 'About', () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AboutPage()),
+            )),
             const SizedBox(height: 32),
             if (_currentQuote.isNotEmpty) ...[
               Padding(
@@ -277,8 +280,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Text(
                   '"${_currentQuote}"',
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.subheading(context).copyWith(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: cs.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
                     height: 1.5,
                   ),
@@ -291,17 +296,22 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Text(
                     'Tempo',
-                    style: AppTextStyles.buttonLabel(context).copyWith(
-                      color: AppColors.secondaryTextOf(context),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurfaceVariant,
                       letterSpacing: 2,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'v$_appVersion',
-                    style: AppTextStyles.subheading(context).copyWith(fontSize: 12),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
-
                 ],
               ),
             ),
@@ -312,18 +322,20 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(ColorScheme cs, String title) {
     return Text(
       title,
-      style: AppTextStyles.buttonLabel(context).copyWith(
-        color: AppColors.secondaryTextOf(context),
+      style: GoogleFonts.plusJakartaSans(
         fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: cs.onSurfaceVariant,
         letterSpacing: 1.5,
       ),
     );
   }
 
   Widget _buildMonochromaticToggle({
+    required ColorScheme cs,
     required IconData icon,
     required String label,
     required bool enabled,
@@ -336,10 +348,10 @@ class _SettingsPageState extends State<SettingsPage> {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         decoration: BoxDecoration(
-          color: AppColors.surfaceCardOf(context),
+          color: cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppColors.borderOf(context),
+            color: cs.outlineVariant,
             width: 1,
           ),
         ),
@@ -347,15 +359,17 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             Icon(
               icon,
-              color: AppColors.secondaryTextOf(context),
+              color: cs.onSurfaceVariant,
               size: 22,
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 label,
-                style: AppTextStyles.body(context).copyWith(
-                  color: AppColors.primaryTextOf(context),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
                 ),
               ),
             ),
@@ -366,8 +380,8 @@ class _SettingsPageState extends State<SettingsPage> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
                 color: enabled
-                    ? AppColors.accentOf(context)
-                    : AppColors.borderOf(context),
+                    ? cs.primary
+                    : cs.outlineVariant,
               ),
               padding: const EdgeInsets.all(3),
               child: Align(
@@ -388,7 +402,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildAutoDismissTile(AlarmSettings settings) {
+  Widget _buildAutoDismissTile(ColorScheme cs, AlarmSettings settings) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _showAutoDismissSheet,
@@ -396,10 +410,10 @@ class _SettingsPageState extends State<SettingsPage> {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         decoration: BoxDecoration(
-          color: AppColors.surfaceCardOf(context),
+          color: cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppColors.borderOf(context),
+            color: cs.outlineVariant,
             width: 1,
           ),
         ),
@@ -407,7 +421,7 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             Icon(
               Icons.timer_outlined,
-              color: AppColors.secondaryTextOf(context),
+              color: cs.onSurfaceVariant,
               size: 22,
             ),
             const SizedBox(width: 16),
@@ -417,8 +431,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Text(
                     'Auto-dismiss alarm',
-                    style: AppTextStyles.body(context).copyWith(
-                      color: AppColors.primaryTextOf(context),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -426,8 +442,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     settings.autoDismissEnabled
                         ? 'After ${settings.autoDismissMinutes} min'
                         : 'Off',
-                    style: AppTextStyles.subheading(context).copyWith(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -435,7 +453,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             Icon(
               Icons.chevron_right,
-              color: AppColors.secondaryTextOf(context),
+              color: cs.onSurfaceVariant,
               size: 20,
             ),
           ],
@@ -445,6 +463,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildMonochromaticSlider({
+    required ColorScheme cs,
     required IconData icon,
     required String label,
     required double value,
@@ -453,10 +472,10 @@ class _SettingsPageState extends State<SettingsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCardOf(context),
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.borderOf(context),
+          color: cs.outlineVariant,
           width: 1,
         ),
       ),
@@ -467,28 +486,32 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               Icon(
                 icon,
-                color: AppColors.secondaryTextOf(context),
+                color: cs.onSurfaceVariant,
                 size: 22,
               ),
               const SizedBox(width: 16),
               Text(
                 label,
-                style: AppTextStyles.body(context).copyWith(
-                  color: AppColors.primaryTextOf(context),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
                 ),
               ),
               const Spacer(),
               Text(
                 '${(value * 100).round()}%',
-                style: AppTextStyles.buttonLabel(context).copyWith(
-                  color: AppColors.secondaryTextOf(context),
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurfaceVariant,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           _DotMatrixSlider(
+            cs: cs,
             value: value,
             onChanged: onChanged,
           ),
@@ -498,6 +521,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildCustomSettingToggle({
+    required ColorScheme cs,
     required IconData icon,
     required String label,
     required bool enabled,
@@ -510,10 +534,10 @@ class _SettingsPageState extends State<SettingsPage> {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         decoration: BoxDecoration(
-          color: enabled ? AppColors.accentOf(context) : AppColors.surfaceCardOf(context),
+          color: enabled ? cs.primary : cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: enabled ? Colors.transparent : AppColors.borderOf(context),
+            color: enabled ? Colors.transparent : cs.outlineVariant,
             width: 1,
           ),
         ),
@@ -521,15 +545,17 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             Icon(
               icon,
-              color: enabled ? Colors.white : AppColors.primaryTextOf(context),
+              color: enabled ? cs.onPrimary : cs.onSurface,
               size: 22,
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 label,
-                style: AppTextStyles.body(context).copyWith(
-                  color: enabled ? Colors.white : AppColors.primaryTextOf(context),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: enabled ? cs.onPrimary : cs.onSurface,
                 ),
               ),
             ),
@@ -538,9 +564,9 @@ class _SettingsPageState extends State<SettingsPage> {
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: enabled ? Colors.white : Colors.transparent,
+                color: enabled ? cs.onPrimary : Colors.transparent,
                 border: Border.all(
-                  color: enabled ? Colors.white : AppColors.secondaryTextOf(context).withValues(alpha: 0.4),
+                  color: enabled ? cs.onPrimary : cs.onSurfaceVariant.withValues(alpha: 0.4),
                   width: 1.5,
                 ),
               ),
@@ -549,7 +575,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ? Icon(
                       Icons.check,
                       size: 14,
-                      color: AppColors.accentOf(context),
+                      color: cs.primary,
                     )
                   : null,
             ),
@@ -559,26 +585,34 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildInfoTile(IconData icon, String label, String value) {
+  Widget _buildInfoTile(ColorScheme cs, IconData icon, String label, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCardOf(context),
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderOf(context), width: 1),
+        border: Border.all(color: cs.outlineVariant, width: 1),
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.secondaryTextOf(context), size: 22),
+          Icon(icon, color: cs.onSurfaceVariant, size: 22),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(label, style: AppTextStyles.body(context)),
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+            ),
           ),
           Text(
             value,
-            style: AppTextStyles.body(context).copyWith(
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
               fontWeight: FontWeight.w800,
-              color: AppColors.accentOf(context),
+              color: cs.primary,
             ),
           ),
         ],
@@ -586,12 +620,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildNavigationTile({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final cs = Theme.of(context).colorScheme;
+  Widget _buildNavigationTile(ColorScheme cs, IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -628,9 +657,11 @@ class _SettingsPageState extends State<SettingsPage> {
 class _DotMatrixSlider extends StatelessWidget {
   final double value;
   final ValueChanged<double> onChanged;
+  final ColorScheme cs;
   final _sliderKey = GlobalKey();
 
   _DotMatrixSlider({
+    required this.cs,
     required this.value,
     required this.onChanged,
   });
@@ -660,8 +691,8 @@ class _DotMatrixSlider extends StatelessWidget {
                     height: isActive ? 20 : 8,
                     decoration: BoxDecoration(
                       color: isActive
-                          ? AppColors.accentOf(context)
-                          : AppColors.borderOf(context),
+                          ? cs.primary
+                          : cs.outlineVariant,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -710,10 +741,12 @@ class _AutoDismissSheetState extends State<_AutoDismissSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCardOf(context),
+        color: cs.surfaceContainerHigh,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -725,7 +758,7 @@ class _AutoDismissSheetState extends State<_AutoDismissSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.borderOf(context),
+                color: cs.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -733,9 +766,10 @@ class _AutoDismissSheetState extends State<_AutoDismissSheet> {
           const SizedBox(height: 20),
           Text(
             'AUTO-DISMISS ALARM',
-            style: AppTextStyles.buttonLabel(context).copyWith(
-              color: AppColors.secondaryTextOf(context),
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurfaceVariant,
               letterSpacing: 1.5,
             ),
           ),
@@ -755,25 +789,26 @@ class _AutoDismissSheetState extends State<_AutoDismissSheet> {
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.accentOf(context)
-                      : AppColors.backgroundOf(context),
+                      ? cs.primary
+                      : cs.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: isSelected
                       ? null
-                      : Border.all(color: AppColors.borderOf(context), width: 1),
+                      : Border.all(color: cs.outlineVariant, width: 1),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       minutes == 0 ? 'Off' : '$minutes minutes',
-                      style: AppTextStyles.body(context).copyWith(
-                        color: isSelected ? Colors.white : AppColors.primaryTextOf(context),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
                         fontWeight: FontWeight.w800,
+                        color: isSelected ? cs.onPrimary : cs.onSurface,
                       ),
                     ),
                     if (isSelected)
-                      const Icon(Icons.check, color: Colors.white, size: 18),
+                      Icon(Icons.check, color: cs.onPrimary, size: 18),
                   ],
                 ),
               ),
