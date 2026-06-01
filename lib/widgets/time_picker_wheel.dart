@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_text_styles.dart';
 
 class TimePickerWheel extends StatefulWidget {
   final int initialHour;
@@ -73,10 +71,11 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
     required int selected,
     required double wheelWidth,
   }) {
+    final cs = Theme.of(context).colorScheme;
     final itemHeight = MediaQuery.textScalerOf(context)
         .scale(MediaQuery.of(context).size.height * 0.065)
         .clamp(40.0, 64.0);
-    final visibleItems = 5;
+    const visibleItems = 5;
     final wheelHeight = itemHeight * visibleItems;
 
     return ClipRect(
@@ -87,9 +86,8 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
         clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           border: Border(
-            top: BorderSide(color: AppColors.borderOf(context), width: 0.5),
-            bottom:
-                BorderSide(color: AppColors.borderOf(context), width: 0.5),
+            top: BorderSide(color: cs.outlineVariant, width: 0.5),
+            bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
           ),
         ),
         child: Stack(
@@ -102,10 +100,8 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
                 height: itemHeight,
                 decoration: BoxDecoration(
                   border: Border(
-                    top: BorderSide(
-                        color: AppColors.borderOf(context), width: 0.5),
-                    bottom: BorderSide(
-                        color: AppColors.borderOf(context), width: 0.5),
+                    top: BorderSide(color: cs.outlineVariant, width: 0.5),
+                    bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
                   ),
                 ),
               ),
@@ -124,9 +120,12 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
                 return Center(
                   child: Text(
                     labelBuilder(value),
-                    style: isSelected
-                        ? AppTextStyles.wheelItem(context)
-                        : AppTextStyles.wheelItemDim(context),
+                    style: TextStyle(
+                      fontFamily: 'GoogleFonts.plusJakartaSans',
+                      fontSize: 28,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w300,
+                      color: isSelected ? cs.onSurface : cs.onSurfaceVariant,
+                    ),
                   ),
                 );
               }),
@@ -138,10 +137,10 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.backgroundOf(context),
-                      AppColors.backgroundOf(context).withValues(alpha: 0),
-                      AppColors.backgroundOf(context).withValues(alpha: 0),
-                      AppColors.backgroundOf(context),
+                      cs.surface,
+                      cs.surface.withValues(alpha: 0),
+                      cs.surface.withValues(alpha: 0),
+                      cs.surface,
                     ],
                     stops: const [0.0, 0.25, 0.75, 1.0],
                   ),
@@ -156,6 +155,7 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
     final wheelWidth = (screenWidth - 80) / 2;
 
@@ -169,8 +169,22 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('HOUR', style: AppTextStyles.buttonLabel(context)),
-                  Text('MIN', style: AppTextStyles.buttonLabel(context)),
+                  Text('HOUR',
+                      style: TextStyle(
+                        fontFamily: 'GoogleFonts.plusJakartaSans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurfaceVariant,
+                        letterSpacing: 1.5,
+                      )),
+                  Text('MIN',
+                      style: TextStyle(
+                        fontFamily: 'GoogleFonts.plusJakartaSans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurfaceVariant,
+                        letterSpacing: 1.5,
+                      )),
                 ],
               ),
             ),
@@ -193,13 +207,13 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
                       Container(
                         width: 2,
                         height: 4,
-                        color: AppColors.primaryTextOf(context),
+                        color: cs.onSurface,
                       ),
                       const SizedBox(height: 8),
                       Container(
                         width: 2,
                         height: 4,
-                        color: AppColors.primaryTextOf(context),
+                        color: cs.onSurface,
                       ),
                     ],
                   ),
@@ -226,13 +240,12 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
                   padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
-                    side: BorderSide(
-                        color: AppColors.primaryTextOf(context), width: 1.5),
+                    side: BorderSide(color: cs.primary, width: 1.5),
                   ),
                 ),
                 child: Icon(
                   Icons.check,
-                  color: AppColors.primaryTextOf(context),
+                  color: cs.primary,
                   size: 28,
                 ),
               ),

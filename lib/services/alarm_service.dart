@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:hive_flutter/hive_flutter.dart';
+import '../core/hive_helper.dart';
 import '../models/alarm_model.dart';
 import '../screens/alarm_ring_screen.dart';
 import 'screen_wake_handler.dart';
@@ -334,11 +335,10 @@ class AlarmService {
   }
 
   Future<void> _persistStopFlag(String alarmId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final stopped = prefs.getStringList('stopped_alarms') ?? [];
+    final stopped = HiveHelper.settings.get('stopped_alarms') as List<String>? ?? [];
     if (!stopped.contains(alarmId)) {
       stopped.add(alarmId);
-      await prefs.setStringList('stopped_alarms', stopped);
+      await HiveHelper.settings.put('stopped_alarms', stopped);
     }
   }
 
@@ -368,9 +368,8 @@ class AlarmService {
   }
 
   Future<List<String>> fetchAndClearStoppedAlarms() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stopped = prefs.getStringList('stopped_alarms') ?? [];
-    await prefs.remove('stopped_alarms');
+    final stopped = HiveHelper.settings.get('stopped_alarms') as List<String>? ?? [];
+    await HiveHelper.settings.delete('stopped_alarms');
     return stopped;
   }
 
@@ -457,12 +456,16 @@ Future<void> _backgroundNotificationHandler(
 
   if (response.actionId == 'stop' || response.actionId == 'snooze') {
     debugPrint('[AlarmService Background] Persisting stop flag');
-    final prefs = await SharedPreferences.getInstance();
-    final stopped = prefs.getStringList('stopped_alarms') ?? [];
+    try {
+      await Hive.initFlutter();
+      await Hive.openBox('settings');
+    } catch (_) {}
+    final settingsBox = Hive.box('settings');
+    final stopped = (settingsBox.get('stopped_alarms') as List<String>?) ?? [];
     final id = response.payload;
     if (id != null && !stopped.contains(id)) {
       stopped.add(id);
-      await prefs.setStringList('stopped_alarms', stopped);
+      await settingsBox.put('stopped_alarms', stopped);
     }
   }
 }

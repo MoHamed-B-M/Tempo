@@ -1,51 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/alarm_model.dart';
-import '../services/alarm_notifier.dart';
-import '../services/alarm_service.dart';
-import '../services/alarm_settings.dart';
+import '../providers/alarm_provider.dart';
+import '../providers/settings_provider.dart';
+import '../services/screen_wake_handler.dart';
 import '../widgets/lock_screen.dart';
 
-class AlarmRingScreen extends StatefulWidget {
+class AlarmRingScreen extends ConsumerWidget {
   final AlarmModel alarm;
 
   const AlarmRingScreen({super.key, required this.alarm});
 
   @override
-  State<AlarmRingScreen> createState() => _AlarmRingScreenState();
-}
-
-class _AlarmRingScreenState extends State<AlarmRingScreen> {
-  void _snooze() {
-    context.read<AlarmService>().snoozeAlarm(widget.alarm);
-    Navigator.of(context).pop();
-  }
-
-  void _dismiss() {
-    final service = context.read<AlarmService>();
-    service.stopAlarm(widget.alarm);
-    if (!widget.alarm.isRepeating) {
-      context.read<AlarmStateNotifier>().disableAlarm(widget.alarm.id);
-    }
-    Navigator.of(context).pop();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final now = TimeOfDay.now();
     final timeStr = now.format(context);
-    final settings = context.watch<AlarmSettings>();
+    final settings = ref.watch(alarmSettingsProvider);
+    final alarmService = ref.read(alarmServiceProvider);
+
+    void snooze() {
+      ScreenWakeHandler.enable();
+      alarmService.snoozeAlarm(alarm);
+      Navigator.of(context).pop();
+    }
+
+    void dismiss() {
+      ScreenWakeHandler.enable();
+      alarmService.stopAlarm(alarm);
+      if (!alarm.isRepeating) {
+        ref.read(alarmListProvider.notifier).disableAlarm(alarm.id);
+      }
+      Navigator.of(context).pop();
+    }
 
     return LockScreen(
       mode: LockScreenMode.alarm,
-      title: widget.alarm.label.isNotEmpty ? widget.alarm.label : 'Alarm',
+      title: alarm.label.isNotEmpty ? alarm.label : 'Alarm',
       timeDisplay: timeStr,
       showSnooze: true,
       autoDismissMinutes: settings.autoDismissMinutes,
       vibrateEnabled: settings.vibrateOnAlarm,
       volume: settings.volume,
-      onStop: _dismiss,
-      onSnooze: _snooze,
+      onStop: dismiss,
+      onSnooze: snooze,
     );
   }
 }

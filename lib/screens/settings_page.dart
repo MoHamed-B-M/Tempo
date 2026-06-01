@@ -1,23 +1,22 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:m3e_core/m3e_core.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../services/alarm_settings.dart';
-import '../services/theme_service.dart';
+import '../providers/settings_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/update_manager.dart';
 import 'about_page.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   String _channel = 'stable';
   String _appVersion = '';
   bool _checking = false;
@@ -50,12 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadSettings() async {
     final channel = await UpdateManager.getSavedChannel();
     final version = await UpdateManager.getCurrentVersion();
-    final prefs = await SharedPreferences.getInstance();
-    final savedQuote = prefs.getString('saved_quote');
-    final quote = savedQuote ?? (_quotes[Random().nextInt(_quotes.length)]);
-    if (savedQuote == null) {
-      await prefs.setString('saved_quote', quote);
-    }
+    final quote = _quotes[Random().nextInt(_quotes.length)];
     setState(() {
       _channel = channel;
       _appVersion = version;
@@ -77,24 +71,25 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showAutoDismissSheet() {
-    final settings = context.read<AlarmSettings>();
+    final settings = ref.read(alarmSettingsProvider);
     HapticFeedback.selectionClick();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _AutoDismissSheet(
         currentMinutes: settings.autoDismissMinutes,
-        onSelected: (minutes) => settings.setAutoDismissMinutes(minutes),
+        onSelected: (minutes) =>
+            ref.read(alarmSettingsProvider.notifier).setAutoDismissMinutes(minutes),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeService = context.watch<ThemeService>();
-    final alarmSettings = context.watch<AlarmSettings>();
+    final themeMode = ref.watch(themeModeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+    final alarmSettings = ref.watch(alarmSettingsProvider);
     final cs = Theme.of(context).colorScheme;
-    final isDark = themeService.isDark;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -130,7 +125,9 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: Icons.vibration_outlined,
               label: 'Vibrate on alarm',
               enabled: alarmSettings.vibrateOnAlarm,
-              onTap: () => alarmSettings.setVibrateOnAlarm(!alarmSettings.vibrateOnAlarm),
+              onTap: () => ref
+                  .read(alarmSettingsProvider.notifier)
+                  .setVibrateOnAlarm(!alarmSettings.vibrateOnAlarm),
             ),
             const SizedBox(height: 12),
             _buildAutoDismissTile(cs, alarmSettings),
@@ -140,7 +137,8 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: Icons.volume_up_outlined,
               label: 'Alarm volume',
               value: alarmSettings.volume,
-              onChanged: (v) => alarmSettings.setVolume(v),
+              onChanged: (v) =>
+                  ref.read(alarmSettingsProvider.notifier).setVolume(v),
             ),
             const SizedBox(height: 32),
             _buildSectionTitle(cs, 'APPEARANCE'),
@@ -148,24 +146,26 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildCustomSettingToggle(
               cs: cs,
               icon: Icons.dark_mode_outlined,
-              label: isDark ? 'Dark Mode' : (themeService.mode == ThemeMode.light ? 'Light Mode' : 'System Theme'),
+              label: isDark
+                  ? 'Dark Mode'
+                  : (themeMode == ThemeMode.light
+                      ? 'Light Mode'
+                      : 'System Theme'),
               enabled: isDark,
               onTap: () {
                 HapticFeedback.selectionClick();
-                themeService.toggle();
+                ref.read(themeModeProvider.notifier).toggle();
               },
             ),
             const SizedBox(height: 12),
-            _buildCustomSettingToggle(
-              cs: cs,
-              icon: Icons.tab,
-              label: 'Show Nav Labels',
-              enabled: themeService.showNavLabels,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                themeService.setShowNavLabels(!themeService.showNavLabels);
-              },
-            ),
+            _buildNavigationTile(
+                cs,
+                Icons.info_outline,
+                'About',
+                () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AboutPage()),
+                    )),
             const SizedBox(height: 32),
             _buildSectionTitle(cs, 'APP VERSION'),
             const SizedBox(height: 12),
@@ -180,16 +180,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: M3EButton.icon(
                     onPressed: () => _setChannel('stable'),
                     icon: Icon(Icons.shield_outlined,
-                      color: _channel == 'stable' ? Colors.white : null,
-                      size: 18,
-                    ),
+                        color: _channel == 'stable' ? Colors.white : null,
+                        size: 18),
                     label: Text(
                       'Stable',
                       style: TextStyle(
-                        color: _channel == 'stable' ? Colors.white : null,
-                      ),
+                          color: _channel == 'stable' ? Colors.white : null),
                     ),
-                    style: _channel == 'stable' ? M3EButtonStyle.filled : M3EButtonStyle.outlined,
+                    style: _channel == 'stable'
+                        ? M3EButtonStyle.filled
+                        : M3EButtonStyle.outlined,
                     size: M3EButtonSize.md,
                     decoration: M3EButtonDecoration(
                       backgroundColor: _channel == 'stable'
@@ -197,7 +197,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           : null,
                       side: _channel == 'stable'
                           ? null
-                          : WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant)),
+                          : WidgetStatePropertyAll(
+                              BorderSide(color: cs.outlineVariant)),
                     ),
                   ),
                 ),
@@ -206,16 +207,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: M3EButton.icon(
                     onPressed: () => _setChannel('beta'),
                     icon: Icon(Icons.science_outlined,
-                      color: _channel == 'beta' ? Colors.white : null,
-                      size: 18,
-                    ),
+                        color: _channel == 'beta' ? Colors.white : null,
+                        size: 18),
                     label: Text(
                       'Beta',
                       style: TextStyle(
-                        color: _channel == 'beta' ? Colors.white : null,
-                      ),
+                          color: _channel == 'beta' ? Colors.white : null),
                     ),
-                    style: _channel == 'beta' ? M3EButtonStyle.filled : M3EButtonStyle.outlined,
+                    style: _channel == 'beta'
+                        ? M3EButtonStyle.filled
+                        : M3EButtonStyle.outlined,
                     size: M3EButtonSize.md,
                     decoration: M3EButtonDecoration(
                       backgroundColor: _channel == 'beta'
@@ -223,7 +224,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           : null,
                       side: _channel == 'beta'
                           ? null
-                          : WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant)),
+                          : WidgetStatePropertyAll(
+                              BorderSide(color: cs.outlineVariant)),
                     ),
                   ),
                 ),
@@ -269,16 +271,11 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             const SizedBox(height: 32),
-            _buildNavigationTile(cs, Icons.info_outline, 'About', () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AboutPage()),
-            )),
-            const SizedBox(height: 32),
             if (_currentQuote.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  '"${_currentQuote}"',
+                  '"$_currentQuote"',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
@@ -350,18 +347,11 @@ class _SettingsPageState extends State<SettingsPage> {
         decoration: BoxDecoration(
           color: cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: cs.outlineVariant,
-            width: 1,
-          ),
+          border: Border.all(color: cs.outlineVariant, width: 1),
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: cs.onSurfaceVariant,
-              size: 22,
-            ),
+            Icon(icon, color: cs.onSurfaceVariant, size: 22),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
@@ -379,13 +369,12 @@ class _SettingsPageState extends State<SettingsPage> {
               height: 28,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                color: enabled
-                    ? cs.primary
-                    : cs.outlineVariant,
+                color: enabled ? cs.primary : cs.outlineVariant,
               ),
               padding: const EdgeInsets.all(3),
               child: Align(
-                alignment: enabled ? Alignment.centerRight : Alignment.centerLeft,
+                alignment:
+                    enabled ? Alignment.centerRight : Alignment.centerLeft,
                 child: Container(
                   width: 22,
                   height: 22,
@@ -402,7 +391,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildAutoDismissTile(ColorScheme cs, AlarmSettings settings) {
+  Widget _buildAutoDismissTile(ColorScheme cs, AlarmSettingsState settings) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _showAutoDismissSheet,
@@ -412,18 +401,11 @@ class _SettingsPageState extends State<SettingsPage> {
         decoration: BoxDecoration(
           color: cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: cs.outlineVariant,
-            width: 1,
-          ),
+          border: Border.all(color: cs.outlineVariant, width: 1),
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.timer_outlined,
-              color: cs.onSurfaceVariant,
-              size: 22,
-            ),
+            Icon(Icons.timer_outlined, color: cs.onSurfaceVariant, size: 22),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -451,11 +433,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: cs.onSurfaceVariant,
-              size: 20,
-            ),
+            Icon(Icons.chevron_right, color: cs.onSurfaceVariant, size: 20),
           ],
         ),
       ),
@@ -474,21 +452,14 @@ class _SettingsPageState extends State<SettingsPage> {
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: cs.outlineVariant,
-          width: 1,
-        ),
+        border: Border.all(color: cs.outlineVariant, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                color: cs.onSurfaceVariant,
-                size: 22,
-              ),
+              Icon(icon, color: cs.onSurfaceVariant, size: 22),
               const SizedBox(width: 16),
               Text(
                 label,
@@ -543,11 +514,8 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: enabled ? cs.onPrimary : cs.onSurface,
-              size: 22,
-            ),
+            Icon(icon,
+                color: enabled ? cs.onPrimary : cs.onSurface, size: 22),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
@@ -566,17 +534,15 @@ class _SettingsPageState extends State<SettingsPage> {
                 shape: BoxShape.circle,
                 color: enabled ? cs.onPrimary : Colors.transparent,
                 border: Border.all(
-                  color: enabled ? cs.onPrimary : cs.onSurfaceVariant.withValues(alpha: 0.4),
+                  color: enabled
+                      ? cs.onPrimary
+                      : cs.onSurfaceVariant.withValues(alpha: 0.4),
                   width: 1.5,
                 ),
               ),
               alignment: Alignment.center,
               child: enabled
-                  ? Icon(
-                      Icons.check,
-                      size: 14,
-                      color: cs.primary,
-                    )
+                  ? Icon(Icons.check, size: 14, color: cs.primary)
                   : null,
             ),
           ],
@@ -585,7 +551,8 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildInfoTile(ColorScheme cs, IconData icon, String label, String value) {
+  Widget _buildInfoTile(
+      ColorScheme cs, IconData icon, String label, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
@@ -620,7 +587,8 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildNavigationTile(ColorScheme cs, IconData icon, String label, VoidCallback onTap) {
+  Widget _buildNavigationTile(
+      ColorScheme cs, IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -674,11 +642,13 @@ class _DotMatrixSlider extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown: (details) => _updateFromPosition(details.localPosition.dx),
-      onHorizontalDragUpdate: (details) => _updateFromPosition(details.localPosition.dx),
+      onHorizontalDragUpdate: (details) =>
+          _updateFromPosition(details.localPosition.dx),
       child: LayoutBuilder(
         key: _sliderKey,
         builder: (context, constraints) {
-          final dotWidth = (constraints.maxWidth - (dotCount - 1) * 4) / dotCount;
+          final dotWidth =
+              (constraints.maxWidth - (dotCount - 1) * 4) / dotCount;
           return SizedBox(
             height: 24,
             child: Row(
@@ -690,9 +660,7 @@ class _DotMatrixSlider extends StatelessWidget {
                     width: dotWidth,
                     height: isActive ? 20 : 8,
                     decoration: BoxDecoration(
-                      color: isActive
-                          ? cs.primary
-                          : cs.outlineVariant,
+                      color: isActive ? cs.primary : cs.outlineVariant,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -706,7 +674,8 @@ class _DotMatrixSlider extends StatelessWidget {
   }
 
   void _updateFromPosition(double dx) {
-    final renderBox = _sliderKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        _sliderKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
     final width = renderBox.size.width;
     if (width <= 0) return;
@@ -785,12 +754,11 @@ class _AutoDismissSheetState extends State<_AutoDismissSheet> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? cs.primary
-                      : cs.surface,
+                  color: isSelected ? cs.primary : cs.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: isSelected
                       ? null

@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:m3e_core/m3e_core.dart';
-import 'package:provider/provider.dart';
-import '../../constants/app_text_styles.dart';
-import '../../services/alarm_notifier.dart';
+import '../../providers/alarm_provider.dart';
 import '../../widgets/sound_picker_sheet.dart';
 
-class SleepTimerTab extends StatefulWidget {
+class SleepTimerTab extends ConsumerStatefulWidget {
   const SleepTimerTab({super.key});
 
   @override
-  State<SleepTimerTab> createState() => _SleepTimerTabState();
+  ConsumerState<SleepTimerTab> createState() => _SleepTimerTabState();
 }
 
-class _SleepTimerTabState extends State<SleepTimerTab> {
+class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
   TimeOfDay _selectedTime = const TimeOfDay(hour: 7, minute: 0);
   List<int> _selectedDays = [4];
 
@@ -26,10 +25,12 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
   void _incrementTime(int minutes) {
     HapticFeedback.selectionClick();
     setState(() {
-      int totalMinutes = _selectedTime.hour * 60 + _selectedTime.minute + minutes;
+      int totalMinutes =
+          _selectedTime.hour * 60 + _selectedTime.minute + minutes;
       if (totalMinutes >= 1440) totalMinutes -= 1440;
       if (totalMinutes < 0) totalMinutes += 1440;
-      _selectedTime = TimeOfDay(hour: totalMinutes ~/ 60, minute: totalMinutes % 60);
+      _selectedTime =
+          TimeOfDay(hour: totalMinutes ~/ 60, minute: totalMinutes % 60);
     });
   }
 
@@ -48,22 +49,25 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
   Future<void> _saveSleepSchedule() async {
     HapticFeedback.mediumImpact();
     final cs = Theme.of(context).colorScheme;
-    final service = context.read<AlarmStateNotifier>();
 
-    await service.addAlarm(
-      hour: _selectedTime.hour,
-      minute: _selectedTime.minute,
-      sound: _selectedSound,
-      repeatDays: _selectedDays,
-      label: 'Wake-up Alarm',
-    );
+    await ref.read(alarmListProvider.notifier).addAlarm(
+          hour: _selectedTime.hour,
+          minute: _selectedTime.minute,
+          sound: _selectedSound,
+          repeatDays: _selectedDays,
+          label: 'Wake-up Alarm',
+        );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Sleep alarm scheduled for ${_selectedTime.format(context)}',
-            style: AppTextStyles.body(context).copyWith(color: Colors.white),
+            style: TextStyle(
+              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontSize: 14,
+              color: Colors.white,
+            ),
           ),
           backgroundColor: cs.primary,
           behavior: SnackBarBehavior.floating,
@@ -94,14 +98,23 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
         children: [
           Text(
             'Sleep Timer',
-            style: AppTextStyles.heading(context),
+            style: TextStyle(
+              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: cs.onSurface,
+              letterSpacing: -0.5,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             'Set a regular wake-up alarm'.toUpperCase(),
-            style: AppTextStyles.subheading(context).copyWith(
+            style: TextStyle(
+              fontFamily: 'GoogleFonts.plusJakartaSans',
               fontSize: 12,
               fontWeight: FontWeight.w700,
+              color: cs.onSurfaceVariant,
+              letterSpacing: 1.5,
             ),
           ),
           const Spacer(),
@@ -117,7 +130,8 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: cs.surfaceContainerHigh,
-                      border: Border.all(color: cs.outlineVariant, width: 1.5),
+                      border:
+                          Border.all(color: cs.outlineVariant, width: 1.5),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
@@ -133,14 +147,27 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      _selectedTime.format(context).replaceAll(RegExp(r'[a-zA-Z\s]'), ''),
-                      style: AppTextStyles.displayTime(context).copyWith(fontSize: 64),
+                      _selectedTime
+                          .format(context)
+                          .replaceAll(RegExp(r'[a-zA-Z\s]'), ''),
+                      style: TextStyle(
+                        fontFamily: 'GoogleFonts.plusJakartaSans',
+                        fontSize: 64,
+                        fontWeight: FontWeight.w200,
+                        color: cs.onSurface,
+                      ),
                     ),
                     Text(
-                      _selectedTime.format(context).replaceAll(RegExp(r'[0-9:]'), '').trim().toLowerCase(),
-                      style: AppTextStyles.displayTime(context).copyWith(
+                      _selectedTime
+                          .format(context)
+                          .replaceAll(RegExp(r'[0-9:]'), '')
+                          .trim()
+                          .toLowerCase(),
+                      style: TextStyle(
+                        fontFamily: 'GoogleFonts.plusJakartaSans',
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
+                        color: cs.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -187,12 +214,17 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isSelected ? cs.primary : cs.surfaceContainerHigh,
-                    border: isSelected ? null : Border.all(color: cs.outlineVariant, width: 1),
+                    border: isSelected
+                        ? null
+                        : Border.all(color: cs.outlineVariant, width: 1),
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     _days[index],
-                    style: AppTextStyles.buttonLabel(context).copyWith(
+                    style: TextStyle(
+                      fontFamily: 'GoogleFonts.plusJakartaSans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                       color: isSelected ? cs.onPrimary : cs.onSurface,
                     ),
                   ),
@@ -230,7 +262,8 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
               _buildSettingCard(
                 icon: Icons.music_note_outlined,
                 title: 'Sound',
-                subtitle: 'Default (${_selectedSound == 'default' ? 'miui_week_ringtone.ogg' : _selectedSound})',
+                subtitle:
+                    'Default (${_selectedSound == 'default' ? 'miui_week_ringtone.ogg' : _selectedSound})',
                 enabled: false,
                 cs: cs,
                 onTap: () {
@@ -253,7 +286,8 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                   onPressed: _resetFields,
                   size: M3EButtonSize.md,
                   decoration: M3EButtonDecoration(
-                    side: WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant)),
+                    side: WidgetStatePropertyAll(
+                        BorderSide(color: cs.outlineVariant)),
                     borderRadius: 16,
                   ),
                   child: Text(
@@ -324,7 +358,10 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                 children: [
                   Text(
                     title,
-                    style: AppTextStyles.body(context).copyWith(
+                    style: TextStyle(
+                      fontFamily: 'GoogleFonts.plusJakartaSans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                       color: enabled ? cs.onPrimary : cs.onSurface,
                     ),
                   ),
@@ -332,8 +369,12 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: AppTextStyles.alarmLabel(context).copyWith(
-                        color: enabled ? cs.onPrimary.withValues(alpha: 0.7) : cs.onSurfaceVariant,
+                      style: TextStyle(
+                        fontFamily: 'GoogleFonts.plusJakartaSans',
+                        fontSize: 12,
+                        color: enabled
+                            ? cs.onPrimary.withValues(alpha: 0.7)
+                            : cs.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -348,7 +389,9 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
                 shape: BoxShape.circle,
                 color: enabled ? cs.onPrimary : Colors.transparent,
                 border: Border.all(
-                  color: enabled ? cs.onPrimary : cs.onSurfaceVariant.withValues(alpha: 0.4),
+                  color: enabled
+                      ? cs.onPrimary
+                      : cs.onSurfaceVariant.withValues(alpha: 0.4),
                   width: 1.5,
                 ),
               ),

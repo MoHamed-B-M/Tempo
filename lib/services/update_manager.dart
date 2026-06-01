@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/hive_helper.dart';
 import 'update_service.dart';
 
 class UpdateManager {
   static const _channelKey = 'update_channel';
 
   static Future<String> getSavedChannel() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_channelKey) ?? 'stable';
+    return HiveHelper.settings.get(_channelKey) as String? ?? 'stable';
   }
 
   static Future<void> saveChannel(String channel) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_channelKey, channel);
+    await HiveHelper.settings.put(_channelKey, channel);
   }
 
   static Future<String> getCurrentVersion() async {
@@ -24,7 +22,8 @@ class UpdateManager {
   }
 
   static String stripV(String tag) {
-    final stripped = tag.startsWith(RegExp(r'[vV]')) ? tag.substring(1) : tag;
+    final stripped =
+        tag.startsWith(RegExp(r'[vV]')) ? tag.substring(1) : tag;
     return stripped.toLowerCase();
   }
 

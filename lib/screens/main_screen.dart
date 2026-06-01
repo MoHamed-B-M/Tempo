@@ -1,22 +1,21 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import '../services/theme_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'settings_page.dart';
 import 'tabs/alarms_tab.dart';
 import 'tabs/world_clock_tab.dart';
 import 'tabs/stopwatch_tab.dart';
 import 'tabs/timer_tab.dart';
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen>
+class _MainScreenState extends ConsumerState<MainScreen>
     with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   late AnimationController _slideController;
@@ -29,8 +28,6 @@ class _MainScreenState extends State<MainScreen>
     Icons.timer_outlined,
     Icons.hourglass_bottom,
   ];
-
-
 
   final List<Widget> _tabs = const [
     AlarmsTab(),
@@ -76,8 +73,6 @@ class _MainScreenState extends State<MainScreen>
     final cs = Theme.of(context).colorScheme;
     final topPad = MediaQuery.of(context).padding.top;
     final bottomInset = MediaQuery.of(context).padding.bottom;
-    final showBar = context.watch<ThemeService>().showNavLabels;
-
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
@@ -129,16 +124,7 @@ class _MainScreenState extends State<MainScreen>
             left: 20,
             right: 20,
             bottom: bottomInset + 20,
-            child: AnimatedSlide(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOutCubic,
-              offset: showBar ? Offset.zero : const Offset(0, 2),
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 250),
-                opacity: showBar ? 1.0 : 0.0,
-                child: _buildFloatingBar(cs),
-              ),
-            ),
+            child: _buildFloatingBar(cs),
           ),
         ],
       ),
@@ -166,7 +152,7 @@ class _MainScreenState extends State<MainScreen>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
         child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final itemWidth = (constraints.maxWidth) / 4;

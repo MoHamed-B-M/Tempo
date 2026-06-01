@@ -2,19 +2,18 @@ import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:m3e_core/m3e_core.dart';
-import 'package:provider/provider.dart';
-import '../../constants/app_text_styles.dart';
-import '../../services/stopwatch_state.dart';
+import '../../providers/timer_provider.dart';
 
-class StopwatchTab extends StatefulWidget {
+class StopwatchTab extends ConsumerStatefulWidget {
   const StopwatchTab({super.key});
 
   @override
-  State<StopwatchTab> createState() => _StopwatchTabState();
+  ConsumerState<StopwatchTab> createState() => _StopwatchTabState();
 }
 
-class _StopwatchTabState extends State<StopwatchTab>
+class _StopwatchTabState extends ConsumerState<StopwatchTab>
     with SingleTickerProviderStateMixin {
   Timer? _timer;
   late AnimationController _progressAnim;
@@ -43,8 +42,8 @@ class _StopwatchTabState extends State<StopwatchTab>
 
   void _toggleStopwatch() {
     HapticFeedback.mediumImpact();
-    final sw = context.read<StopwatchState>();
-    if (sw.isRunning) {
+    final sw = ref.read(stopwatchProvider.notifier);
+    if (ref.read(stopwatchProvider).isRunning) {
       _timer?.cancel();
       sw.stop();
       _progressAnim.animateTo(
@@ -55,9 +54,9 @@ class _StopwatchTabState extends State<StopwatchTab>
     } else {
       sw.start();
       _timer = Timer.periodic(const Duration(milliseconds: 10), (_) {
-        final s = context.read<StopwatchState>();
-        s.tick();
-        _progressAnim.value = (s.elapsedMs % 60000) / 60000.0;
+        ref.read(stopwatchProvider.notifier).tick();
+        _progressAnim.value =
+            (ref.read(stopwatchProvider).elapsedMs % 60000) / 60000.0;
       });
     }
   }
@@ -65,7 +64,7 @@ class _StopwatchTabState extends State<StopwatchTab>
   void _resetStopwatch() {
     HapticFeedback.mediumImpact();
     _timer?.cancel();
-    context.read<StopwatchState>().reset();
+    ref.read(stopwatchProvider.notifier).reset();
     setState(() {
       _laps = [];
     });
@@ -78,9 +77,9 @@ class _StopwatchTabState extends State<StopwatchTab>
 
   void _recordLap() {
     HapticFeedback.selectionClick();
-    final sw = context.read<StopwatchState>();
+    final elapsedMs = ref.read(stopwatchProvider).elapsedMs;
     setState(() {
-      _laps.insert(0, sw.elapsedMs);
+      _laps.insert(0, elapsedMs);
     });
   }
 
@@ -108,20 +107,37 @@ class _StopwatchTabState extends State<StopwatchTab>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: cs.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           'EDIT TASK DETAILS',
-          style: AppTextStyles.buttonLabel(context).copyWith(fontSize: 14),
+          style: TextStyle(
+            fontFamily: 'GoogleFonts.plusJakartaSans',
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: cs.onSurfaceVariant,
+            letterSpacing: 1.5,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: titleController,
-              style: AppTextStyles.body(context),
+              style: TextStyle(
+                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: cs.onSurface,
+              ),
               decoration: InputDecoration(
                 labelText: 'TASK NAME',
-                labelStyle: AppTextStyles.subheading(context),
+                labelStyle: TextStyle(
+                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurfaceVariant,
+                ),
                 enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: cs.outlineVariant),
                 ),
@@ -130,10 +146,20 @@ class _StopwatchTabState extends State<StopwatchTab>
             const SizedBox(height: 12),
             TextField(
               controller: statusController,
-              style: AppTextStyles.body(context),
+              style: TextStyle(
+                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: cs.onSurface,
+              ),
               decoration: InputDecoration(
                 labelText: 'TASK STATUS',
-                labelStyle: AppTextStyles.subheading(context),
+                labelStyle: TextStyle(
+                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurfaceVariant,
+                ),
                 enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: cs.outlineVariant),
                 ),
@@ -142,11 +168,21 @@ class _StopwatchTabState extends State<StopwatchTab>
             const SizedBox(height: 12),
             TextField(
               controller: progressController,
-              style: AppTextStyles.body(context),
+              style: TextStyle(
+                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: cs.onSurface,
+              ),
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: 'PROGRESS PERCENT (%)',
-                labelStyle: AppTextStyles.subheading(context),
+                labelStyle: TextStyle(
+                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurfaceVariant,
+                ),
                 enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: cs.outlineVariant),
                 ),
@@ -159,7 +195,10 @@ class _StopwatchTabState extends State<StopwatchTab>
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'CANCEL',
-              style: AppTextStyles.buttonLabel(context).copyWith(
+              style: TextStyle(
+                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
                 color: cs.onSurfaceVariant,
               ),
             ),
@@ -182,7 +221,10 @@ class _StopwatchTabState extends State<StopwatchTab>
             },
             child: Text(
               'SAVE',
-              style: AppTextStyles.buttonLabel(context).copyWith(
+              style: TextStyle(
+                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
                 color: cs.primary,
               ),
             ),
@@ -195,7 +237,7 @@ class _StopwatchTabState extends State<StopwatchTab>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final sw = context.watch<StopwatchState>();
+    final sw = ref.watch(stopwatchProvider);
     final elapsedMs = sw.elapsedMs;
     final isRunning = sw.isRunning;
 
@@ -206,7 +248,13 @@ class _StopwatchTabState extends State<StopwatchTab>
         children: [
           Text(
             'StopWatch',
-            style: AppTextStyles.heading(context),
+            style: TextStyle(
+              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: cs.onSurface,
+              letterSpacing: -0.5,
+            ),
           ),
           const Spacer(),
           Center(
@@ -223,14 +271,12 @@ class _StopwatchTabState extends State<StopwatchTab>
                         child: BackdropFilter(
                           filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                           child: AnimatedContainer(
-                            duration:
-                                const Duration(milliseconds: 400),
+                            duration: const Duration(milliseconds: 400),
                             curve: Curves.easeInOutCubic,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.grey.withValues(
-                                alpha: isRunning ? 0.12 : 0.03,
-                              ),
+                                  alpha: isRunning ? 0.12 : 0.03),
                             ),
                           ),
                         ),
@@ -245,18 +291,22 @@ class _StopwatchTabState extends State<StopwatchTab>
                         child: Text(
                           _formatTime(elapsedMs),
                           textAlign: TextAlign.center,
-                          style: AppTextStyles.alarmTime(context).copyWith(
+                          style: TextStyle(
+                            fontFamily: 'GoogleFonts.plusJakartaSans',
                             fontSize: 36,
                             fontWeight: FontWeight.w800,
+                            color: cs.onSurface,
                           ),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         isRunning ? 'ELAPSED' : 'STOPPED',
-                        style: AppTextStyles.subheading(context).copyWith(
+                        style: TextStyle(
+                          fontFamily: 'GoogleFonts.plusJakartaSans',
                           fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurfaceVariant,
                           letterSpacing: 1.5,
                         ),
                       ),
@@ -264,7 +314,8 @@ class _StopwatchTabState extends State<StopwatchTab>
                         const SizedBox(height: 8),
                         Text(
                           'Lap ${_formatTime(_laps.first)}',
-                          style: AppTextStyles.body(context).copyWith(
+                          style: TextStyle(
+                            fontFamily: 'GoogleFonts.plusJakartaSans',
                             fontSize: 13,
                             color: cs.primary,
                             fontWeight: FontWeight.w700,
@@ -307,18 +358,21 @@ class _StopwatchTabState extends State<StopwatchTab>
                             children: [
                               Text(
                                 'Lap ${lapIndex + 1}',
-                                style: AppTextStyles.subheading(context)
-                                    .copyWith(
+                                style: TextStyle(
+                                  fontFamily: 'GoogleFonts.plusJakartaSans',
                                   fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
+                                  color: cs.onSurfaceVariant,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 _formatTime(lapMs),
-                                style: AppTextStyles.body(context).copyWith(
+                                style: TextStyle(
+                                  fontFamily: 'GoogleFonts.plusJakartaSans',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
+                                  color: cs.onSurface,
                                 ),
                               ),
                             ],
@@ -332,22 +386,28 @@ class _StopwatchTabState extends State<StopwatchTab>
           Center(
             child: GestureDetector(
               onTap: isRunning ? null : _showEditTaskDialog,
-              behavior: isRunning ? HitTestBehavior.translucent : HitTestBehavior.opaque,
+              behavior: isRunning
+                  ? HitTestBehavior.translucent
+                  : HitTestBehavior.opaque,
               child: Column(
                 children: [
                   Text(
                     _taskTitle,
-                    style: AppTextStyles.alarmTime(context).copyWith(
+                    style: TextStyle(
+                      fontFamily: 'GoogleFonts.plusJakartaSans',
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _taskStatus,
-                    style: AppTextStyles.subheading(context).copyWith(
+                    style: TextStyle(
+                      fontFamily: 'GoogleFonts.plusJakartaSans',
                       fontSize: 13,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -356,7 +416,8 @@ class _StopwatchTabState extends State<StopwatchTab>
                     opacity: isRunning ? 0.0 : 1.0,
                     child: Text(
                       '${_customProgressPercent.round()}% work done  (Tap to edit)',
-                      style: AppTextStyles.body(context).copyWith(
+                      style: TextStyle(
+                        fontFamily: 'GoogleFonts.plusJakartaSans',
                         fontSize: 12,
                         color: cs.onSurfaceVariant,
                       ),
@@ -378,7 +439,8 @@ class _StopwatchTabState extends State<StopwatchTab>
                     isRunning ? cs.surfaceContainerHigh : cs.primary,
                   ),
                   side: isRunning
-                      ? WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant))
+                      ? WidgetStatePropertyAll(
+                          BorderSide(color: cs.outlineVariant))
                       : null,
                   borderRadius: 18,
                   fixedSize: const Size(84, 56),
@@ -411,7 +473,8 @@ class _StopwatchTabState extends State<StopwatchTab>
                     isRunning ? cs.surfaceContainerHigh : cs.primary,
                   ),
                   side: isRunning
-                      ? WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant))
+                      ? WidgetStatePropertyAll(
+                          BorderSide(color: cs.outlineVariant))
                       : null,
                   borderRadius: 18,
                   fixedSize: const Size(112, 56),

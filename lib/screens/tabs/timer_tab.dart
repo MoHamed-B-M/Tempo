@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:m3e_core/m3e_core.dart';
-import '../../constants/app_text_styles.dart';
 import '../../main.dart' show notificationsPlugin;
 import '../../widgets/orange_ring_painter.dart';
 
@@ -36,7 +35,8 @@ class _TimerTabState extends State<TimerTab> {
   }
 
   void _setDuration() {
-    final total = (_inputHours * 3600 + _inputMinutes * 60 + _inputSeconds) * 1000;
+    final total =
+        (_inputHours * 3600 + _inputMinutes * 60 + _inputSeconds) * 1000;
     if (total <= 0) return;
     setState(() {
       _remainingMs = total;
@@ -108,8 +108,7 @@ class _TimerTabState extends State<TimerTab> {
       category: AndroidNotificationCategory.alarm,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('stop', 'Stop',
-            showsUserInterface: true),
+        AndroidNotificationAction('stop', 'Stop', showsUserInterface: true),
       ],
     );
     const iosDetails = DarwinNotificationDetails(
@@ -155,10 +154,19 @@ class _TimerTabState extends State<TimerTab> {
         children: [
           Text(
             'Timer',
-            style: AppTextStyles.heading(context),
+            style: TextStyle(
+              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: cs.onSurface,
+              letterSpacing: -0.5,
+            ),
           ),
           const Spacer(),
-          if (!hasDuration) _buildInputSection(cs) else _buildTimerSection(cs),
+          if (!hasDuration)
+            _buildInputSection(cs)
+          else
+            _buildTimerSection(cs),
           const Spacer(),
         ],
       ),
@@ -172,17 +180,35 @@ class _TimerTabState extends State<TimerTab> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildTimeInput('HOUR', _inputHours, (v) => _inputHours = v.clamp(0, 99), 99, cs),
+            _buildTimeInput(
+                'HOUR', _inputHours, (v) => _inputHours = v.clamp(0, 99), 99,
+                cs),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(':', style: AppTextStyles.displayTime(context).copyWith(fontSize: 36)),
+              child: Text(':',
+                  style: TextStyle(
+                    fontFamily: 'GoogleFonts.plusJakartaSans',
+                    fontSize: 36,
+                    fontWeight: FontWeight.w200,
+                    color: cs.onSurface,
+                  )),
             ),
-            _buildTimeInput('MIN', _inputMinutes, (v) => _inputMinutes = v.clamp(0, 59), 59, cs),
+            _buildTimeInput(
+                'MIN', _inputMinutes, (v) => _inputMinutes = v.clamp(0, 59), 59,
+                cs),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(':', style: AppTextStyles.displayTime(context).copyWith(fontSize: 36)),
+              child: Text(':',
+                  style: TextStyle(
+                    fontFamily: 'GoogleFonts.plusJakartaSans',
+                    fontSize: 36,
+                    fontWeight: FontWeight.w200,
+                    color: cs.onSurface,
+                  )),
             ),
-            _buildTimeInput('SEC', _inputSeconds, (v) => _inputSeconds = v.clamp(0, 59), 59, cs),
+            _buildTimeInput(
+                'SEC', _inputSeconds, (v) => _inputSeconds = v.clamp(0, 59), 59,
+                cs),
           ],
         ),
         const SizedBox(height: 32),
@@ -208,7 +234,8 @@ class _TimerTabState extends State<TimerTab> {
     );
   }
 
-  Widget _buildTimeInput(String label, int value, ValueChanged<int> onChanged, int max, ColorScheme cs) {
+  Widget _buildTimeInput(String label, int value, ValueChanged<int> onChanged,
+      int max, ColorScheme cs) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -233,7 +260,8 @@ class _TimerTabState extends State<TimerTab> {
         ),
         const SizedBox(height: 8),
         GestureDetector(
-          onTap: () => _showNumberPicker(context, label, value, onChanged, max, cs),
+          onTap: () =>
+              _showNumberPicker(context, label, value, onChanged, max, cs),
           child: Container(
             width: 72,
             height: 56,
@@ -245,7 +273,12 @@ class _TimerTabState extends State<TimerTab> {
             ),
             child: Text(
               value.toString().padLeft(2, '0'),
-              style: AppTextStyles.alarmTime(context).copyWith(fontSize: 28, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: cs.onSurface,
+              ),
             ),
           ),
         ),
@@ -270,32 +303,60 @@ class _TimerTabState extends State<TimerTab> {
           ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: AppTextStyles.subheading(context).copyWith(fontSize: 10, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: TextStyle(
+              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurfaceVariant,
+              letterSpacing: 1.5,
+            )),
       ],
     );
   }
 
-  void _showNumberPicker(BuildContext context, String label, int current, ValueChanged<int> onChanged, int max, ColorScheme cs) {
+  void _showNumberPicker(BuildContext context, String label, int current,
+      ValueChanged<int> onChanged, int max, ColorScheme cs) {
     final controller = TextEditingController(text: current.toString());
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: cs.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(label, style: AppTextStyles.buttonLabel(context)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(label,
+            style: TextStyle(
+              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurfaceVariant,
+              letterSpacing: 1.5,
+            )),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          style: AppTextStyles.displayTime(context).copyWith(fontSize: 36),
+          style: TextStyle(
+            fontFamily: 'GoogleFonts.plusJakartaSans',
+            fontSize: 36,
+            fontWeight: FontWeight.w200,
+            color: cs.onSurface,
+          ),
           textAlign: TextAlign.center,
           decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16)),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('CANCEL', style: AppTextStyles.buttonLabel(context).copyWith(color: cs.onSurfaceVariant)),
+            child: Text('CANCEL',
+                style: TextStyle(
+                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurfaceVariant,
+                )),
           ),
           TextButton(
             onPressed: () {
@@ -304,7 +365,13 @@ class _TimerTabState extends State<TimerTab> {
               setState(() {});
               Navigator.pop(ctx);
             },
-            child: Text('SET', style: AppTextStyles.buttonLabel(context).copyWith(color: cs.primary)),
+            child: Text('SET',
+                style: TextStyle(
+                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: cs.primary,
+                )),
           ),
         ],
       ),
@@ -342,20 +409,25 @@ class _TimerTabState extends State<TimerTab> {
                   child: Text(
                     _formatTime(_remainingMs),
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.alarmTime(context).copyWith(
+                    style: TextStyle(
+                      fontFamily: 'GoogleFonts.plusJakartaSans',
                       fontSize: _initialMs >= 3600000 ? 28 : 36,
                       fontWeight: FontWeight.w800,
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _isFinished ? 'TIME\'S UP!' : (_isRunning ? 'RUNNING' : 'READY'),
-                  style: AppTextStyles.subheading(context).copyWith(
+                  _isFinished
+                      ? "TIME'S UP!"
+                      : (_isRunning ? 'RUNNING' : 'READY'),
+                  style: TextStyle(
+                    fontFamily: 'GoogleFonts.plusJakartaSans',
                     fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
+                    color: _isFinished ? Colors.green : cs.onSurfaceVariant,
                     letterSpacing: 1.5,
-                    color: _isFinished ? Colors.green : null,
                   ),
                 ),
               ],
@@ -370,7 +442,8 @@ class _TimerTabState extends State<TimerTab> {
               onPressed: _resetTimer,
               size: M3EButtonSize.md,
               decoration: M3EButtonDecoration(
-                side: WidgetStatePropertyAll(BorderSide(color: cs.outlineVariant)),
+                side: WidgetStatePropertyAll(
+                    BorderSide(color: cs.outlineVariant)),
                 borderRadius: 18,
                 fixedSize: const Size(84, 56),
               ),
@@ -380,7 +453,9 @@ class _TimerTabState extends State<TimerTab> {
             M3EFilledButton.icon(
               onPressed: _toggleTimer,
               icon: Icon(
-                _isFinished ? Icons.refresh : (_isRunning ? Icons.pause : Icons.play_arrow),
+                _isFinished
+                    ? Icons.refresh
+                    : (_isRunning ? Icons.pause : Icons.play_arrow),
                 color: cs.onPrimary,
                 size: 24,
               ),

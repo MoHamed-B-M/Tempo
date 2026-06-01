@@ -2,17 +2,16 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:provider/provider.dart';
-import 'services/alarm_notifier.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/app_theme.dart';
+import 'core/hive_helper.dart';
+import 'providers/alarm_provider.dart';
+import 'providers/theme_provider.dart';
+import 'providers/timer_provider.dart';
+import 'screens/main_screen.dart';
 import 'services/alarm_service.dart';
-import 'services/alarm_settings.dart';
 import 'services/screen_wake_handler.dart';
-import 'services/stopwatch_state.dart';
-import 'services/theme_service.dart';
 import 'services/update_manager.dart';
-import 'theme/app_theme.dart';
-import 'widgets/home_page.dart';
-import 'widgets/lock_screen.dart';
 
 final FlutterLocalNotificationsPlugin notificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -23,81 +22,53 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
+  await HiveHelper.init();
+
   final alarmService = AlarmService(notificationsPlugin);
   AlarmService.navigatorKey = navigatorKey;
   await alarmService.initialize();
 
-  final alarmNotifier = AlarmStateNotifier(alarmService);
-  await alarmNotifier.load();
-  alarmService.onStopFromNotification = alarmNotifier.disableAlarm;
-
-  final themeService = ThemeService();
-  await themeService.load();
-
-  final alarmSettings = AlarmSettings();
-  await alarmSettings.load();
-
-  runApp(TempoApp(
-    alarmService: alarmService,
-    alarmNotifier: alarmNotifier,
-    themeService: themeService,
-    alarmSettings: alarmSettings,
-  ));
+  runApp(
+    ProviderScope(
+      overrides: [
+        alarmServiceProvider.overrideWithValue(alarmService),
+      ],
+      child: const _TempoApp(),
+    ),
+  );
 }
 
-class TempoApp extends StatelessWidget {
-  final AlarmService alarmService;
-  final AlarmStateNotifier alarmNotifier;
-  final ThemeService themeService;
-  final AlarmSettings alarmSettings;
-
-  const TempoApp({
-    super.key,
-    required this.alarmService,
-    required this.alarmNotifier,
-    required this.themeService,
-    required this.alarmSettings,
-  });
+class _TempoApp extends ConsumerWidget {
+  const _TempoApp();
 
   @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider.value(value: alarmService),
-        ChangeNotifierProvider.value(value: alarmNotifier),
-        ChangeNotifierProvider.value(value: themeService),
-        ChangeNotifierProvider.value(value: alarmSettings),
-        ChangeNotifierProvider(create: (_) => StopwatchState()),
-      ],
-      child: DynamicColorBuilder(
-        builder: (lightDynamic, darkDynamic) {
-          return Consumer<ThemeService>(
-            builder: (context, themeService, _) {
-              return MaterialApp(
-                title: 'Tempo',
-                debugShowCheckedModeBanner: false,
-                navigatorKey: navigatorKey,
-                themeMode: themeService.mode,
-                theme: AppTheme.light(dynamicColor: lightDynamic),
-                darkTheme: AppTheme.dark(dynamicColor: darkDynamic),
-                home: const _AppShell(),
-              );
-            },
-          );
-        },
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    return DynamicColorBuilder(
+      builder: (lightDynamic, darkDynamic) {
+        return MaterialApp(
+          title: 'Tempo',
+          debugShowCheckedModeBanner: false,
+          navigatorKey: navigatorKey,
+          themeMode: themeMode,
+          theme: AppTheme.light(dynamicColor: lightDynamic),
+          darkTheme: AppTheme.dark(dynamicColor: darkDynamic),
+          home: const _AppShell(),
+        );
+      },
     );
   }
 }
 
-class _AppShell extends StatefulWidget {
+class _AppShell extends ConsumerStatefulWidget {
   const _AppShell();
 
   @override
-  State<_AppShell> createState() => _AppShellState();
+  ConsumerState<_AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
+class _AppShellState extends ConsumerState<_AppShell>
+    with WidgetsBindingObserver {
   bool _showingStopwatchLock = false;
 
   @override
@@ -105,6 +76,7 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(alarmServiceProvider).processPendingAlarm();
       UpdateManager.checkAndShowUpdate(context, silent: true);
     });
   }
@@ -123,55 +95,80 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
   }
 
   Future<void> _onResume() async {
-    final alarmNotifier = context.read<AlarmStateNotifier>();
-    await alarmNotifier.scheduleAll();
+    final alarmNotifier = ref.read(alarmListProvider.notifier);
+    final alarmService = ref.read(alarmServiceProvider);
 
-    final stoppedIds = await context.read<AlarmService>().fetchAndClearStoppedAlarms();
+    alarmNotifier.sortAndUpdate();
+
+    final stoppedIds = await alarmService.fetchAndClearStoppedAlarms();
     for (final id in stoppedIds) {
       alarmNotifier.disableAlarm(id);
     }
 
-    alarmNotifier.checkMissedAlarms();
+    alarmService.checkMissedAlarms(ref.read(alarmListProvider));
 
-    final sw = context.read<StopwatchState>();
-    if (sw.isRunning && !_showingStopwatchLock) {
+    final swState = ref.read(stopwatchProvider);
+    if (swState.isRunning && !_showingStopwatchLock) {
       _showStopwatchLockScreen();
     }
   }
 
   void _showStopwatchLockScreen() {
     _showingStopwatchLock = true;
-    final sw = context.read<StopwatchState>();
     final navigator = Navigator.of(context);
-    final timeNotifier = ValueNotifier<String>(
-      _formatStopwatchTime(sw.elapsedMs),
-    );
-
-    sw.addListener(() {
-      timeNotifier.value = _formatStopwatchTime(sw.elapsedMs);
-    });
 
     ScreenWakeHandler.enable();
     navigator.push(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => LockScreen(
-          mode: LockScreenMode.stopwatch,
-          title: 'Stopwatch',
-          timeDisplay: _formatStopwatchTime(sw.elapsedMs),
-          liveTime: timeNotifier,
-          showSnooze: false,
-          onStop: () {
-            _showingStopwatchLock = false;
-            sw.stop();
-            ScreenWakeHandler.disable();
-            navigator.pop();
-          },
-        ),
+        builder: (_) => const _StopwatchLockProxy(),
       ),
     ).then((_) {
       _showingStopwatchLock = false;
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const MainScreen();
+  }
+}
+
+class _StopwatchLockProxy extends ConsumerWidget {
+  const _StopwatchLockProxy();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sw = ref.watch(stopwatchProvider);
+    final cs = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: cs.surface,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _formatStopwatchTime(sw.elapsedMs),
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.w200,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(stopwatchProvider.notifier).stop();
+                ScreenWakeHandler.disable();
+                Navigator.of(context).pop();
+              },
+              child: const Text('STOP'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   static String _formatStopwatchTime(int ms) {
@@ -184,10 +181,5 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
       return '${hours}h ${mins.toString().padLeft(2, '0')}m';
     }
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}.${hundredths.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const HomePage();
   }
 }

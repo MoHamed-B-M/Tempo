@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_text_styles.dart';
 
 class SoundPickerSheet extends StatelessWidget {
   final String selectedSound;
@@ -26,9 +24,10 @@ class SoundPickerSheet extends StatelessWidget {
     required String selectedSound,
     required ValueChanged<String> onSoundSelected,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceCardOf(context),
+      backgroundColor: cs.surfaceContainerHigh,
       builder: (_) => SoundPickerSheet(
         selectedSound: selectedSound,
         onSoundSelected: onSoundSelected,
@@ -38,6 +37,8 @@ class SoundPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
       child: Column(
@@ -49,7 +50,7 @@ class SoundPickerSheet extends StatelessWidget {
               width: 32,
               height: 3,
               decoration: BoxDecoration(
-                color: AppColors.dimWhiteOf(context),
+                color: cs.onSurfaceVariant.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -57,7 +58,13 @@ class SoundPickerSheet extends StatelessWidget {
           const SizedBox(height: 20),
           Text(
             'ALARM SOUND',
-            style: AppTextStyles.buttonLabel(context),
+            style: TextStyle(
+              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurfaceVariant,
+              letterSpacing: 1.5,
+            ),
           ),
           const SizedBox(height: 16),
           ...sounds.map(
@@ -65,6 +72,7 @@ class SoundPickerSheet extends StatelessWidget {
               id: sound.$1,
               label: sound.$2,
               isSelected: selectedSound == sound.$1,
+              cs: cs,
               onTap: () {
                 onSoundSelected(sound.$1);
                 Navigator.pop(context);
@@ -81,18 +89,21 @@ class _SoundTile extends StatelessWidget {
   final String id;
   final String label;
   final bool isSelected;
+  final ColorScheme cs;
   final VoidCallback onTap;
 
   const _SoundTile({
     required this.id,
     required this.label,
     required this.isSelected,
+    required this.cs,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final icon = isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked;
+    final icon =
+        isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked;
 
     return InkWell(
       onTap: onTap,
@@ -104,17 +115,16 @@ class _SoundTile extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: isSelected
-                  ? AppColors.primaryTextOf(context)
-                  : AppColors.secondaryTextOf(context),
+              color: isSelected ? cs.primary : cs.onSurfaceVariant,
             ),
             const SizedBox(width: 16),
             Text(
               label.toUpperCase(),
-              style: AppTextStyles.body(context).copyWith(
-                color: isSelected
-                    ? AppColors.primaryTextOf(context)
-                    : AppColors.secondaryTextOf(context),
+              style: TextStyle(
+                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: isSelected ? cs.primary : cs.onSurfaceVariant,
               ),
             ),
           ],

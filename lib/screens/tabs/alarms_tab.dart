@@ -1,21 +1,21 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:m3e_core/m3e_core.dart';
-import 'package:provider/provider.dart';
 import '../../models/alarm_model.dart';
-import '../../services/alarm_notifier.dart';
+import '../../providers/alarm_provider.dart';
 import '../../widgets/time_picker_wheel.dart';
 
-class AlarmsTab extends StatefulWidget {
+class AlarmsTab extends ConsumerStatefulWidget {
   const AlarmsTab({super.key});
 
   @override
-  State<AlarmsTab> createState() => _AlarmsTabState();
+  ConsumerState<AlarmsTab> createState() => _AlarmsTabState();
 }
 
-class _AlarmsTabState extends State<AlarmsTab> {
+class _AlarmsTabState extends ConsumerState<AlarmsTab> {
   final Set<String> _expandedIds = {};
 
   bool _isExpanded(int index, List<AlarmModel> alarms) {
@@ -101,9 +101,10 @@ class _AlarmsTabState extends State<AlarmsTab> {
                     child: M3EFilledButton(
                       onPressed: () {
                         HapticFeedback.mediumImpact();
-                        context
-                            .read<AlarmStateNotifier>()
-                            .addAlarm(hour: hour, minute: minute);
+                        ref.read(alarmListProvider.notifier).addAlarm(
+                              hour: hour,
+                              minute: minute,
+                            );
                         Navigator.pop(ctx);
                       },
                       size: M3EButtonSize.md,
@@ -129,9 +130,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
     AlarmModel? best;
     for (final a in active) {
       final alarmMin = a.hour * 60 + a.minute;
-      final diff = alarmMin > cur
-          ? alarmMin - cur
-          : alarmMin - cur + 1440;
+      final diff = alarmMin > cur ? alarmMin - cur : alarmMin - cur + 1440;
       if (diff < bestMin) {
         bestMin = diff;
         best = a;
@@ -148,8 +147,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final notifier = context.watch<AlarmStateNotifier>();
-    final alarms = notifier.alarms;
+    final alarms = ref.watch(alarmListProvider);
     final cs = Theme.of(context).colorScheme;
 
     return Stack(
@@ -202,9 +200,9 @@ class _AlarmsTabState extends State<AlarmsTab> {
               SliverM3EDismissibleCardList(
                 itemCount: alarms.length,
                 itemBuilder: (context, index) =>
-                    _buildAlarmCard(alarms, index, cs, notifier),
+                    _buildAlarmCard(alarms, index, cs),
                 onDismiss: (index, direction) async {
-                  notifier.removeAlarm(alarms[index].id);
+                  ref.read(alarmListProvider.notifier).removeAlarm(alarms[index].id);
                   return true;
                 },
                 style: M3EDismissibleCardStyle(
@@ -215,17 +213,22 @@ class _AlarmsTabState extends State<AlarmsTab> {
                   border: BorderSide(
                     color: cs.outlineVariant.withValues(alpha: 0.5),
                   ),
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   padding: EdgeInsets.zero,
                   neighbourPull: 8,
                   neighbourReach: 3,
-                  neighbourMotion: const M3EMotion.custom(stiffness: 800, damping: 0.7),
-                  snapBackMotion: const M3EMotion.custom(stiffness: 380, damping: 0.6),
-                  flyMotion: const M3EMotion.custom(stiffness: 400, damping: 0.8),
+                  neighbourMotion:
+                      const M3EMotion.custom(stiffness: 800, damping: 0.7),
+                  snapBackMotion:
+                      const M3EMotion.custom(stiffness: 380, damping: 0.6),
+                  flyMotion:
+                      const M3EMotion.custom(stiffness: 400, damping: 0.8),
                   background: Container(
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 24),
-                    child: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 26),
+                    child: const Icon(Icons.delete_outline_rounded,
+                        color: Colors.red, size: 26),
                   ),
                   backgroundBorderRadius: 20,
                 ),
@@ -298,8 +301,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
     );
   }
 
-  Widget _buildAlarmCard(
-      List<AlarmModel> alarms, int index, ColorScheme cs, AlarmStateNotifier notifier) {
+  Widget _buildAlarmCard(List<AlarmModel> alarms, int index, ColorScheme cs) {
     final alarm = alarms[index];
     final timeStr =
         '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}';
@@ -318,7 +320,8 @@ class _AlarmsTabState extends State<AlarmsTab> {
     }
 
     final enabled = alarm.enabled;
-    final textColor = enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.4);
+    final textColor =
+        enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.4);
     final subtitleColor = enabled
         ? cs.onSurfaceVariant
         : cs.onSurfaceVariant.withValues(alpha: 0.4);
@@ -388,7 +391,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
                 value: enabled,
                 onChanged: (val) {
                   HapticFeedback.mediumImpact();
-                  notifier.toggleAlarm(alarm.id);
+                  ref.read(alarmListProvider.notifier).toggleAlarm(alarm.id);
                 },
               ),
             ],
@@ -396,22 +399,29 @@ class _AlarmsTabState extends State<AlarmsTab> {
         );
       },
       bodyBuilder: (context, idx, progress) {
-        return AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOutCubic,
-          alignment: Alignment.topCenter,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Divider(height: 1, indent: 20, endIndent: 20),
-              _ExpandedAlarmPanel(
-                alarm: alarm,
-                notifier: notifier,
-                cs: cs,
-                onDelete: () => notifier.removeAlarm(alarm.id),
-              ),
-            ],
+        return ClipRect(
+          child: Align(
+            heightFactor: progress,
+            alignment: Alignment.topCenter,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Divider(height: 1, indent: 20, endIndent: 20),
+                _ExpandedAlarmPanel(
+                  alarm: alarm,
+                  cs: cs,
+                  onDelete: () =>
+                      ref.read(alarmListProvider.notifier).removeAlarm(alarm.id),
+                  onUpdateLabel: (label) =>
+                      ref.read(alarmListProvider.notifier).updateAlarmLabel(alarm.id, label),
+                  onUpdateRepeatDays: (days) =>
+                      ref.read(alarmListProvider.notifier).updateAlarmRepeatDays(alarm.id, days),
+                  onUpdateSound: (sound) =>
+                      ref.read(alarmListProvider.notifier).updateAlarmSound(alarm.id, sound),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -421,15 +431,19 @@ class _AlarmsTabState extends State<AlarmsTab> {
 
 class _ExpandedAlarmPanel extends StatefulWidget {
   final AlarmModel alarm;
-  final AlarmStateNotifier notifier;
   final ColorScheme cs;
   final VoidCallback onDelete;
+  final ValueChanged<String> onUpdateLabel;
+  final ValueChanged<List<int>> onUpdateRepeatDays;
+  final ValueChanged<String> onUpdateSound;
 
   const _ExpandedAlarmPanel({
     required this.alarm,
-    required this.notifier,
     required this.cs,
     required this.onDelete,
+    required this.onUpdateLabel,
+    required this.onUpdateRepeatDays,
+    required this.onUpdateSound,
   });
 
   @override
@@ -461,8 +475,10 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
     _sound = widget.alarm.sound;
     _soundController = M3EDropdownController<String>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final match = _sounds.firstWhere((s) => s.$1 == _sound, orElse: () => _sounds.first);
-      _soundController.toggleOnly(M3EDropdownItem<String>(label: match.$2, value: match.$1));
+      final match = _sounds.firstWhere((s) => s.$1 == _sound,
+          orElse: () => _sounds.first);
+      _soundController.toggleOnly(
+          M3EDropdownItem<String>(label: match.$2, value: match.$1));
     });
   }
 
@@ -477,17 +493,17 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
     _label = val;
     _labelDebounce?.cancel();
     _labelDebounce = Timer(const Duration(milliseconds: 400), () {
-      widget.notifier.updateAlarmLabel(widget.alarm.id, _label);
+      widget.onUpdateLabel(_label);
     });
   }
 
   void _saveRepeatDays() {
-    widget.notifier.updateAlarmRepeatDays(widget.alarm.id, _repeatDays);
+    widget.onUpdateRepeatDays(_repeatDays);
   }
 
   void _saveSound(String value) {
     _sound = value;
-    widget.notifier.updateAlarmSound(widget.alarm.id, value);
+    widget.onUpdateSound(value);
   }
 
   @override
@@ -516,8 +532,8 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
                 fontWeight: FontWeight.w500,
                 color: cs.onSurfaceVariant,
               ),
-              prefixIcon:
-                  Icon(Icons.label_outline, color: cs.onSurfaceVariant, size: 20),
+              prefixIcon: Icon(Icons.label_outline,
+                  color: cs.onSurfaceVariant, size: 20),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: cs.outlineVariant),
@@ -535,7 +551,6 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
             ),
           ),
           const SizedBox(height: 20),
-
           Text(
             'REPEAT',
             style: GoogleFonts.plusJakartaSans(
@@ -572,9 +587,8 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: selected ? cs.primary : cs.surfaceContainerHigh,
-                    border: selected
-                        ? null
-                        : Border.all(color: cs.outlineVariant),
+                    border:
+                        selected ? null : Border.all(color: cs.outlineVariant),
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -590,7 +604,6 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
             }),
           ),
           const SizedBox(height: 20),
-
           M3EDropdownMenu<String>(
             controller: _soundController,
             singleSelect: true,
@@ -623,7 +636,6 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
             haptic: M3EHapticFeedback.light,
           ),
           const SizedBox(height: 20),
-
           SizedBox(
             width: double.infinity,
             child: M3EOutlinedButton.icon(
@@ -631,7 +643,8 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
                 HapticFeedback.mediumImpact();
                 widget.onDelete();
               },
-              icon: Icon(Icons.delete_outline_rounded, color: cs.error, size: 20),
+              icon:
+                  Icon(Icons.delete_outline_rounded, color: cs.error, size: 20),
               label: Text(
                 'Delete alarm',
                 style: GoogleFonts.plusJakartaSans(
@@ -642,7 +655,8 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
               ),
               size: M3EButtonSize.md,
               decoration: M3EButtonDecoration(
-                side: WidgetStatePropertyAll(BorderSide(color: cs.error.withValues(alpha: 0.3))),
+                side: WidgetStatePropertyAll(
+                    BorderSide(color: cs.error.withValues(alpha: 0.3))),
               ),
             ),
           ),

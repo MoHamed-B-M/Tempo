@@ -2,60 +2,69 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:m3e_core/m3e_core.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
+import '../../core/hive_helper.dart';
 
-class WorldClockTab extends StatefulWidget {
+final worldClockProvider =
+    NotifierProvider<WorldClockNotifier, List<String>>(
+  WorldClockNotifier.new,
+);
+
+class WorldClockNotifier extends Notifier<List<String>> {
+  @override
+  List<String> build() {
+    final data = HiveHelper.worldClock.get('favorites') as String?;
+    if (data != null) {
+      return (jsonDecode(data) as List).cast<String>();
+    }
+    return ['America/New_York', 'Europe/London', 'Asia/Tokyo'];
+  }
+
+  Future<void> save() async {
+    await HiveHelper.worldClock.put('favorites', jsonEncode(state));
+  }
+
+  Future<void> add(String tzId) async {
+    state = [...state, tzId];
+    await save();
+  }
+
+  Future<void> removeAt(int index) async {
+    state = [...state.take(index), ...state.skip(index + 1)];
+    await save();
+  }
+}
+
+class WorldClockTab extends ConsumerStatefulWidget {
   const WorldClockTab({super.key});
 
   @override
-  State<WorldClockTab> createState() => _WorldClockTabState();
+  ConsumerState<WorldClockTab> createState() => _WorldClockTabState();
 }
 
-class _WorldClockTabState extends State<WorldClockTab> {
+class _WorldClockTabState extends ConsumerState<WorldClockTab> {
   late Timer _timer;
   late DateTime _currentTime;
-  List<String> _favoriteTimezones = [];
-  static const _prefsKey = 'favorite_timezones';
 
   @override
   void initState() {
     super.initState();
     tz_data.initializeTimeZones();
     _currentTime = DateTime.now();
-    _loadFavorites().then((_) {
-      if (mounted) setState(() {});
-    });
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _currentTime = DateTime.now());
     });
-    if (_favoriteTimezones.isEmpty) {
-      _favoriteTimezones = ['America/New_York', 'Europe/London', 'Asia/Tokyo'];
-      _saveFavorites();
-    }
   }
 
   @override
   void dispose() {
     _timer.cancel();
     super.dispose();
-  }
-
-  Future<void> _loadFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_prefsKey);
-    if (data != null) {
-      _favoriteTimezones = (jsonDecode(data) as List).cast<String>();
-    }
-  }
-
-  Future<void> _saveFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefsKey, jsonEncode(_favoriteTimezones));
   }
 
   String _formatTimeInZone(String tzId) {
@@ -113,8 +122,13 @@ class _WorldClockTabState extends State<WorldClockTab> {
   void _showAddCitySheet() {
     HapticFeedback.mediumImpact();
     final cs = Theme.of(context).colorScheme;
+    final favorites = ref.read(worldClockProvider);
     final allTimezones = tz.timeZoneDatabase.locations.keys
-        .where((id) => !id.startsWith('Etc/') && !id.startsWith('SystemV/') && !id.startsWith('US/') && !id.contains('/'))
+        .where((id) =>
+            !id.startsWith('Etc/') &&
+            !id.startsWith('SystemV/') &&
+            !id.startsWith('US/') &&
+            !id.contains('/'))
         .toList()
       ..sort();
 
@@ -130,7 +144,7 @@ class _WorldClockTabState extends State<WorldClockTab> {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
             final filtered = allTimezones.where((id) {
-              if (_favoriteTimezones.contains(id)) return false;
+              if (favorites.contains(id)) return false;
               if (query.isEmpty) return true;
               final lower = query.toLowerCase();
               return id.toLowerCase().contains(lower) ||
@@ -183,7 +197,8 @@ class _WorldClockTabState extends State<WorldClockTab> {
                       ),
                       filled: true,
                       fillColor: cs.surfaceContainerHigh,
-                      prefixIcon: Icon(Icons.search, color: cs.onSurfaceVariant),
+                      prefixIcon:
+                          Icon(Icons.search, color: cs.onSurfaceVariant),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 16,
@@ -242,10 +257,9 @@ class _WorldClockTabState extends State<WorldClockTab> {
                                   ),
                                 ),
                                 onTap: () {
-                                  setState(() {
-                                    _favoriteTimezones.add(tzId);
-                                    _saveFavorites();
-                                  });
+                                  ref
+                                      .read(worldClockProvider.notifier)
+                                      .add(tzId);
                                   Navigator.pop(ctx);
                                 },
                               );
@@ -264,6 +278,7 @@ class _WorldClockTabState extends State<WorldClockTab> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final favorites = ref.watch(worldClockProvider);
 
     return Stack(
       children: [
@@ -314,7 +329,9 @@ class _WorldClockTabState extends State<WorldClockTab> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        DateFormat('EEEE, d MMM').format(_currentTime).toUpperCase(),
+                        DateFormat('EEEE, d MMM')
+                            .format(_currentTime)
+                            .toUpperCase(),
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -340,10 +357,10 @@ class _WorldClockTabState extends State<WorldClockTab> {
               Expanded(
                 child: ListView.builder(
                   physics: const BouncingScrollPhysics(),
-                  itemCount: _favoriteTimezones.length,
+                  itemCount: favorites.length,
                   padding: const EdgeInsets.only(bottom: 100),
                   itemBuilder: (ctx, index) {
-                    final tzId = _favoriteTimezones[index];
+                    final tzId = favorites[index];
                     final name = _cityName(tzId);
                     final timeStr = _formatTimeInZone(tzId);
                     final amPmStr = _formatAmPmInZone(tzId);
@@ -367,10 +384,7 @@ class _WorldClockTabState extends State<WorldClockTab> {
                         ),
                       ),
                       onDismissed: (_) {
-                        setState(() {
-                          _favoriteTimezones.removeAt(index);
-                          _saveFavorites();
-                        });
+                        ref.read(worldClockProvider.notifier).removeAt(index);
                       },
                       child: RepaintBoundary(
                         child: Padding(
@@ -384,7 +398,8 @@ class _WorldClockTabState extends State<WorldClockTab> {
                               color: cs.surfaceContainerHigh,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: cs.outlineVariant.withValues(alpha: 0.5),
+                                color:
+                                    cs.outlineVariant.withValues(alpha: 0.5),
                                 width: 1,
                               ),
                             ),
@@ -416,7 +431,8 @@ class _WorldClockTabState extends State<WorldClockTab> {
                                   ),
                                 ),
                                 Row(
-                                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.baseline,
                                   textBaseline: TextBaseline.alphabetic,
                                   children: [
                                     Text(
