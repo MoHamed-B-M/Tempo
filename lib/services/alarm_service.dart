@@ -379,6 +379,21 @@ class AlarmService {
       await plugin.requestExactAlarmsPermission();
     }
   }
+
+  Future<void> launchAlarmFullScreen() async {
+    await ScreenWakeHandler.launchAlarmActivity();
+  }
+
+  Future<bool> ensureAlarmPermissions() async {
+    try {
+      await requestExactAlarmPermission();
+      await ScreenWakeHandler.requestFullScreenIntentPermission();
+      await ScreenWakeHandler.requestExactAlarmPermission();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 @pragma('vm:entry-point')

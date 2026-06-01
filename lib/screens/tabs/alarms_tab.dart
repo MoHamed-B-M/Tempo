@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -434,10 +435,8 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
   late String _label;
   late List<int> _repeatDays;
   late String _sound;
-  bool _labelChanged = false;
-  bool _repeatChanged = false;
-  bool _soundChanged = false;
   late final M3EDropdownController<String> _soundController;
+  Timer? _labelDebounce;
 
   static const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const _sounds = [
@@ -464,21 +463,26 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
 
   @override
   void dispose() {
+    _labelDebounce?.cancel();
     _soundController.dispose();
-    _commitChanges();
     super.dispose();
   }
 
-  void _commitChanges() {
-    if (_labelChanged) {
+  void _saveLabel(String val) {
+    _label = val;
+    _labelDebounce?.cancel();
+    _labelDebounce = Timer(const Duration(milliseconds: 400), () {
       widget.notifier.updateAlarmLabel(widget.alarm.id, _label);
-    }
-    if (_repeatChanged) {
-      widget.notifier.updateAlarmRepeatDays(widget.alarm.id, _repeatDays);
-    }
-    if (_soundChanged) {
-      widget.notifier.updateAlarmSound(widget.alarm.id, _sound);
-    }
+    });
+  }
+
+  void _saveRepeatDays() {
+    widget.notifier.updateAlarmRepeatDays(widget.alarm.id, _repeatDays);
+  }
+
+  void _saveSound(String value) {
+    _sound = value;
+    widget.notifier.updateAlarmSound(widget.alarm.id, value);
   }
 
   @override
@@ -494,10 +498,7 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
           TextField(
             controller: TextEditingController(text: _label)
               ..selection = TextSelection.collapsed(offset: _label.length),
-            onChanged: (val) {
-              _label = val;
-              _labelChanged = true;
-            },
+            onChanged: _saveLabel,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -555,8 +556,8 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
                     } else {
                       _repeatDays.add(dayNum);
                     }
-                    _repeatChanged = true;
                   });
+                  _saveRepeatDays();
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
@@ -595,8 +596,8 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
               if (items.isNotEmpty && items.first.value != _sound) {
                 setState(() {
                   _sound = items.first.value;
-                  _soundChanged = true;
                 });
+                _saveSound(_sound);
               }
             },
             fieldStyle: M3EDropdownFieldStyle(
@@ -623,7 +624,6 @@ class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
             child: M3EOutlinedButton.icon(
               onPressed: () {
                 HapticFeedback.mediumImpact();
-                _commitChanges();
                 widget.onDelete();
               },
               icon: Icon(Icons.delete_outline_rounded, color: cs.error, size: 20),

@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.20] - 2026-06-01
+- Fixed full-screen intent: added dedicated `AlarmActivity` with `showWhenLocked`/`turnScreenOn` flags in AndroidManifest, updated `MainActivity.kt` with `onNewIntent` override and method channels for alarm activity launch and permission management
+- Added foreground service permissions (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`) to AndroidManifest for reliable alarm triggering
+- Removed problematic `taskAffinity=""` and `singleInstance` launch mode from MainActivity — full-screen intents now correctly launch the alarm screen from any app state
+- Added `ScreenWakeHandler.launchAlarmActivity()`, `requestFullScreenIntentPermission()`, and `requestExactAlarmPermission()` method channels
+- Added `AlarmService.ensureAlarmPermissions()` to request exact alarm and full-screen intent permissions on Android 14+
+- Rewrote lock screen UI: replaced blurry gradient background with solid dark `M3EContainer.gem` card — crisp, high-contrast industrial M3E design with sharp time display, `M3EFilledButton` (red expressive dismiss), `M3EOutlinedButton` (snooze), subtle border and shadow
+- Refactored alarm expandable panel for instant persistence: label changes save after 400ms debounce, repeat day toggles and sound selection commit immediately via `AlarmStateNotifier` — no more commit-on-dispose pattern
+- Fixed OTA update checker with 3-attempt retry mechanism and exponential backoff; added explicit error logging via `debugPrint`; download button now prefers direct APK asset URL before falling back to release page
+- Replaced all `AppColors`/`AppTextStyles` references in `update_manager.dart` with `Theme.of(context).colorScheme`
+- Cleaned up unused fields in lock screen (`_slideOffset`, thresholds) and unused import in `update_manager.dart`
+- Verified with `flutter analyze` — 0 errors, 0 warnings
+
 ## [1.0.19] - 2026-06-01
 - Added `dynamic_color: ^1.8.0` dependency — Material You dynamic color theming with wallpaper-derived light/dark color schemes
 - Added `state_notifier: ^1.0.0` dependency for state-layer alarm architecture (used as ChangeNotifier pattern for Provider compatibility)

@@ -14,4 +14,28 @@ class ScreenWakeHandler {
       await _channel.invokeMethod('disable');
     } catch (_) {}
   }
+
+  static Future<void> launchAlarmActivity() async {
+    try {
+      await _channel.invokeMethod('launchAlarmActivity');
+    } catch (_) {}
+  }
+
+  static Future<bool> requestFullScreenIntentPermission() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('requestFullScreenIntentPermission');
+      return result ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  static Future<bool> requestExactAlarmPermission() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('requestExactAlarmPermission');
+      return result ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
 }

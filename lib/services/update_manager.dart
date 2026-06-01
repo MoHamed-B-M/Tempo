@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_text_styles.dart';
 import 'update_service.dart';
 
 class UpdateManager {
@@ -107,24 +106,33 @@ class UpdateManager {
   }
 
   static void _showSnackBar(BuildContext context, String message) {
+    final cs = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.surfaceCardOf(context),
+        content: Text(
+          message,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        backgroundColor: cs.surfaceContainerHigh,
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   static void _showUpdateSheet(BuildContext context, ReleaseInfo release) {
+    final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.backgroundOf(context),
+      backgroundColor: cs.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (ctx) {
+        final sheetCs = Theme.of(ctx).colorScheme;
         return Padding(
           padding: EdgeInsets.fromLTRB(
             24,
@@ -141,8 +149,7 @@ class UpdateManager {
                   width: 48,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.secondaryTextOf(ctx)
-                        .withValues(alpha: 0.3),
+                    color: sheetCs.onSurfaceVariant.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -154,13 +161,12 @@ class UpdateManager {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.accentOf(ctx)
-                          .withValues(alpha: 0.15),
+                      color: sheetCs.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       Icons.system_update_alt_rounded,
-                      color: AppColors.accentOf(ctx),
+                      color: sheetCs.primary,
                       size: 24,
                     ),
                   ),
@@ -170,16 +176,20 @@ class UpdateManager {
                     children: [
                       Text(
                         'UPDATE AVAILABLE',
-                        style: AppTextStyles.buttonLabel(ctx).copyWith(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: sheetCs.onSurface,
+                          letterSpacing: 0.5,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Version ${release.version}',
-                        style: AppTextStyles.body(ctx).copyWith(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
-                          color: AppColors.secondaryTextOf(ctx),
+                          fontWeight: FontWeight.w500,
+                          color: sheetCs.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -192,13 +202,15 @@ class UpdateManager {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceCardOf(ctx),
+                    color: sheetCs.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     release.body,
-                    style: AppTextStyles.body(ctx).copyWith(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      color: sheetCs.onSurface,
                       height: 1.5,
                     ),
                     maxLines: 8,
@@ -213,11 +225,11 @@ class UpdateManager {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(ctx);
-                    _launchReleaseUrl(release.url);
+                    _launchDownload(release);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accentOf(ctx),
-                    foregroundColor: Colors.white,
+                    backgroundColor: sheetCs.primary,
+                    foregroundColor: sheetCs.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -225,9 +237,11 @@ class UpdateManager {
                   ),
                   child: Text(
                     'DOWNLOAD',
-                    style: AppTextStyles.buttonLabel(ctx).copyWith(
-                      color: Colors.white,
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: sheetCs.onPrimary,
+                      letterSpacing: 1,
                     ),
                   ),
                 ),
@@ -240,9 +254,11 @@ class UpdateManager {
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
                     'NOT NOW',
-                    style: AppTextStyles.buttonLabel(ctx).copyWith(
-                      color: AppColors.secondaryTextOf(ctx),
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: sheetCs.onSurfaceVariant,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
@@ -254,7 +270,8 @@ class UpdateManager {
     );
   }
 
-  static Future<void> _launchReleaseUrl(String url) async {
+  static Future<void> _launchDownload(ReleaseInfo release) async {
+    final url = release.apkDownloadUrl ?? release.url;
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
