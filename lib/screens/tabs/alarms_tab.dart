@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:m3e_core/m3e_core.dart';
 import 'package:provider/provider.dart';
 import '../../models/alarm_model.dart';
-import '../../services/alarm_service.dart';
+import '../../services/alarm_notifier.dart';
 import '../../widgets/sound_picker_sheet.dart';
 import '../../widgets/time_picker_wheel.dart';
 
@@ -15,83 +16,27 @@ class AlarmsTab extends StatefulWidget {
 }
 
 class _AlarmsTabState extends State<AlarmsTab> {
-  TimeOfDay _selectedTime = TimeOfDay.now();
-  String _selectedSound = 'default';
-  List<int> _selectedRepeatDays = [];
-  String _selectedLabel = '';
-  String? _editingAlarmId;
+  final Set<String> _expandedIds = {};
 
-  void _editAlarm(AlarmModel alarm) {
-    setState(() {
-      _editingAlarmId = alarm.id;
-      _selectedTime = TimeOfDay(hour: alarm.hour, minute: alarm.minute);
-      _selectedSound = alarm.sound;
-      _selectedRepeatDays = List.from(alarm.repeatDays);
-      _selectedLabel = alarm.label;
-    });
-    _showAlarmEditorSheet(context);
+  bool _isExpanded(int index, List<AlarmModel> alarms) {
+    if (index >= alarms.length) return false;
+    return _expandedIds.contains(alarms[index].id);
   }
 
-  void _createNewAlarm() {
-    final now = TimeOfDay.now();
-    setState(() {
-      _editingAlarmId = null;
-      _selectedTime = TimeOfDay(
-        hour: now.hour,
-        minute: now.minute + 1 >= 60 ? 0 : now.minute + 1,
-      );
-      _selectedSound = 'default';
-      _selectedRepeatDays = [];
-      _selectedLabel = '';
-    });
-    _showAlarmEditorSheet(context);
-  }
-
-  Future<void> _saveAlarm(BuildContext sheetContext) async {
+  void _toggleExpand(int index, List<AlarmModel> alarms) {
     HapticFeedback.mediumImpact();
-    final service = context.read<AlarmService>();
-    try {
-      if (_editingAlarmId != null) {
-        await service.updateAlarm(
-          id: _editingAlarmId!,
-          hour: _selectedTime.hour,
-          minute: _selectedTime.minute,
-          sound: _selectedSound,
-          repeatDays: _selectedRepeatDays,
-          label: _selectedLabel,
-        );
+    final id = alarms[index].id;
+    setState(() {
+      if (_expandedIds.contains(id)) {
+        _expandedIds.remove(id);
       } else {
-        await service.addAlarm(
-          hour: _selectedTime.hour,
-          minute: _selectedTime.minute,
-          sound: _selectedSound,
-          repeatDays: _selectedRepeatDays,
-          label: _selectedLabel,
-        );
+        _expandedIds.clear();
+        _expandedIds.add(id);
       }
-      if (!mounted) return;
-      if (sheetContext.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _editingAlarmId != null ? 'Alarm updated' : 'Alarm created',
-            ),
-          ),
-        );
-        Navigator.pop(sheetContext);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Failed to save alarm'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
+    });
   }
 
-  void _showAlarmEditorSheet(BuildContext context) {
+  void _showCreateSheet() {
     final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
@@ -102,9 +47,11 @@ class _AlarmsTabState extends State<AlarmsTab> {
       ),
       builder: (ctx) {
         final sheetCs = Theme.of(ctx).colorScheme;
-        final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         return StatefulBuilder(
-          builder: (ctx, setModalState) {
+          builder: (ctx, setSheetState) {
+            var hour = TimeOfDay.now().hour;
+            var minute = (TimeOfDay.now().minute + 1) % 60;
+
             return Padding(
               padding: EdgeInsets.fromLTRB(
                 24,
@@ -112,11 +59,10 @@ class _AlarmsTabState extends State<AlarmsTab> {
                 24,
                 MediaQuery.of(ctx).viewInsets.bottom +
                     MediaQuery.of(ctx).padding.bottom +
-                    80,
+                    24,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(
                     child: Container(
@@ -130,7 +76,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    _editingAlarmId != null ? 'EDIT ALARM' : 'NEW ALARM',
+                    'SET ALARM',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -140,184 +86,31 @@ class _AlarmsTabState extends State<AlarmsTab> {
                   ),
                   const SizedBox(height: 24),
                   TimePickerWheel(
-                    initialHour: _selectedTime.hour,
-                    initialMinute: _selectedTime.minute,
-                    onChanged: (time) {
-                      setModalState(() => _selectedTime = time);
+                    initialHour: hour,
+                    initialMinute: minute,
+                    onChanged: (t) {
+                      setSheetState(() {
+                        hour = t.hour;
+                        minute = t.minute;
+                      });
                     },
                   ),
-                  const SizedBox(height: 24),
-                  Card(
-                    color: sheetCs.surfaceContainerHigh,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 4),
-                      child: TextField(
-                        onChanged: (val) => _selectedLabel = val,
-                        controller: TextEditingController(text: _selectedLabel)
-                          ..selection = TextSelection.collapsed(
-                              offset: _selectedLabel.length),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: sheetCs.onSurface,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Add alarm label...',
-                          hintStyle: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: sheetCs.onSurfaceVariant,
-                          ),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'REPEAT ON',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: sheetCs.onSurfaceVariant,
-                      letterSpacing: 1.5,
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: M3EFilledButton(
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        context
+                            .read<AlarmNotifier>()
+                            .addAlarm(hour: hour, minute: minute);
+                        Navigator.pop(ctx);
+                      },
+                      size: M3EButtonSize.md,
+                      child: const Text('ADD ALARM'),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(7, (i) {
-                      final dayNum = i + 1;
-                      final selected = _selectedRepeatDays.contains(dayNum);
-                      return GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setModalState(() {
-                            if (selected) {
-                              _selectedRepeatDays.remove(dayNum);
-                            } else {
-                              _selectedRepeatDays.add(dayNum);
-                            }
-                          });
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOutCubic,
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: selected
-                                ? sheetCs.primary
-                                : sheetCs.surfaceContainerHigh,
-                            border: selected
-                                ? null
-                                : Border.all(
-                                    color: sheetCs.outlineVariant),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            days[i][0],
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: selected
-                                  ? sheetCs.onPrimary
-                                  : sheetCs.onSurface,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 24),
-                  InkWell(
-                    onTap: () {
-                      SoundPickerSheet.show(
-                        context,
-                        selectedSound: _selectedSound,
-                        onSoundSelected: (sound) {
-                          setModalState(() => _selectedSound = sound);
-                        },
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Card(
-                      color: sheetCs.surfaceContainerHigh,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.music_note_outlined,
-                                    color: sheetCs.primary),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'SOUND',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: sheetCs.onSurface,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              _selectedSound.toUpperCase(),
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: sheetCs.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: EdgeInsets.only(
-                        top: MediaQuery.of(ctx).size.height * 0.04),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: Text(
-                              'CANCEL',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: sheetCs.onSurfaceVariant,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () => _saveAlarm(ctx),
-                            child: Text(
-                              'SAVE',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             );
@@ -327,28 +120,36 @@ class _AlarmsTabState extends State<AlarmsTab> {
     );
   }
 
-  String _getAlarmStatus(List<AlarmModel> alarms) {
+  String _getStatus(List<AlarmModel> alarms) {
     final active = alarms.where((a) => a.enabled).toList();
-    if (active.isEmpty) return 'NO ALARMS SET';
-    final next = active.first;
+    if (active.isEmpty) return 'No alarms';
     final now = TimeOfDay.now();
-    final currentMinutes = now.hour * 60 + now.minute;
-    final alarmMinutes = next.hour * 60 + next.minute;
-    final diff = alarmMinutes > currentMinutes
-        ? alarmMinutes - currentMinutes
-        : alarmMinutes - currentMinutes + 1440;
-    final hours = diff ~/ 60;
-    final mins = diff % 60;
-    if (hours > 0) {
-      return 'ALARM IN ${hours}H ${mins}MIN';
+    final cur = now.hour * 60 + now.minute;
+    int bestMin = 1440;
+    AlarmModel? best;
+    for (final a in active) {
+      final alarmMin = a.hour * 60 + a.minute;
+      final diff = alarmMin > cur
+          ? alarmMin - cur
+          : alarmMin - cur + 1440;
+      if (diff < bestMin) {
+        bestMin = diff;
+        best = a;
+      }
     }
-    return 'ALARM IN ${mins}MIN';
+    if (best == null) return 'No upcoming alarms';
+    final h = bestMin ~/ 60;
+    final m = bestMin % 60;
+    final parts = <String>[];
+    if (h > 0) parts.add('${h}h');
+    if (m > 0) parts.add('${m}min');
+    return 'Next alarm in ${parts.join(' ')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final service = context.watch<AlarmService>();
-    final alarms = service.alarms;
+    final notifier = context.watch<AlarmNotifier>();
+    final alarms = notifier.alarms;
     final cs = Theme.of(context).colorScheme;
 
     return Stack(
@@ -370,7 +171,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Alarms',
+                        'Alarm',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 32,
                           fontWeight: FontWeight.w800,
@@ -380,7 +181,7 @@ class _AlarmsTabState extends State<AlarmsTab> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _getAlarmStatus(alarms),
+                        _getStatus(alarms),
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -400,24 +201,27 @@ class _AlarmsTabState extends State<AlarmsTab> {
             else
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildAlarmItem(alarms[index], cs),
+                  (context, index) =>
+                      _buildAlarmCard(alarms, index, cs, notifier),
                   childCount: alarms.length,
                 ),
               ),
+            const SliverToBoxAdapter(child: SizedBox(height: 96)),
           ],
         ),
         Positioned(
-          right: 24,
+          left: 0,
+          right: 0,
           bottom: 24,
-          child: FloatingActionButton(
-            onPressed: _createNewAlarm,
-            backgroundColor: cs.primary,
-            foregroundColor: cs.onPrimary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+          child: Center(
+            child: M3EFilledButton(
+              onPressed: _showCreateSheet,
+              size: M3EButtonSize.md,
+              decoration: M3EButtonDecoration(
+                borderRadius: 28,
+              ),
+              child: const Icon(Icons.add, size: 28),
             ),
-            elevation: 4,
-            child: const Icon(Icons.add, size: 28),
           ),
         ),
       ],
@@ -429,13 +233,10 @@ class _AlarmsTabState extends State<AlarmsTab> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
+          M3EContainer.circle(
+            color: cs.primary.withValues(alpha: 0.1),
             width: 80,
             height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: cs.primary.withValues(alpha: 0.1),
-            ),
             child: Icon(
               Icons.alarm_add_rounded,
               color: cs.primary.withValues(alpha: 0.6),
@@ -444,12 +245,11 @@ class _AlarmsTabState extends State<AlarmsTab> {
           ),
           const SizedBox(height: 20),
           Text(
-            'NO ALARMS YET',
+            'No alarms',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
+              fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: cs.onSurfaceVariant,
-              letterSpacing: 1.5,
+              color: cs.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -466,125 +266,381 @@ class _AlarmsTabState extends State<AlarmsTab> {
     );
   }
 
-  Widget _buildAlarmItem(AlarmModel alarm, ColorScheme cs) {
+  Widget _buildAlarmCard(
+      List<AlarmModel> alarms, int index, ColorScheme cs, AlarmNotifier notifier) {
+    final alarm = alarms[index];
     final timeStr =
         '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}';
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final repeatText = alarm.isRepeating
-        ? alarm.repeatDays.map((d) => days[d - 1]).join(' ')
-        : 'Once';
 
-    return TweenAnimationBuilder<double>(
-      key: ValueKey('anim_${alarm.id}'),
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOutCubic,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.scale(
-            scale: 0.95 + 0.05 * value,
-            child: child,
-          ),
-        );
+    String subtitle;
+    if (alarm.label.isNotEmpty && alarm.isRepeating) {
+      final d = alarm.repeatDays.map((d) => days[d - 1]).join(' ');
+      subtitle = '${alarm.label}  •  $d';
+    } else if (alarm.label.isNotEmpty) {
+      subtitle = alarm.label;
+    } else if (alarm.isRepeating) {
+      subtitle = alarm.repeatDays.map((d) => days[d - 1]).join(' ');
+    } else {
+      subtitle = 'Once';
+    }
+
+    final enabled = alarm.enabled;
+    final textColor = enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.4);
+    final subtitleColor = enabled
+        ? cs.onSurfaceVariant
+        : cs.onSurfaceVariant.withValues(alpha: 0.4);
+
+    return Dismissible(
+      key: ValueKey(alarm.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) {
+        HapticFeedback.mediumImpact();
+        notifier.removeAlarm(alarm.id);
       },
-      child: Dismissible(
-        key: ValueKey(alarm.id),
-        direction: DismissDirection.endToStart,
-        onDismissed: (_) => context.read<AlarmService>().removeAlarm(alarm.id),
-        background: Container(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: cs.error.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 24),
-          child: Icon(Icons.delete_outline_rounded, color: cs.error),
+      background: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: cs.error.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Card(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          color: alarm.enabled ? cs.primaryContainer : cs.surfaceContainerHigh,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: () => _editAlarm(alarm),
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              timeStr,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w700,
-                                color: alarm.enabled
-                                    ? cs.onPrimaryContainer
-                                    : cs.onSurface,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            if (alarm.enabled)
-                              Icon(
-                                Icons.notifications_active_rounded,
-                                color: cs.onPrimaryContainer
-                                    .withValues(alpha: 0.7),
-                                size: 20,
-                              ),
-                          ],
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        child: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 26),
+      ),
+      child: buildM3EExpandableItem(
+        index: index,
+        totalCount: alarms.length,
+        isExpanded: _isExpanded(index, alarms),
+        decoration: M3EExpandableStyle(
+          outerRadius: 20,
+          innerRadius: 6,
+          gap: 0,
+          expandedRadius: 20,
+          color: enabled ? cs.surfaceContainerHigh : cs.surfaceContainerLow,
+          border: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.5),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          headerPadding: EdgeInsets.zero,
+          bodyPadding: EdgeInsets.zero,
+          useInkWell: true,
+          tapHeaderToToggle: true,
+          tapBodyToExpand: false,
+          tapBodyToCollapse: false,
+          expandIcon: null,
+          collapseIcon: null,
+        ),
+        expandMotion: M3EMotion.expressiveSpatialFast,
+        collapseMotion: M3EMotion.standardSpatialFast,
+        onToggle: () => _toggleExpand(index, alarms),
+        headerBuilder: (context, idx, progress) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 8, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        timeStr,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                          letterSpacing: -1,
+                          height: 1.1,
                         ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            if (alarm.label.isNotEmpty) ...[
-                              Text(
-                                '${alarm.label.toUpperCase()}  •  ',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: alarm.enabled
-                                      ? cs.onPrimaryContainer
-                                          .withValues(alpha: 0.8)
-                                      : cs.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                            Text(
-                              repeatText.toUpperCase(),
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: alarm.enabled
-                                    ? cs.onPrimaryContainer
-                                        .withValues(alpha: 0.8)
-                                    : cs.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                      ),
+                      if (subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: subtitleColor,
+                          ),
                         ),
                       ],
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: enabled,
+                  onChanged: (val) {
+                    HapticFeedback.mediumImpact();
+                    notifier.toggleAlarm(alarm.id);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+        bodyBuilder: (context, idx, progress) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Divider(height: 1, indent: 20, endIndent: 20),
+              _ExpandedAlarmPanel(
+                alarm: alarm,
+                notifier: notifier,
+                cs: cs,
+                onDelete: () => notifier.removeAlarm(alarm.id),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ExpandedAlarmPanel extends StatefulWidget {
+  final AlarmModel alarm;
+  final AlarmNotifier notifier;
+  final ColorScheme cs;
+  final VoidCallback onDelete;
+
+  const _ExpandedAlarmPanel({
+    required this.alarm,
+    required this.notifier,
+    required this.cs,
+    required this.onDelete,
+  });
+
+  @override
+  State<_ExpandedAlarmPanel> createState() => _ExpandedAlarmPanelState();
+}
+
+class _ExpandedAlarmPanelState extends State<_ExpandedAlarmPanel> {
+  late String _label;
+  late List<int> _repeatDays;
+  late String _sound;
+  bool _labelChanged = false;
+  bool _repeatChanged = false;
+  bool _soundChanged = false;
+
+  static const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  @override
+  void initState() {
+    super.initState();
+    _label = widget.alarm.label;
+    _repeatDays = List.from(widget.alarm.repeatDays);
+    _sound = widget.alarm.sound;
+  }
+
+  void _commitChanges() {
+    if (_labelChanged) {
+      widget.notifier.updateAlarmLabel(widget.alarm.id, _label);
+    }
+    if (_repeatChanged) {
+      widget.notifier.updateAlarmRepeatDays(widget.alarm.id, _repeatDays);
+    }
+    if (_soundChanged) {
+      widget.notifier.updateAlarmSound(widget.alarm.id, _sound);
+    }
+  }
+
+  @override
+  void dispose() {
+    _commitChanges();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = widget.cs;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Label field
+          TextField(
+            controller: TextEditingController(text: _label)
+              ..selection = TextSelection.collapsed(offset: _label.length),
+            onChanged: (val) {
+              _label = val;
+              _labelChanged = true;
+            },
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: cs.onSurface,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Alarm label',
+              hintStyle: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: cs.onSurfaceVariant,
+              ),
+              prefixIcon:
+                  Icon(Icons.label_outline, color: cs.onSurfaceVariant, size: 20),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: cs.outlineVariant),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: cs.outlineVariant),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: cs.primary, width: 1.5),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Repeat days
+          Text(
+            'REPEAT',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: cs.onSurfaceVariant,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (i) {
+              final dayNum = i + 1;
+              final selected = _repeatDays.contains(dayNum);
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    if (selected) {
+                      _repeatDays.remove(dayNum);
+                    } else {
+                      _repeatDays.add(dayNum);
+                    }
+                    _repeatChanged = true;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOutCubic,
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? cs.primary : cs.surfaceContainerHigh,
+                    border: selected
+                        ? null
+                        : Border.all(color: cs.outlineVariant),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    _dayNames[i],
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: selected ? cs.onPrimary : cs.onSurface,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Switch(
-                    value: alarm.enabled,
-                    onChanged: (val) {
-                      HapticFeedback.selectionClick();
-                      context.read<AlarmService>().toggleAlarm(alarm.id);
-                    },
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 20),
+
+          // Sound picker
+          InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              SoundPickerSheet.show(
+                context,
+                selectedSound: _sound,
+                onSoundSelected: (sound) {
+                  setState(() {
+                    _sound = sound;
+                    _soundChanged = true;
+                  });
+                },
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cs.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.music_note_outlined,
+                      color: cs.onSurfaceVariant, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Sound',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface,
+                      ),
+                    ),
                   ),
+                  Text(
+                    _sound.toUpperCase(),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: cs.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right,
+                      color: cs.onSurfaceVariant, size: 20),
                 ],
               ),
             ),
           ),
-        ),
+          const SizedBox(height: 20),
+
+          // Delete button
+          SizedBox(
+            width: double.infinity,
+            child: M3EOutlinedButton.icon(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _commitChanges();
+                widget.onDelete();
+              },
+              icon: Icon(Icons.delete_outline_rounded, color: cs.error, size: 20),
+              label: Text(
+                'Delete alarm',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: cs.error,
+                ),
+              ),
+              size: M3EButtonSize.md,
+              decoration: M3EButtonDecoration(
+                side: WidgetStatePropertyAll(BorderSide(color: cs.error.withValues(alpha: 0.3))),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

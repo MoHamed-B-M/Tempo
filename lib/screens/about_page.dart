@@ -13,6 +13,10 @@ class AboutPage extends StatefulWidget {
 
 class _AboutPageState extends State<AboutPage> {
   String _appVersion = '';
+  final List<String> _releaseNotes = [
+    'Removed "by Mohamed" and GitHub source link from settings page footer; developer credit and repo link now live exclusively in the dedicated AboutPage',
+    'Added release notes section to AboutPage showing the latest changelog entries inline',
+  ];
 
   @override
   void initState() {
@@ -53,12 +57,13 @@ class _AboutPageState extends State<AboutPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Center(
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const SizedBox(height: 48),
+              // App icon and name
               Container(
                 width: 96,
                 height: 96,
@@ -158,6 +163,55 @@ class _AboutPageState extends State<AboutPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 48),
+              // Release notes section
+              if (_releaseNotes.isNotEmpty) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'WHAT\'S NEW IN v$_appVersion',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurfaceVariant,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...List.generate(_releaseNotes.length, (i) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          margin: const EdgeInsets.only(top: 6),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: cs.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _releaseNotes[i],
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: cs.onSurface,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 40),
+              ],
             ],
           ),
         ),

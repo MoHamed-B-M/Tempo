@@ -1,28 +1,26 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:uuid/uuid.dart';
 import '../models/alarm_model.dart';
 import '../screens/alarm_ring_screen.dart';
 import 'screen_wake_handler.dart';
 
-class AlarmService extends ChangeNotifier {
-  static const _storageKey = 'alarms';
+class AlarmService {
   static const _channelId = 'tempo_alarm_channel';
   static const _channelName = 'Alarm Notifications';
 
   static GlobalKey<NavigatorState>? navigatorKey;
 
   final FlutterLocalNotificationsPlugin _notifications;
-  List<AlarmModel> _alarms = [];
   bool _initialized = false;
   String? _pendingAlarmId;
 
-  List<AlarmModel> get alarms => List.unmodifiable(_alarms);
+  /// Called when a notification stop action fires for a one-shot alarm.
+  late void Function(String alarmId) onStopFromNotification;
+
   String? get pendingAlarmId => _pendingAlarmId;
 
   AlarmService(this._notifications);
@@ -52,10 +50,9 @@ class AlarmService extends ChangeNotifier {
     );
 
     await _createNotificationChannel();
-    await _loadAlarms();
 
-    // Check if app was launched from a notification tap
-    final launchDetails = await _notifications.getNotificationAppLaunchDetails();
+    final launchDetails =
+        await _notifications.getNotificationAppLaunchDetails();
     if (launchDetails?.didNotificationLaunchApp == true) {
       _pendingAlarmId = launchDetails!.notificationResponse?.payload;
     }
@@ -90,126 +87,6 @@ class AlarmService extends ChangeNotifier {
         ?.createNotificationChannel(androidChannel);
   }
 
-  Future<void> _loadAlarms() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_storageKey);
-    if (data != null) {
-      final list = jsonDecode(data) as List;
-      _alarms = list
-          .map((e) => AlarmModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-  }
-
-  Future<void> _saveAlarms() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = jsonEncode(_alarms.map((a) => a.toJson()).toList());
-    await prefs.setString(_storageKey, data);
-  }
-
-  Future<AlarmModel> addAlarm({
-    required int hour,
-    required int minute,
-    String sound = 'default',
-    List<int> repeatDays = const [],
-    String label = '',
-  }) async {
-    final alarm = AlarmModel(
-      id: const Uuid().v4(),
-      hour: hour,
-      minute: minute,
-      sound: sound,
-      repeatDays: repeatDays,
-      label: label,
-    );
-    _alarms.add(alarm);
-    await _saveAlarms();
-    await _scheduleAlarm(alarm);
-    notifyListeners();
-    return alarm;
-  }
-
-  Future<void> updateAlarm({
-    required String id,
-    required int hour,
-    required int minute,
-    String sound = 'default',
-    List<int> repeatDays = const [],
-    String label = '',
-  }) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
-    if (index == -1) return;
-    final updated = _alarms[index].copyWith(
-      hour: hour,
-      minute: minute,
-      sound: sound,
-      repeatDays: repeatDays,
-      label: label,
-    );
-    _alarms[index] = updated;
-    await _saveAlarms();
-    await _cancelAlarmNotification(updated);
-    if (updated.enabled) {
-      await _scheduleAlarm(updated);
-    }
-    notifyListeners();
-  }
-
-  Future<void> toggleAlarm(String id) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
-    if (index == -1) return;
-    final updated = _alarms[index].copyWith(enabled: !_alarms[index].enabled);
-    _alarms[index] = updated;
-    await _saveAlarms();
-    await _cancelAlarmNotification(updated);
-    if (updated.enabled) {
-      await _scheduleAlarm(updated);
-    }
-    notifyListeners();
-  }
-
-  Future<void> removeAlarm(String id) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
-    if (index == -1) return;
-    await _cancelAlarmNotification(_alarms[index]);
-    _alarms.removeAt(index);
-    await _saveAlarms();
-    notifyListeners();
-  }
-
-  Future<void> clearAllAlarms() async {
-    for (final alarm in _alarms) {
-      await _cancelAlarmNotification(alarm);
-    }
-    _alarms.clear();
-    await _saveAlarms();
-    notifyListeners();
-  }
-
-  Future<void> _scheduleAlarm(AlarmModel alarm) async {
-    if (!alarm.enabled) return;
-
-    final now = DateTime.now();
-    var scheduledDate = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      alarm.hour,
-      alarm.minute,
-      now.second,
-      now.millisecond,
-    );
-
-    if (alarm.isRepeating) {
-      await _scheduleRepeatingNotifications(alarm, scheduledDate, now);
-    } else {
-      if (scheduledDate.isBefore(now)) {
-        scheduledDate = scheduledDate.add(const Duration(days: 1));
-      }
-      await _scheduleOneShot(alarm, scheduledDate);
-    }
-  }
-
   AndroidNotificationDetails _buildAndroidDetails(String sound) {
     final soundName =
         sound != 'default' && sound != 'sound1' ? 'alarm_$sound' : 'sound1';
@@ -235,14 +112,34 @@ class AlarmService extends ChangeNotifier {
   }
 
   int _notifId(AlarmModel alarm) => alarm.id.hashCode.abs();
-
   int _notifIdForDay(AlarmModel alarm, int day) =>
       (alarm.id.hashCode.abs() * 10) + day;
 
-  Future<void> _scheduleOneShot(
-    AlarmModel alarm,
-    DateTime date,
-  ) async {
+  Future<void> scheduleAlarm(AlarmModel alarm) async {
+    if (!alarm.enabled) return;
+
+    final now = DateTime.now();
+    var scheduledDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      alarm.hour,
+      alarm.minute,
+      now.second,
+      now.millisecond,
+    );
+
+    if (alarm.isRepeating) {
+      await _scheduleRepeatingNotifications(alarm, scheduledDate, now);
+    } else {
+      if (scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+      await _scheduleOneShot(alarm, scheduledDate);
+    }
+  }
+
+  Future<void> _scheduleOneShot(AlarmModel alarm, DateTime date) async {
     final androidDetails = _buildAndroidDetails(alarm.sound);
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
@@ -284,9 +181,10 @@ class AlarmService extends ChangeNotifier {
         _notifId(alarm),
         'Tempo Alarm',
         alarm.label.isNotEmpty ? alarm.label : 'Alarm',
-        tz.TZDateTime.from(scheduledDate.isBefore(now)
-            ? scheduledDate.add(const Duration(days: 1))
-            : scheduledDate,
+        tz.TZDateTime.from(
+            scheduledDate.isBefore(now)
+                ? scheduledDate.add(const Duration(days: 1))
+                : scheduledDate,
             tz.local),
         details,
         payload: alarm.id,
@@ -310,16 +208,14 @@ class AlarmService extends ChangeNotifier {
         if (nextDate.isBefore(now)) {
           nextDate = nextDate.add(const Duration(days: 7));
         }
-        final notifId = _notifIdForDay(alarm, day);
         await _notifications.zonedSchedule(
-          notifId,
+          _notifIdForDay(alarm, day),
           'Tempo Alarm',
           alarm.label.isNotEmpty ? alarm.label : 'Alarm',
           tz.TZDateTime.from(nextDate, tz.local),
           details,
           payload: alarm.id,
-          matchDateTimeComponents:
-              DateTimeComponents.dayOfWeekAndTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
@@ -328,7 +224,7 @@ class AlarmService extends ChangeNotifier {
     }
   }
 
-  Future<void> _cancelAlarmNotification(AlarmModel alarm) async {
+  Future<void> cancelAlarm(AlarmModel alarm) async {
     await _notifications.cancel(_notifId(alarm));
     if (alarm.isRepeating) {
       for (final day in alarm.repeatDays) {
@@ -337,151 +233,24 @@ class AlarmService extends ChangeNotifier {
     }
   }
 
-  void _onNotificationTap(NotificationResponse response) {
-    _handleNotificationResponse(response);
-  }
-
-  void _handleNotificationResponse(NotificationResponse response) {
-    final alarmId = response.payload;
-    if (alarmId == null) return;
-
-    AlarmModel? found;
-    for (final a in _alarms) {
-      if (a.id == alarmId) { found = a; break; }
-    }
-    if (found == null) return;
-    final alarm = found;
-
-    if (response.actionId == 'stop') {
-      _stopAlarm(alarm);
-      _persistStopFlag(alarmId);
-      navigatorKey?.currentState?.maybePop();
-      return;
-    }
-
-    if (response.actionId == 'snooze') {
-      _snoozeAlarm(alarm);
-      navigatorKey?.currentState?.maybePop();
-      return;
-    }
-
-    _showAlarmScreen(alarm);
-  }
-
-  Future<void> _persistStopFlag(String alarmId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final stopped = prefs.getStringList('stopped_alarms') ?? [];
-    if (!stopped.contains(alarmId)) {
-      stopped.add(alarmId);
-      await prefs.setStringList('stopped_alarms', stopped);
-    }
-  }
-
-  void _showAlarmScreen(AlarmModel alarm) {
-    final navigator = navigatorKey?.currentState;
-    if (navigator == null) {
-      _pendingAlarmId = alarm.id;
-      return;
-    }
-
-    ScreenWakeHandler.enable();
-    navigator.push(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => AlarmRingScreen(alarm: alarm),
-      ),
-    );
-  }
-
-  void processPendingAlarm() {
-    if (_pendingAlarmId == null) return;
-    final id = _pendingAlarmId!;
-    _pendingAlarmId = null;
-
-    AlarmModel? alarm;
-    for (final a in _alarms) {
-      if (a.id == id) { alarm = a; break; }
-    }
-    if (alarm != null) {
-      _showAlarmScreen(alarm);
-    }
-  }
-
-  Future<void> processStoppedAlarms() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stopped = prefs.getStringList('stopped_alarms') ?? [];
-    if (stopped.isEmpty) return;
-
-    bool changed = false;
-    for (final id in stopped) {
-      final idx = _alarms.indexWhere((a) => a.id == id);
-      if (idx != -1 && _alarms[idx].enabled) {
-        _alarms[idx] = _alarms[idx].copyWith(enabled: false);
-        changed = true;
-      }
-    }
-    await prefs.remove('stopped_alarms');
-    if (changed) {
-      await _saveAlarms();
-      notifyListeners();
-    }
-  }
-
-  void checkMissedAlarms() {
-    final now = DateTime.now();
-
-    for (final alarm in _alarms) {
-      if (!alarm.enabled) continue;
-
-      if (alarm.isRepeating) continue;
-
-      final alarmDateTime = DateTime(
-        now.year, now.month, now.day, alarm.hour, alarm.minute,
-      );
-      if (!alarmDateTime.isBefore(now)) continue;
-
-      final diff = now.difference(alarmDateTime);
-      if (diff.inMinutes > 2) continue;
-
-      _showAlarmScreen(alarm);
-      return;
-    }
-  }
-
-  Future<void> rescheduleAll() async {
-    for (final alarm in _alarms) {
-      await _cancelAlarmNotification(alarm);
+  Future<void> scheduleAll(List<AlarmModel> alarms) async {
+    for (final alarm in alarms) {
+      await cancelAlarm(alarm);
       if (alarm.enabled) {
-        await _scheduleAlarm(alarm);
+        await scheduleAlarm(alarm);
       }
     }
   }
 
-  Future<void> requestExactAlarmPermission() async {
-    final plugin = _notifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-    if (plugin != null) {
-      await plugin.requestExactAlarmsPermission();
-    }
-  }
-
-  Future<void> _stopAlarm(AlarmModel alarm) async {
-    await _cancelAlarmNotification(alarm);
+  Future<void> stopAlarm(AlarmModel alarm) async {
+    await cancelAlarm(alarm);
     if (alarm.isRepeating) {
-      await _scheduleAlarm(alarm);
-    } else {
-      final idx = _alarms.indexWhere((a) => a.id == alarm.id);
-      if (idx != -1) {
-        _alarms[idx] = _alarms[idx].copyWith(enabled: false);
-        await _saveAlarms();
-        notifyListeners();
-      }
+      await scheduleAlarm(alarm);
     }
   }
 
-  Future<void> _snoozeAlarm(AlarmModel alarm) async {
-    await _cancelAlarmNotification(alarm);
+  Future<void> snoozeAlarm(AlarmModel alarm) async {
+    await cancelAlarm(alarm);
 
     final snoozeTime = DateTime.now().add(const Duration(minutes: 5));
     final androidDetails = _buildAndroidDetails(alarm.sound);
@@ -490,7 +259,8 @@ class AlarmService extends ChangeNotifier {
       presentBadge: true,
       presentSound: true,
     );
-    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    final details =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await _notifications.zonedSchedule(
       _notifId(alarm),
@@ -504,10 +274,116 @@ class AlarmService extends ChangeNotifier {
           UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
+
+  void _onNotificationTap(NotificationResponse response) {
+    _handleNotificationResponse(response);
+  }
+
+  void _handleNotificationResponse(NotificationResponse response) {
+    final alarmId = response.payload;
+    if (alarmId == null) return;
+
+    if (response.actionId == 'stop') {
+      _persistStopFlag(alarmId);
+      onStopFromNotification(alarmId);
+      navigatorKey?.currentState?.maybePop();
+      return;
+    }
+
+    if (response.actionId == 'snooze') {
+      // Build a minimal AlarmModel for scheduling — we only need id/sound/label
+      final alarm = AlarmModel(
+        id: alarmId,
+        hour: 0,
+        minute: 0,
+        sound: 'default',
+      );
+      snoozeAlarm(alarm);
+      navigatorKey?.currentState?.maybePop();
+      return;
+    }
+
+    _showAlarmScreen(alarmId, 'Tempo Alarm');
+  }
+
+  Future<void> _persistStopFlag(String alarmId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final stopped = prefs.getStringList('stopped_alarms') ?? [];
+    if (!stopped.contains(alarmId)) {
+      stopped.add(alarmId);
+      await prefs.setStringList('stopped_alarms', stopped);
+    }
+  }
+
+  void _showAlarmScreen(String alarmId, String title) {
+    final navigator = navigatorKey?.currentState;
+    if (navigator == null) {
+      _pendingAlarmId = alarmId;
+      return;
+    }
+
+    ScreenWakeHandler.enable();
+    navigator.push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => AlarmRingScreen(
+          alarm: AlarmModel(id: alarmId, hour: 0, minute: 0),
+        ),
+      ),
+    );
+  }
+
+  void processPendingAlarm() {
+    if (_pendingAlarmId == null) return;
+    final id = _pendingAlarmId!;
+    _pendingAlarmId = null;
+    _showAlarmScreen(id, 'Alarm');
+  }
+
+  Future<List<String>> fetchAndClearStoppedAlarms() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stopped = prefs.getStringList('stopped_alarms') ?? [];
+    await prefs.remove('stopped_alarms');
+    return stopped;
+  }
+
+  void checkMissedAlarms(List<AlarmModel> alarms) {
+    final now = DateTime.now();
+
+    for (final alarm in alarms) {
+      if (!alarm.enabled) continue;
+      if (alarm.isRepeating) continue;
+
+      final alarmDateTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        alarm.hour,
+        alarm.minute,
+      );
+      if (!alarmDateTime.isBefore(now)) continue;
+
+      final diff = now.difference(alarmDateTime);
+      if (diff.inMinutes > 2) continue;
+
+      _showAlarmScreen(alarm.id, alarm.label.isNotEmpty ? alarm.label : 'Alarm');
+      return;
+    }
+  }
+
+  Future<void> requestExactAlarmPermission() async {
+    final plugin = _notifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (plugin != null) {
+      await plugin.requestExactAlarmsPermission();
+    }
+  }
 }
 
 @pragma('vm:entry-point')
-Future<void> _backgroundNotificationHandler(NotificationResponse response) async {
+Future<void> _backgroundNotificationHandler(
+    NotificationResponse response) async {
   final plugin = FlutterLocalNotificationsPlugin();
   await plugin.cancel(response.id ?? -1);
 

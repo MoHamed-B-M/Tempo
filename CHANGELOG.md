@@ -1,8 +1,29 @@
 # Changelog
 
+## [1.0.18] - 2026-06-01
+- Added `m3e_core: ^0.1.0` dependency — Material 3 Expressive component library with spring animations, expressive shapes, and enhanced interaction patterns
+- Rewrote AlarmsTab with M3E expandable card items (`buildM3EExpandableItem`) — spring‑powered expand/collapse animations, animated border‑radius morphing on hover/press, M3E expressive shape containers for empty state
+- Replaced manual `FilledButton`, `OutlinedButton`, and `FloatingActionButton` with `M3EFilledButton`, `M3EOutlinedButton.icon`, and `M3EButton.icon` variants across AlarmsTab, SettingsPage, TimerTab, StopwatchTab, SleepTimerTab — M3E buttons feature spring‑driven radius morphing, configurable haptic feedback, and consistent M3 sizing tokens (xs/sm/md/lg/xl)
+- Updated SettingsPage: channel toggle buttons migrated from custom `GestureDetector`+`AnimatedContainer` to `M3EButton.icon` with filled/outlined style switching, "Check for Updates" replaced with `M3EButton.icon` (filled, decorative)
+- Updated TimerTab: START TIMER, reset, and start/pause controls replaced with `M3EFilledButton` / `M3EOutlinedButton` — consistent 18px border radius, fixed sizing, spring‑driven press feedback
+- Updated StopwatchTab: flag/reset and start/pause buttons replaced with `M3EOutlinedButton` / `M3EFilledButton.icon` — dynamic background/border states for running vs. stopped
+- Updated SleepTimerTab: "Skip" and "Next" buttons replaced with `M3EOutlinedButton` / `M3EFilledButton` — unified 16px border radius with theme accent color
+- Verified with `flutter analyze` — 0 errors, 0 warnings
+
+## [1.0.17] - 2026-05-31
+- Removed "by Mohamed" and GitHub source link from settings page footer; developer credit and repo link now live exclusively in the dedicated AboutPage
+- Added release notes section to AboutPage showing the latest changelog entries inline
+- Bumped version to 1.0.17
+
 ## [1.0.16] - 2026-05-31
 - Added `AppTheme` class using `ColorScheme.fromSeed(seedColor: #F56D3B)` generating full M3 tonal palette with warm charcoal/off-white surfaces and orange primary; replaces inline `_buildLightTheme()` / `_buildDarkTheme()` in main.dart
-- Refactored alarms tab with SliverAppBar (pinned, expanded) + SliverList via CustomScrollView, FlexibleSpaceBar header, M3 Switch replacing custom animated circle toggle, Card with `primaryContainer`/`surfaceContainerHigh` colors from theme, entrance animations (TweenAnimationBuilder with scale 0.95→1.0 + fade 0→1, easeInOutCubic), FilledButton/TextButton defaults from M3 theme
+- Split alarm architecture: `AlarmService` stripped to scheduling-only (no longer a `ChangeNotifier`); new `AlarmNotifier` (`ChangeNotifier`) owns alarm list state with `SharedPreferences` persistence and coordinates with `AlarmService` for scheduling. Provided via `Provider` + `ChangeNotifierProvider` in main.dart
+- Rewrote alarms tab with Google Clock M3 design — 36px `HH:mm` digital clock display, M3 `Switch`, centered `FloatingActionButton` at bottom, `AnimatedSize` expansion revealing inline label/repeat/sound/delete panel with auto-commit on dispose, `Dismissible` swipe-to-delete with trash icon and animated background, `HapticFeedback.mediumImpact()` on all interactions, `SliverAppBar` pinned header with "Next alarm in..." status
+- Created `AlarmNotifier` (`lib/services/alarm_notifier.dart`) with full CRUD, partial field updates (`updateAlarmLabel`, `updateAlarmRepeatDays`, `updateAlarmSound`), `disableAlarm` for notification stop callbacks
+- Refactored `AlarmService` (`lib/services/alarm_service.dart`) — removed `_alarms`, `_loadAlarms`, `_saveAlarms`, `addAlarm`, `updateAlarm`, `removeAlarm`, `toggleAlarm`, `clearAllAlarms`. Kept scheduling, notification handlers, `stopAlarm`, `snoozeAlarm`, `processPendingAlarm`, `checkMissedAlarms(List<AlarmModel>)`, `fetchAndClearStoppedAlarms()`. Exposes `onStopFromNotification` callback wired to `AlarmNotifier.disableAlarm`
+- Updated `alarm_ring_screen.dart` — uses `AlarmService.stopAlarm`/`snoozeAlarm` and `AlarmNotifier.disableAlarm` for one-shot dismiss
+- Updated `sleep_timer_tab.dart` — uses `AlarmNotifier.addAlarm` instead of `AlarmService.addAlarm`
+- Updated `home_page.dart` — streamlined to call `AlarmService.processPendingAlarm()` only (permission/schedule handled by notifier in lifecycle)
 - Created dedicated AboutPage with app icon, version, description, developer/framework info rows, and tappable GitHub source link
 - Added "About" navigation tile in settings page that opens AboutPage, styled with `surfaceContainerHigh` + `outlineVariant` from theme
 - Removed unused AppColors and AppTextStyles imports from alarms_tab and main.dart; removed dead `_defaultColorScheme` field from AppTheme

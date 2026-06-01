@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
+import 'services/alarm_notifier.dart';
 import 'services/alarm_service.dart';
 import 'services/alarm_settings.dart';
 import 'services/screen_wake_handler.dart';
@@ -23,6 +24,10 @@ void main() async {
   AlarmService.navigatorKey = navigatorKey;
   await alarmService.initialize();
 
+  final alarmNotifier = AlarmNotifier(alarmService);
+  await alarmNotifier.load();
+  alarmService.onStopFromNotification = alarmNotifier.disableAlarm;
+
   final themeService = ThemeService();
   await themeService.load();
 
@@ -31,6 +36,7 @@ void main() async {
 
   runApp(TempoApp(
     alarmService: alarmService,
+    alarmNotifier: alarmNotifier,
     themeService: themeService,
     alarmSettings: alarmSettings,
   ));
@@ -38,12 +44,14 @@ void main() async {
 
 class TempoApp extends StatelessWidget {
   final AlarmService alarmService;
+  final AlarmNotifier alarmNotifier;
   final ThemeService themeService;
   final AlarmSettings alarmSettings;
 
   const TempoApp({
     super.key,
     required this.alarmService,
+    required this.alarmNotifier,
     required this.themeService,
     required this.alarmSettings,
   });
@@ -52,7 +60,8 @@ class TempoApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: alarmService),
+        Provider.value(value: alarmService),
+        ChangeNotifierProvider.value(value: alarmNotifier),
         ChangeNotifierProvider.value(value: themeService),
         ChangeNotifierProvider.value(value: alarmSettings),
         ChangeNotifierProvider(create: (_) => StopwatchState()),
@@ -72,7 +81,6 @@ class TempoApp extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _AppShell extends StatefulWidget {
@@ -103,15 +111,24 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      final alarmService = context.read<AlarmService>();
-      alarmService.rescheduleAll();
-      alarmService.processStoppedAlarms();
-      alarmService.checkMissedAlarms();
+      _onResume();
+    }
+  }
 
-      final sw = context.read<StopwatchState>();
-      if (sw.isRunning && !_showingStopwatchLock) {
-        _showStopwatchLockScreen();
-      }
+  Future<void> _onResume() async {
+    final alarmNotifier = context.read<AlarmNotifier>();
+    await alarmNotifier.scheduleAll();
+
+    final stoppedIds = await context.read<AlarmService>().fetchAndClearStoppedAlarms();
+    for (final id in stoppedIds) {
+      alarmNotifier.disableAlarm(id);
+    }
+
+    alarmNotifier.checkMissedAlarms();
+
+    final sw = context.read<StopwatchState>();
+    if (sw.isRunning && !_showingStopwatchLock) {
+      _showStopwatchLockScreen();
     }
   }
 

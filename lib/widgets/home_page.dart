@@ -14,16 +14,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _initAlarmService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AlarmService>().processPendingAlarm();
     });
-  }
-
-  Future<void> _initAlarmService() async {
-    final service = context.read<AlarmService>();
-    await service.requestExactAlarmPermission();
-    await service.rescheduleAll();
   }
 
   @override

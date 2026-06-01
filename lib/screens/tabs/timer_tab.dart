@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:m3e_core/m3e_core.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../../main.dart' show notificationsPlugin;
@@ -185,26 +186,18 @@ class _TimerTabState extends State<TimerTab> {
           ],
         ),
         const SizedBox(height: 32),
-        GestureDetector(
-          onTap: _setDuration,
-          child: Container(
-            width: 200,
-            height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.accentOf(context),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accentOf(context).withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+        SizedBox(
+          width: 200,
+          child: M3EFilledButton(
+            onPressed: _setDuration,
+            size: M3EButtonSize.md,
+            decoration: M3EButtonDecoration(
+              backgroundColor: WidgetStatePropertyAll(AppColors.accentOf(context)),
+              borderRadius: 18,
             ),
-            alignment: Alignment.center,
-            child: Text(
+            child: const Text(
               'START TIMER',
-              style: AppTextStyles.buttonLabel(context).copyWith(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
@@ -374,63 +367,40 @@ class _TimerTabState extends State<TimerTab> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(
-              width: 84,
-              height: 56,
-              child: GestureDetector(
-                onTap: _resetTimer,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOutCubic,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceCardOf(context),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.borderOf(context), width: 1),
-                  ),
-                  child: const Icon(Icons.refresh, color: Colors.white, size: 24),
-                ),
+            M3EOutlinedButton(
+              onPressed: _resetTimer,
+              size: M3EButtonSize.md,
+              decoration: M3EButtonDecoration(
+                backgroundColor: WidgetStatePropertyAll(AppColors.surfaceCardOf(context)),
+                side: WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context))),
+                borderRadius: 18,
+                fixedSize: const Size(84, 56),
               ),
+              child: const Icon(Icons.refresh, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 20),
-            SizedBox(
-              width: 112,
-              height: 56,
-              child: GestureDetector(
-                onTap: _toggleTimer,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOutCubic,
-                  decoration: BoxDecoration(
-                    color: _isFinished ? Colors.green : AppColors.accentOf(context),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (_isFinished ? Colors.green : AppColors.accentOf(context)).withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _isFinished ? Icons.refresh : (_isRunning ? Icons.pause : Icons.play_arrow),
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _isFinished ? 'RESET' : (_isRunning ? 'PAUSE' : 'START'),
-                        style: AppTextStyles.buttonLabel(context).copyWith(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
+            M3EFilledButton.icon(
+              onPressed: _toggleTimer,
+              icon: Icon(
+                _isFinished ? Icons.refresh : (_isRunning ? Icons.pause : Icons.play_arrow),
+                color: Colors.white,
+                size: 24,
+              ),
+              label: Text(
+                _isFinished ? 'RESET' : (_isRunning ? 'PAUSE' : 'START'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                 ),
+              ),
+              size: M3EButtonSize.md,
+              decoration: M3EButtonDecoration(
+                backgroundColor: WidgetStatePropertyAll(
+                  _isFinished ? Colors.green : AppColors.accentOf(context),
+                ),
+                borderRadius: 18,
+                fixedSize: const Size(112, 56),
               ),
             ),
           ],

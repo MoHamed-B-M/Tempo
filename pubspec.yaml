@@ -1,7 +1,7 @@
 name: tempo
 description: A minimalist, high-fidelity alarm clock app.
 publish_to: "none"
-version: 1.0.16
+version: 1.0.18
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -22,6 +22,7 @@ dependencies:
   audioplayers: ^6.1.0
   timezone: ^0.9.4
   flutter_timezone: ^5.1.0
+  m3e_core: ^0.1.0
 
 dev_dependencies:
   flutter_test:

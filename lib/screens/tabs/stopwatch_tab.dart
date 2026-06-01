@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:m3e_core/m3e_core.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
@@ -368,101 +369,51 @@ class _StopwatchTabState extends State<StopwatchTab>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 84,
-                height: 56,
-                child: GestureDetector(
-                  onTap: isRunning ? _recordLap : _resetStopwatch,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOutCubic,
-                    decoration: BoxDecoration(
-                      color: isRunning
-                          ? AppColors.surfaceCardOf(context)
-                          : AppColors.accentOf(context),
-                      borderRadius: BorderRadius.circular(18),
-                      border: isRunning
-                          ? Border.all(
-                              color: AppColors.borderOf(context),
-                              width: 1,
-                            )
-                          : null,
-                      boxShadow: isRunning
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: AppColors.accentOf(context)
-                                    .withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                    ),
-                    child: Icon(
-                      isRunning ? Icons.flag_outlined : Icons.stop,
-                      color: isRunning
-                          ? AppColors.primaryTextOf(context)
-                          : Colors.white,
-                      size: 24,
-                    ),
+              M3EOutlinedButton(
+                onPressed: isRunning ? _recordLap : _resetStopwatch,
+                size: M3EButtonSize.md,
+                decoration: M3EButtonDecoration(
+                  backgroundColor: WidgetStatePropertyAll(
+                    isRunning ? AppColors.surfaceCardOf(context) : AppColors.accentOf(context),
                   ),
+                  side: isRunning
+                      ? WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context)))
+                      : null,
+                  borderRadius: 18,
+                  fixedSize: const Size(84, 56),
+                ),
+                child: Icon(
+                  isRunning ? Icons.flag_outlined : Icons.stop,
+                  color: isRunning ? AppColors.primaryTextOf(context) : Colors.white,
+                  size: 24,
                 ),
               ),
               const SizedBox(width: 20),
-              SizedBox(
-                width: 112,
-                height: 56,
-                child: GestureDetector(
-                  onTap: _toggleStopwatch,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOutCubic,
-                    decoration: BoxDecoration(
-                      color: isRunning
-                          ? AppColors.surfaceCardOf(context)
-                          : AppColors.accentOf(context),
-                      borderRadius: BorderRadius.circular(18),
-                      border: isRunning
-                          ? Border.all(
-                              color: AppColors.borderOf(context),
-                              width: 1,
-                            )
-                          : null,
-                      boxShadow: isRunning
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: AppColors.accentOf(context)
-                                    .withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          isRunning ? Icons.pause : Icons.play_arrow,
-                          color: isRunning
-                              ? AppColors.primaryTextOf(context)
-                              : Colors.white,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          isRunning ? 'PAUSE' : 'START',
-                          style: AppTextStyles.buttonLabel(context).copyWith(
-                            color: isRunning
-                                ? AppColors.primaryTextOf(context)
-                                : Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
+              M3EFilledButton.icon(
+                onPressed: _toggleStopwatch,
+                icon: Icon(
+                  isRunning ? Icons.pause : Icons.play_arrow,
+                  color: isRunning ? AppColors.primaryTextOf(context) : Colors.white,
+                  size: 24,
+                ),
+                label: Text(
+                  isRunning ? 'PAUSE' : 'START',
+                  style: TextStyle(
+                    color: isRunning ? AppColors.primaryTextOf(context) : Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
                   ),
+                ),
+                size: M3EButtonSize.md,
+                decoration: M3EButtonDecoration(
+                  backgroundColor: WidgetStatePropertyAll(
+                    isRunning ? AppColors.surfaceCardOf(context) : AppColors.accentOf(context),
+                  ),
+                  side: isRunning
+                      ? WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context)))
+                      : null,
+                  borderRadius: 18,
+                  fixedSize: const Size(112, 56),
                 ),
               ),
             ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/alarm_model.dart';
+import '../services/alarm_notifier.dart';
 import '../services/alarm_service.dart';
 import '../services/alarm_settings.dart';
 import '../widgets/lock_screen.dart';
@@ -16,19 +17,15 @@ class AlarmRingScreen extends StatefulWidget {
 
 class _AlarmRingScreenState extends State<AlarmRingScreen> {
   void _snooze() {
-    final service = context.read<AlarmService>();
-    service.toggleAlarm(widget.alarm.id);
-    Future.delayed(const Duration(minutes: 5), () {
-      service.toggleAlarm(widget.alarm.id);
-    });
+    context.read<AlarmService>().snoozeAlarm(widget.alarm);
     Navigator.of(context).pop();
   }
 
   void _dismiss() {
     final service = context.read<AlarmService>();
-    service.toggleAlarm(widget.alarm.id);
-    if (widget.alarm.isRepeating) {
-      service.toggleAlarm(widget.alarm.id);
+    service.stopAlarm(widget.alarm);
+    if (!widget.alarm.isRepeating) {
+      context.read<AlarmNotifier>().disableAlarm(widget.alarm.id);
     }
     Navigator.of(context).pop();
   }

@@ -2,9 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:m3e_core/m3e_core.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_text_styles.dart';
 import '../services/alarm_settings.dart';
@@ -174,11 +174,55 @@ class _SettingsPageState extends State<SettingsPage> {
             Row(
               children: [
                 Expanded(
-                  child: _buildChannelButton('stable', 'Stable', Icons.shield_outlined),
+                  child: M3EButton.icon(
+                    onPressed: () => _setChannel('stable'),
+                    icon: Icon(Icons.shield_outlined,
+                      color: _channel == 'stable' ? Colors.white : null,
+                      size: 18,
+                    ),
+                    label: Text(
+                      'Stable',
+                      style: TextStyle(
+                        color: _channel == 'stable' ? Colors.white : null,
+                      ),
+                    ),
+                    style: _channel == 'stable' ? M3EButtonStyle.filled : M3EButtonStyle.outlined,
+                    size: M3EButtonSize.md,
+                    decoration: M3EButtonDecoration(
+                      backgroundColor: _channel == 'stable'
+                          ? WidgetStatePropertyAll(AppColors.accentOf(context))
+                          : null,
+                      side: _channel == 'stable'
+                          ? null
+                          : WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context))),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildChannelButton('beta', 'Beta', Icons.science_outlined),
+                  child: M3EButton.icon(
+                    onPressed: () => _setChannel('beta'),
+                    icon: Icon(Icons.science_outlined,
+                      color: _channel == 'beta' ? Colors.white : null,
+                      size: 18,
+                    ),
+                    label: Text(
+                      'Beta',
+                      style: TextStyle(
+                        color: _channel == 'beta' ? Colors.white : null,
+                      ),
+                    ),
+                    style: _channel == 'beta' ? M3EButtonStyle.filled : M3EButtonStyle.outlined,
+                    size: M3EButtonSize.md,
+                    decoration: M3EButtonDecoration(
+                      backgroundColor: _channel == 'beta'
+                          ? WidgetStatePropertyAll(AppColors.accentOf(context))
+                          : null,
+                      side: _channel == 'beta'
+                          ? null
+                          : WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context))),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -193,33 +237,28 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             const SizedBox(height: 48),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _checking ? null : _checkForUpdates,
-                icon: _checking
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.refresh, size: 18, color: Colors.white),
-                label: Text(
-                  _checking ? 'CHECKING...' : 'CHECK FOR UPDATES',
-                  style: AppTextStyles.buttonLabel(context).copyWith(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accentOf(context),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  elevation: 0,
-                ),
+            M3EButton.icon(
+              onPressed: _checking ? null : _checkForUpdates,
+              icon: _checking
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.refresh, size: 18),
+              label: Text(
+                _checking ? 'CHECKING...' : 'CHECK FOR UPDATES',
+                style: const TextStyle(color: Colors.white),
+              ),
+              style: M3EButtonStyle.filled,
+              size: M3EButtonSize.md,
+              decoration: M3EButtonDecoration(
+                backgroundColor: WidgetStatePropertyAll(AppColors.accentOf(context)),
+                foregroundColor: const WidgetStatePropertyAll(Colors.white),
+                borderRadius: 18,
               ),
             ),
             const SizedBox(height: 32),
@@ -262,31 +301,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     'v$_appVersion',
                     style: AppTextStyles.subheading(context).copyWith(fontSize: 12),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'by Mohamed',
-                    style: AppTextStyles.subheading(context).copyWith(
-                      fontSize: 11,
-                      color: AppColors.secondaryTextOf(context).withValues(alpha: 0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  GestureDetector(
-                    onTap: () async {
-                      final uri = Uri.parse('https://github.com/MoHamed-B-M/Tempo');
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri, mode: LaunchMode.externalApplication);
-                      }
-                    },
-                    child: Text(
-                      'github.com/MoHamed-B-M/Tempo',
-                      style: AppTextStyles.subheading(context).copyWith(
-                        fontSize: 10,
-                        color: AppColors.accentOf(context),
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
+
                 ],
               ),
             ),
@@ -567,44 +582,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildChannelButton(String channelVal, String label, IconData icon) {
-    final isSelected = _channel == channelVal;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _setChannel(channelVal),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.accentOf(context) : AppColors.surfaceCardOf(context),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isSelected ? Colors.transparent : AppColors.borderOf(context),
-            width: 1,
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : AppColors.secondaryTextOf(context),
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: AppTextStyles.buttonLabel(context).copyWith(
-                color: isSelected ? Colors.white : AppColors.primaryTextOf(context),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:m3e_core/m3e_core.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
-import '../../services/alarm_service.dart';
+import '../../services/alarm_notifier.dart';
 import '../../widgets/sound_picker_sheet.dart';
 
 class SleepTimerTab extends StatefulWidget {
@@ -48,9 +49,8 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
 
   Future<void> _saveSleepSchedule() async {
     HapticFeedback.mediumImpact();
-    final service = context.read<AlarmService>();
+    final service = context.read<AlarmNotifier>();
     
-    // Add sleep alarm to AlarmService
     await service.addAlarm(
       hour: _selectedTime.hour,
       minute: _selectedTime.minute,
@@ -255,50 +255,37 @@ class _SleepTimerTabState extends State<SleepTimerTab> {
           Row(
             children: [
               Expanded(
-                child: GestureDetector(
-                  onTap: _resetFields,
-                  child: Container(
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceCardOf(context),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderOf(context), width: 1),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Skip',
-                      style: AppTextStyles.buttonLabel(context).copyWith(
-                        color: AppColors.secondaryTextOf(context),
-                        fontSize: 14,
-                      ),
+                child: M3EOutlinedButton(
+                  onPressed: _resetFields,
+                  size: M3EButtonSize.md,
+                  decoration: M3EButtonDecoration(
+                    backgroundColor: WidgetStatePropertyAll(AppColors.surfaceCardOf(context)),
+                    side: WidgetStatePropertyAll(BorderSide(color: AppColors.borderOf(context))),
+                    borderRadius: 16,
+                  ),
+                  child: Text(
+                    'Skip',
+                    style: TextStyle(
+                      color: AppColors.secondaryTextOf(context),
+                      fontSize: 14,
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: GestureDetector(
-                  onTap: _saveSleepSchedule,
-                  child: Container(
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentOf(context),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accentOf(context).withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Next',
-                      style: AppTextStyles.buttonLabel(context).copyWith(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
+                child: M3EFilledButton(
+                  onPressed: _saveSleepSchedule,
+                  size: M3EButtonSize.md,
+                  decoration: M3EButtonDecoration(
+                    backgroundColor: WidgetStatePropertyAll(AppColors.accentOf(context)),
+                    borderRadius: 16,
+                  ),
+                  child: Text(
+                    'Next',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
                     ),
                   ),
                 ),
