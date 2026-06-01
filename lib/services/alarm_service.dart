@@ -11,6 +11,8 @@ import 'screen_wake_handler.dart';
 class AlarmService {
   static const _channelId = 'tempo_alarm_channel';
   static const _channelName = 'Alarm Notifications';
+  static const _timerChannelId = 'tempo_timer_channel';
+  static const _timerChannelName = 'Timer Notifications';
 
   static GlobalKey<NavigatorState>? navigatorKey;
 
@@ -85,6 +87,19 @@ class AlarmService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(androidChannel);
+
+    const timerChannel = AndroidNotificationChannel(
+      _timerChannelId,
+      _timerChannelName,
+      description: 'Plays when the timer finishes',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(timerChannel);
   }
 
   AndroidNotificationDetails _buildAndroidDetails(String sound) {
@@ -276,22 +291,34 @@ class AlarmService {
   }
 
   void _onNotificationTap(NotificationResponse response) {
+    debugPrint('[AlarmService] Notification tap: actionId=${response.actionId}, payload=${response.payload}');
     _handleNotificationResponse(response);
   }
 
   void _handleNotificationResponse(NotificationResponse response) {
     final alarmId = response.payload;
-    if (alarmId == null) return;
+    if (alarmId == null) {
+      debugPrint('[AlarmService] No payload in notification response');
+      return;
+    }
 
     if (response.actionId == 'stop') {
+      debugPrint('[AlarmService] Stop action for alarm $alarmId');
       _persistStopFlag(alarmId);
       onStopFromNotification(alarmId);
       navigatorKey?.currentState?.maybePop();
       return;
     }
 
+    if (response.actionId == 'reset') {
+      debugPrint('[AlarmService] Reset action for timer $alarmId');
+      _notifications.cancel(alarmId.hashCode.abs());
+      navigatorKey?.currentState?.maybePop();
+      return;
+    }
+
     if (response.actionId == 'snooze') {
-      // Build a minimal AlarmModel for scheduling — we only need id/sound/label
+      debugPrint('[AlarmService] Snooze action for alarm $alarmId');
       final alarm = AlarmModel(
         id: alarmId,
         hour: 0,
@@ -399,10 +426,18 @@ class AlarmService {
 @pragma('vm:entry-point')
 Future<void> _backgroundNotificationHandler(
     NotificationResponse response) async {
+  debugPrint('[AlarmService Background] actionId=${response.actionId}, payload=${response.payload}');
+
   final plugin = FlutterLocalNotificationsPlugin();
   await plugin.cancel(response.id ?? -1);
 
+  if (response.actionId == 'reset') {
+    debugPrint('[AlarmService Background] Timer reset action');
+    return;
+  }
+
   if (response.actionId == 'snooze') {
+    debugPrint('[AlarmService Background] Snooze action');
     const androidDetails = AndroidNotificationDetails(
       'tempo_alarm_channel',
       'Alarm Notifications',
@@ -421,6 +456,7 @@ Future<void> _backgroundNotificationHandler(
   }
 
   if (response.actionId == 'stop' || response.actionId == 'snooze') {
+    debugPrint('[AlarmService Background] Persisting stop flag');
     final prefs = await SharedPreferences.getInstance();
     final stopped = prefs.getStringList('stopped_alarms') ?? [];
     final id = response.payload;

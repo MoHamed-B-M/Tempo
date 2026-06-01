@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.21] - 2026-06-01
+- Fixed edge-to-edge layout: added `SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge)` in `main()`, refactored `MainScreen` with `extendBody: true`, transparent background, removed opaque header circle behind settings gear icon, replaced all `AppColors`/`AppTextStyles` references with `Theme.of(context).colorScheme`
+- Fixed alarm card expand/collapse: wrapped `bodyBuilder` in `AnimatedSize` with `Curves.easeInOutCubic` as smooth fallback for M3E expandable state transitions
+- Fixed OTA update checker: added `connectivity_plus` pre-check before API call, reduced timeout from 15s to 10s, added explicit `SocketException` and `TimeoutException` catch blocks with `debugPrint` logging for each failure mode, added new `noConnection` result type
+- Fixed notification Stop button: added `debugPrint` log statements in both foreground and background notification handlers; created dedicated `tempo_timer_channel` with `'reset'` action for timer finish notifications; `_handleNotificationResponse` now cancels the notification immediately on stop/reset actions
+- Rewrote World Clock tab: uses IANA timezone database from `timezone` package (offline-first), search filters all timezone IDs by city/region name, favorite cities persisted via `SharedPreferences`, `RepaintBoundary` per city card for efficient per-second timer ticks, `M3EContainer.gem` FAB, bold high-contrast monochromatic typography with `PlusJakartaSans`
+- Verified with `flutter analyze` — 0 errors, 0 warnings
+
 ## [1.0.20] - 2026-06-01
 - Fixed full-screen intent: added dedicated `AlarmActivity` with `showWhenLocked`/`turnScreenOn` flags in AndroidManifest, updated `MainActivity.kt` with `onNewIntent` override and method channels for alarm activity launch and permission management
 - Added foreground service permissions (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`) to AndroidManifest for reliable alarm triggering

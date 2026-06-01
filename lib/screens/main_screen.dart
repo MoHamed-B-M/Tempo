@@ -1,8 +1,7 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_text_styles.dart';
 import '../services/theme_service.dart';
 import 'settings_page.dart';
 import 'tabs/alarms_tab.dart';
@@ -23,6 +22,15 @@ class _MainScreenState extends State<MainScreen>
   late AnimationController _slideController;
   late Animation<double> _contentFade;
   bool _tabSwitchLock = false;
+
+  static const _icons = [
+    Icons.alarm_outlined,
+    Icons.public_outlined,
+    Icons.timer_outlined,
+    Icons.hourglass_bottom,
+  ];
+
+
 
   final List<Widget> _tabs = const [
     AlarmsTab(),
@@ -65,126 +73,134 @@ class _MainScreenState extends State<MainScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundOf(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SettingsPage(),
-                        ),
-                      );
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOutCubic,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.surfaceCardOf(context),
-                        border: Border.all(
-                          color: AppColors.borderOf(context),
-                          width: 1,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.settings_outlined,
-                        size: 20,
-                        color: AppColors.primaryTextOf(context),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: FadeTransition(
-                opacity: _contentFade,
-                child: IndexedStack(
-                  index: _currentIndex,
-                  children: _tabs,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _buildFloatingBottomBar(),
-    );
-  }
-
-  Widget _buildFloatingBottomBar() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
+    final topPad = MediaQuery.of(context).padding.top;
     final bottomInset = MediaQuery.of(context).padding.bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24, 0, 24, bottomInset + 24),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceCardDark : Colors.white,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(
-            color: AppColors.borderOf(context),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final itemWidth = (constraints.maxWidth) / 4;
-            return Stack(
-              children: [
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeInOutCubic,
-                  left: _currentIndex * itemWidth,
-                  top: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: itemWidth,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentOf(context),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                  ),
-                ),
-                Row(
+    final showBar = context.watch<ThemeService>().showNavLabels;
+
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              SizedBox(height: topPad + 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    _buildNavItem(0, Icons.alarm_outlined, 'Alarms'),
-                    _buildNavItem(1, Icons.public_outlined, 'Clock'),
-                    _buildNavItem(2, Icons.timer_outlined, 'Stopwatch'),
-                    _buildNavItem(3, Icons.hourglass_bottom, 'Timer'),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SettingsPage(),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.settings_outlined,
+                          size: 22,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ],
-            );
-          },
+              ),
+              Expanded(
+                child: FadeTransition(
+                  opacity: _contentFade,
+                  child: IndexedStack(
+                    index: _currentIndex,
+                    children: _tabs,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: bottomInset + 20,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic,
+              offset: showBar ? Offset.zero : const Offset(0, 2),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 250),
+                opacity: showBar ? 1.0 : 0.0,
+                child: _buildFloatingBar(cs),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingBar(ColorScheme cs) {
+    return Container(
+      height: 64,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainer.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0.35),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = (constraints.maxWidth) / 4;
+              return Stack(
+                children: [
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeInOutCubic,
+                    left: _currentIndex * itemWidth + 6,
+                    top: 6,
+                    bottom: 6,
+                    child: Container(
+                      width: itemWidth - 12,
+                      decoration: BoxDecoration(
+                        color: cs.primary,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: List.generate(4, (i) => _buildNavItem(i)),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index) {
+    final cs = Theme.of(context).colorScheme;
     final isSelected = _currentIndex == index;
-    final showLabels = context.watch<ThemeService>().showNavLabels;
-    final showText = isSelected && showLabels;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -196,22 +212,18 @@ class _MainScreenState extends State<MainScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: isSelected ? Colors.white : AppColors.secondaryTextOf(context),
-                size: 22,
-              ),
-              if (showText) ...[
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: AppTextStyles.buttonLabel(context).copyWith(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
+              AnimatedScale(
+                scale: isSelected ? 1.15 : 1.0,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOutCubic,
+                child: Icon(
+                  _icons[index],
+                  color: isSelected
+                      ? Colors.white
+                      : cs.onSurfaceVariant.withValues(alpha: 0.6),
+                  size: 22,
                 ),
-              ],
+              ),
             ],
           ),
         ),

@@ -68,6 +68,11 @@ class UpdateManager {
           _showSnackBar(context, 'Rate limited. Try again later.');
         }
         break;
+      case UpdateCheckResult.noConnection:
+        if (!silent) {
+          _showSnackBar(context, 'No internet connection');
+        }
+        break;
       case UpdateCheckResult.networkError:
         if (!silent) {
           _showSnackBar(

@@ -396,18 +396,23 @@ class _AlarmsTabState extends State<AlarmsTab> {
         );
       },
       bodyBuilder: (context, idx, progress) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Divider(height: 1, indent: 20, endIndent: 20),
-            _ExpandedAlarmPanel(
-              alarm: alarm,
-              notifier: notifier,
-              cs: cs,
-              onDelete: () => notifier.removeAlarm(alarm.id),
-            ),
-          ],
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOutCubic,
+          alignment: Alignment.topCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Divider(height: 1, indent: 20, endIndent: 20),
+              _ExpandedAlarmPanel(
+                alarm: alarm,
+                notifier: notifier,
+                cs: cs,
+                onDelete: () => notifier.removeAlarm(alarm.id),
+              ),
+            ],
+          ),
         );
       },
     );

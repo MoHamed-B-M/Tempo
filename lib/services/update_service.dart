@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
@@ -10,6 +13,7 @@ enum UpdateCheckResult {
   repoNotFound,
   rateLimited,
   networkError,
+  noConnection,
 }
 
 class ReleaseInfo {
@@ -73,6 +77,16 @@ class UpdateService {
   UpdateService({http.Client? client}) : _client = client ?? http.Client();
 
   Future<UpdateCheckResponse> checkForUpdate() async {
+    try {
+      final connectivity = await Connectivity().checkConnectivity();
+      if (connectivity.contains(ConnectivityResult.none)) {
+        debugPrint('[UpdateService] No network connection');
+        return UpdateCheckResponse(result: UpdateCheckResult.noConnection);
+      }
+    } catch (e) {
+      debugPrint('[UpdateService] Connectivity check failed: $e');
+    }
+
     for (var attempt = 0; attempt < _maxRetries; attempt++) {
       try {
         if (attempt > 0) {
@@ -91,7 +105,7 @@ class UpdateService {
                 'User-Agent': 'Tempo-App',
               },
             )
-            .timeout(const Duration(seconds: 15));
+            .timeout(const Duration(seconds: 10));
 
         if (response.statusCode == 404) {
           debugPrint('[UpdateService] Repo not found (404)');
@@ -128,6 +142,14 @@ class UpdateService {
           result: UpdateCheckResult.available,
           release: ReleaseInfo.fromJson(json),
         );
+      } on SocketException catch (e) {
+        debugPrint('[UpdateService] SocketException (attempt $attempt): $e');
+        if (attempt < _maxRetries - 1) continue;
+        return UpdateCheckResponse(result: UpdateCheckResult.networkError);
+      } on TimeoutException catch (e) {
+        debugPrint('[UpdateService] TimeoutException (attempt $attempt): $e');
+        if (attempt < _maxRetries - 1) continue;
+        return UpdateCheckResponse(result: UpdateCheckResult.networkError);
       } on http.ClientException catch (e) {
         debugPrint('[UpdateService] ClientException (attempt $attempt): $e');
         if (attempt < _maxRetries - 1) continue;
