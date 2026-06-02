@@ -180,12 +180,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   child: M3EButton.icon(
                     onPressed: () => _setChannel('stable'),
                     icon: Icon(Icons.shield_outlined,
-                        color: _channel == 'stable' ? Colors.white : null,
+                        color: _channel == 'stable' ? cs.onPrimary : null,
                         size: 18),
                     label: Text(
                       'Stable',
                       style: TextStyle(
-                          color: _channel == 'stable' ? Colors.white : null),
+                          color: _channel == 'stable' ? cs.onPrimary : null),
                     ),
                     style: _channel == 'stable'
                         ? M3EButtonStyle.filled
@@ -207,12 +207,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   child: M3EButton.icon(
                     onPressed: () => _setChannel('beta'),
                     icon: Icon(Icons.science_outlined,
-                        color: _channel == 'beta' ? Colors.white : null,
+                        color: _channel == 'beta' ? cs.onPrimary : null,
                         size: 18),
                     label: Text(
                       'Beta',
                       style: TextStyle(
-                          color: _channel == 'beta' ? Colors.white : null),
+                          color: _channel == 'beta' ? cs.onPrimary : null),
                     ),
                     style: _channel == 'beta'
                         ? M3EButtonStyle.filled
@@ -249,12 +249,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             M3EButton.icon(
               onPressed: _checking ? null : _checkForUpdates,
               icon: _checking
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: cs.onPrimary,
                       ),
                     )
                   : const Icon(Icons.refresh, size: 18),
@@ -380,7 +380,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   height: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white,
+                    color: enabled ? cs.onPrimary : cs.surface,
                   ),
                 ),
               ),

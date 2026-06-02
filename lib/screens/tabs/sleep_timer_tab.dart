@@ -66,7 +66,7 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
             style: TextStyle(
               fontFamily: 'GoogleFonts.plusJakartaSans',
               fontSize: 14,
-              color: Colors.white,
+              color: cs.onPrimary,
             ),
           ),
           backgroundColor: cs.primary,
@@ -190,9 +190,9 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
                       ],
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(
+                    child: Icon(
                       Icons.add,
-                      color: Colors.white,
+                      color: cs.onPrimary,
                       size: 24,
                     ),
                   ),

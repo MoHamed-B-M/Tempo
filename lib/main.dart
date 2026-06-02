@@ -38,11 +38,33 @@ void main() async {
   );
 }
 
-class _TempoApp extends ConsumerWidget {
+class _TempoApp extends ConsumerStatefulWidget {
   const _TempoApp();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TempoApp> createState() => _TempoAppState();
+}
+
+class _TempoAppState extends ConsumerState<_TempoApp> {
+  @override
+  void initState() {
+    super.initState();
+    ref.listen(themeModeProvider, (prev, next) {
+      SystemChrome.setSystemUIOverlayStyle(
+        SystemUiOverlayStyle(
+          statusBarIconBrightness:
+              next == ThemeMode.light ? Brightness.dark : Brightness.light,
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarIconBrightness:
+              next == ThemeMode.light ? Brightness.dark : Brightness.light,
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
     return DynamicColorBuilder(
       builder: (lightDynamic, darkDynamic) {

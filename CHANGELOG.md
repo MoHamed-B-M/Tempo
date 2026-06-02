@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.24] - 2026-06-02
+- Rebuilt `ThemeData.light()` with `ColorScheme.fromSeed(seedColor: Color(0xFF616161), brightness: Brightness.light)` for clean monochromatic light colours
+- Added `navigationBarTheme`, `dialogTheme`, `bottomSheetTheme`, `switchTheme`, `filledButtonTheme`, `dividerTheme` to theme data
+- Added reactive `SystemUiOverlayStyle` setter — dark status-bar icons in light mode, light icons in dark mode
+- Replaced all remaining hardcoded `Colors.white`/`Colors.black` in UI text widgets with `colorScheme.onPrimary`/`colorScheme.onSurface` across settings, sleep timer, and FAB
+- Replaced shadow `Colors.black` with `cs.shadow` in floating nav
+- Fixed `navigationBarTheme.iconTheme` returning `Color` instead of `IconThemeData`
+- Fixed `const SizedBox` containing non-const `CircularProgressIndicator` in settings update channel
+- Removed `const` from sleep-timer `Icon(Icons.add, ...)` to allow dynamic theme colour
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.23] - 2026-06-02
 - Fixed light mode theming — added explicit `brightness` to `ThemeData`, replaced all hardcoded `Colors.white` with `cs.onPrimary`
 - Centered floating nav icons inside pill bar with `Center` widget wrapping `AnimatedScale`
