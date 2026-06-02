@@ -157,7 +157,7 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
             SliverAppBar(
               pinned: true,
               expandedHeight: 120,
-              backgroundColor: cs.surface,
+              backgroundColor: Colors.transparent,
               foregroundColor: cs.onSurface,
               flexibleSpace: FlexibleSpaceBar(
                 titlePadding: EdgeInsets.zero,

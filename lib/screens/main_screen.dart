@@ -75,7 +75,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final bottomInset = MediaQuery.of(context).padding.bottom;
     return Scaffold(
       extendBody: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: cs.surface,
       body: Stack(
         children: [
           Column(
