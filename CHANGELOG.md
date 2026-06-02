@@ -1,6 +1,6 @@
 # Changelog
 ## [1.0.24] - 2026-06-02
-![Tempo v1.0.24](https://github.com/MoHamed-B-M/Tempo/releases/download/v1.0.24/1.0.24.png)
+![Tempo v1.0.24](android/releases/1.0.24.png)
 - Rebuilt `ThemeData.light()` with `ColorScheme.fromSeed(seedColor: Color(0xFF616161), brightness: Brightness.light)` for clean monochromatic light colours
 - Added `navigationBarTheme`, `dialogTheme`, `bottomSheetTheme`, `switchTheme`, `filledButtonTheme`, `dividerTheme` to theme data
 - Added reactive `SystemUiOverlayStyle` setter — dark status-bar icons in light mode, light icons in dark mode
