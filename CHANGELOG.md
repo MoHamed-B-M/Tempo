@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.0.23] - 2026-06-02
+- Fixed light mode theming — added explicit `brightness` to `ThemeData`, replaced all hardcoded `Colors.white` with `cs.onPrimary`
+- Centered floating nav icons inside pill bar with `Center` widget wrapping `AnimatedScale`
+- Raised FABs above floating nav bar — moved from `bottom: 24` to `bottom: 96`, increased scroll padding to 140
+- Fixed distorted alarm card layout — added `crossAxisAlignment: CrossAxisAlignment.center` and `mainAxisSize: MainAxisSize.min` to header Row/Column
+- Replaced `provider`/`shared_preferences` with `flutter_riverpod`/`hive` across all state layers
+- Created Hive type adapter for `AlarmModel` with manual `TypeAdapter`
+- Created Riverpod providers: `alarmListProvider`, `themeModeProvider`, `alarmSettingsProvider`, `stopwatchProvider`
+- Removed `alarm_notifier.dart`, `alarm_settings.dart`, `theme_service.dart`, `stopwatch_state.dart`, `home_page.dart`, `constants/`
+- Rewired `AlarmService`/`UpdateManager` from `SharedPreferences` to Hive box persistence
+- Rewrote `sound_picker_sheet.dart` and `time_picker_wheel.dart` — replaced deleted `AppColors`/`AppTextStyles` with `Theme.of(context).colorScheme`
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
+## [1.0.22] - 2026-06-01
+
 ## [1.0.21] - 2026-06-01
 - Fixed edge-to-edge layout: added `SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge)` in `main()`, refactored `MainScreen` with `extendBody: true`, transparent background, removed opaque header circle behind settings gear icon, replaced all `AppColors`/`AppTextStyles` references with `Theme.of(context).colorScheme`
 - Fixed alarm card expand/collapse: wrapped `bodyBuilder` in `AnimatedSize` with `Curves.easeInOutCubic` as smooth fallback for M3E expandable state transitions

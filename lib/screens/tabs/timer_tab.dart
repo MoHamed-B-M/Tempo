@@ -220,10 +220,10 @@ class _TimerTabState extends State<TimerTab> {
             decoration: M3EButtonDecoration(
               borderRadius: 18,
             ),
-            child: const Text(
+            child: Text(
               'START TIMER',
               style: TextStyle(
-                color: Colors.white,
+                color: cs.onPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
               ),

@@ -233,13 +233,13 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
                   backgroundBorderRadius: 20,
                 ),
               ),
-            const SliverToBoxAdapter(child: SizedBox(height: 96)),
+              const SliverToBoxAdapter(child: SizedBox(height: 140)),
           ],
         ),
         Positioned(
           left: 0,
           right: 0,
-          bottom: 24,
+          bottom: 96,
           child: Center(
             child: GestureDetector(
               onTap: _showCreateSheet,
@@ -254,7 +254,7 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
                     offset: const Offset(0, 4),
                   ),
                 ],
-                child: const Icon(Icons.add, color: Colors.white, size: 28),
+                child: Icon(Icons.add, color: cs.onPrimary, size: 28),
               ),
             ),
           ),
@@ -355,11 +355,12 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 14, 8, 14),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       timeStr,

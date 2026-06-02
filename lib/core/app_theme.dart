@@ -24,6 +24,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: cs,
+      brightness: cs.brightness,
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       scaffoldBackgroundColor: cs.surface,
       pageTransitionsTheme: PageTransitionsTheme(

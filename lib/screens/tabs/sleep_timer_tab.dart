@@ -307,13 +307,13 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
                   decoration: M3EButtonDecoration(
                     borderRadius: 16,
                   ),
-                  child: const Text(
-                    'Next',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                child: Text(
+                  'Next',
+                  style: TextStyle(
+                    color: cs.onPrimary,
+                    fontSize: 14,
                   ),
+                ),
                 ),
               ),
             ],

@@ -260,13 +260,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   : const Icon(Icons.refresh, size: 18),
               label: Text(
                 _checking ? 'CHECKING...' : 'CHECK FOR UPDATES',
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: cs.onPrimary),
               ),
               style: M3EButtonStyle.filled,
               size: M3EButtonSize.md,
               decoration: M3EButtonDecoration(
                 backgroundColor: WidgetStatePropertyAll(cs.primary),
-                foregroundColor: const WidgetStatePropertyAll(Colors.white),
+                foregroundColor: WidgetStatePropertyAll(cs.onPrimary),
                 borderRadius: 18,
               ),
             ),

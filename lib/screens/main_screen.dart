@@ -191,26 +191,18 @@ class _MainScreenState extends ConsumerState<MainScreen>
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _switchTab(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedScale(
-                scale: isSelected ? 1.15 : 1.0,
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOutCubic,
-                child: Icon(
-                  _icons[index],
-                  color: isSelected
-                      ? Colors.white
-                      : cs.onSurfaceVariant.withValues(alpha: 0.6),
-                  size: 22,
-                ),
-              ),
-            ],
+        child: Center(
+          child: AnimatedScale(
+            scale: isSelected ? 1.15 : 1.0,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOutCubic,
+            child: Icon(
+              _icons[index],
+              color: isSelected
+                  ? cs.onPrimary
+                  : cs.onSurfaceVariant.withValues(alpha: 0.6),
+              size: 22,
+            ),
           ),
         ),
       ),

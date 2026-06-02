@@ -358,7 +358,7 @@ class _WorldClockTabState extends ConsumerState<WorldClockTab> {
                 child: ListView.builder(
                   physics: const BouncingScrollPhysics(),
                   itemCount: favorites.length,
-                  padding: const EdgeInsets.only(bottom: 100),
+                  padding: const EdgeInsets.only(bottom: 140),
                   itemBuilder: (ctx, index) {
                     final tzId = favorites[index];
                     final name = _cityName(tzId);
@@ -469,7 +469,7 @@ class _WorldClockTabState extends ConsumerState<WorldClockTab> {
         ),
         Positioned(
           right: 24,
-          bottom: 24,
+          bottom: 96,
           child: GestureDetector(
             onTap: _showAddCitySheet,
             child: M3EContainer.gem(
@@ -483,7 +483,7 @@ class _WorldClockTabState extends ConsumerState<WorldClockTab> {
                   offset: const Offset(0, 4),
                 ),
               ],
-              child: const Icon(Icons.add, color: Colors.white, size: 28),
+              child: Icon(Icons.add, color: cs.onPrimary, size: 28),
             ),
           ),
         ),
