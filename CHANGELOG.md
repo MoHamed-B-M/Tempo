@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.25] - 2026-06-02
+- Added immersive onboarding flow: 3-page `PageView` with `BouncingScrollPhysics` and spring-physics entrance animations via `motor`'s `SingleMotionBuilder` + `M3EMotion.expressiveSpatialDefault`
+- Page 1: "Welcome to Tempo" with app identity, clock icon in `M3EContainer.puffy`, and clock engine description
+- Page 2: "Expressive Interaction" with feature highlights (spring-driven controls, collapsible cards, Material You colors, offline world clock) using `M3EContainer.gem` icons
+- Page 3: "Ready to Begin" with prominent `M3EContainer.puffy` alert card displaying dark mode advisory notice, and "Get Started" `M3EButton.icon` with `M3EMotion.standardSpatialFast` spring motion and `M3EHapticFeedback.medium` haptics
+- Custom page indicator pill using `StadiumBorder` with `AnimatedContainer` width scaling per active page
+- First-launch Hive check via `HiveHelper.settings` key `onboarding_complete` — onboarding shows only on initial install
+- Added `motor: ^1.1.0` direct dependency for spring physics API
+- Wired onboarding into `_AppShell` build method with async Hive gate before `MainScreen`
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.24] - 2026-06-02
 - Rebuilt `ThemeData.light()` with `ColorScheme.fromSeed(seedColor: Color(0xFF616161), brightness: Brightness.light)` for clean monochromatic light colours
 - Added `navigationBarTheme`, `dialogTheme`, `bottomSheetTheme`, `switchTheme`, `filledButtonTheme`, `dividerTheme` to theme data
