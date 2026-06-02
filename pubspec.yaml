@@ -23,7 +23,6 @@ dependencies:
   timezone: ^0.9.4
   flutter_timezone: ^5.1.0
   m3e_core: ^0.1.0
-  motor: ^1.1.0
   dynamic_color: ^1.8.0
   connectivity_plus: ^6.1.0
   flutter_local_notifications: ^17.2.0
