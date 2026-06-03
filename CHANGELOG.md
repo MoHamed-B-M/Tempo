@@ -1,4 +1,13 @@
 # Changelog
+## [1.0.32] - 2026-06-03
+![Tempo v1.0.32](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.32.png)
+- Implemented Material 3 Container Transform on alarm grid cards using `OpenContainer` from `animations` package
+- Added reusable `ExpressiveOpenContainer` wrapper widget with configurable closed color, border radius, and transition duration
+- Added full-screen `AlarmEditPage` replacing the old bottom-sheet editor — smooth scale-and-expand transition from card bounds to full screen
+- Added `animations: ^2.0.0` dependency
+- Removed legacy `_ExpandedAlarmPanel` expandable panel (dead code)
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.31] - 2026-06-03
 ![Tempo v1.0.31](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.31.png)
 - Replaced app launcher icon across all densities (mdpi–xxxhdpi) for monochrome, foreground, background, and combined layers
