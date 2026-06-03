@@ -18,7 +18,7 @@ class ExpressiveOpenContainer extends StatelessWidget {
     required this.closedColor,
     this.openColor = Colors.transparent,
     this.closedBorderRadius = 28.0,
-    this.transitionDuration = const Duration(milliseconds: 500),
+    this.transitionDuration = const Duration(milliseconds: 600),
     this.closedElevation = 0,
     this.openElevation = 0,
   });
@@ -36,8 +36,16 @@ class ExpressiveOpenContainer extends StatelessWidget {
       openShape: const RoundedRectangleBorder(),
       transitionDuration: transitionDuration,
       transitionType: ContainerTransitionType.fadeThrough,
-      closedBuilder: (context, action) => closedChild,
-      openBuilder: (context, action) => openBuilder(context),
+      closedBuilder: (context, action) => RepaintBoundary(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(closedBorderRadius),
+          clipBehavior: Clip.antiAliasWithSaveLayer,
+          child: closedChild,
+        ),
+      ),
+      openBuilder: (context, action) => RepaintBoundary(
+        child: openBuilder(context),
+      ),
     );
   }
 }

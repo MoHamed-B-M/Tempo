@@ -19,6 +19,8 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    resourceConfigurations += setOf("en")
+
     val keystoreFile = file("upload-keystore.jks")
     if (!keystoreFile.exists()) {
         val keytool = System.getProperty("java.home") + File.separator +
@@ -79,6 +81,7 @@ android {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
+            isCrunchPngs = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

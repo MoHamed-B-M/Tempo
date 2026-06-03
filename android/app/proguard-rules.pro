@@ -7,6 +7,13 @@
 -keep class io.flutter.plugins.** { *; }
 -keep class io.flutter.embedding.** { *; }
 
+# Optimize: allow R8 aggressive optimization
+-optimizationpasses 5
+-overloadaggressively
+-repackageclasses ''
+-allowaccessmodification
+-mergeinterfacesaggressively
+
 # flutter_local_notifications
 -keep class com.dexterous.flutterlocalnotifications.** { *; }
 
