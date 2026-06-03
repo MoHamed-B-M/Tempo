@@ -1,4 +1,12 @@
 # Changelog
+## [1.0.28] - 2026-06-03
+![Tempo v1.0.28](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.28.png)
+- Refactored alarm grid cards with M3 Expressive container styling: distinct `primaryContainer` card background, `BorderRadius.circular(28)` expressive shape, improved inner padding
+- Added optional `cardBackgroundColor` parameter to `_AlarmGridCard` for per-alarm custom card colors (falls back to `primaryContainer`)
+- Disabled alarms now render at 45% opacity on the card color
+- Build config: per-abi split APKs (`arm64-v8a`, `armeabi-v7a`), R8 minification + resource shrinking, ABI-split AAB support
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.27] - 2026-06-03
 ![Tempo v1.0.27](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.27.png)
 - Replaced alarms full-width expandable card list with a 2-column `SliverGrid` of compact cards
