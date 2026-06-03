@@ -2,8 +2,8 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dashboard_screen.dart';
 import 'settings_page.dart';
-import 'tabs/alarms_tab.dart';
 import 'tabs/world_clock_tab.dart';
 import 'tabs/stopwatch_tab.dart';
 import 'tabs/timer_tab.dart';
@@ -23,14 +23,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
   bool _tabSwitchLock = false;
 
   static const _icons = [
-    Icons.alarm_outlined,
+    Icons.grid_view_outlined,
     Icons.public_outlined,
     Icons.timer_outlined,
     Icons.hourglass_bottom,
   ];
 
   final List<Widget> _tabs = const [
-    AlarmsTab(),
+    DashboardScreen(),
     WorldClockTab(),
     StopwatchTab(),
     TimerTab(),

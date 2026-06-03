@@ -1,4 +1,16 @@
 # Changelog
+## [1.0.26] - 2026-06-03
+![Tempo v1.0.26](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.26.png)
+- Replaced traditional tab-based ListView with an expressive, non-uniform grid dashboard
+- Added `DashboardScreen` with staggered card layout: wide Alarm card, geometric Clock card, World Clock card with abstract map painter, Timer with circular progress, and Stopwatch with media controls
+- Capsule chip row (`Wake Up`, `Relax`, `Workout`, `Bloggers`) with active/inactive states using `AnimatedContainer`
+- All cards use `M3EContainer.puffy` with pastel M3 container colors and extreme rounding (28dp+)
+- Custom `_GeometricClockPainter` with concentric rings, geometric dot indices, and stylized clock hands
+- Custom `_WorldMapPainter` with abstract continent blobs
+- Wireframe stopwatch reads from existing `stopwatchProvider`; timer is self-contained with `_CircularProgressPainter`
+- First tab re-themed to `Icons.grid_view_outlined`; World Clock, Stopwatch, and Timer detail tabs preserved
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.25] - 2026-06-02
 ![Tempo v1.0.25](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.25.png)
 - Re-added immersive M3E onboarding flow (v1.0.25 revert was premature)
