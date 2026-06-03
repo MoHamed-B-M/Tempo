@@ -1,5 +1,15 @@
 # Changelog
+## [1.0.26] - 2026-06-03
+![Tempo v1.0.26](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.26.png)
+- Re-added immersive M3E onboarding flow (v1.0.25 revert was premature)
+- Three-page `PageView` (Welcome → Expressive Interaction → Ready to Begin) with `SingleMotionBuilder` spring transitions
+- First-launch gate via Hive `settings` box key `onboarding_complete`
+- "Get Started" `M3EButton` with `M3EMotion.standardSpatialFast` and `M3EHapticFeedback.medium`
+- Custom `StadiumBorder` page indicator with animated width
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.25] - 2026-06-02
+![Tempo v1.0.25](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.25.png)
 - Refactored main layout shell: unified `Scaffold(backgroundColor: cs.surface)` as single root background colour across all tabs — eliminates patchy dark/light container splits
 - Made `SliverAppBar` in alarms tab transparent so `cs.surface` floods uninterrupted from top to bottom
 - Added `android/releases/` to `.gitignore` to prevent tracking release screenshots

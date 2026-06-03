@@ -9,6 +9,7 @@ import 'providers/alarm_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/timer_provider.dart';
 import 'screens/main_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/alarm_service.dart';
 import 'services/screen_wake_handler.dart';
 import 'services/update_manager.dart';
@@ -92,6 +93,7 @@ class _AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<_AppShell>
     with WidgetsBindingObserver {
   bool _showingStopwatchLock = false;
+  bool? _showOnboarding;
 
   @override
   void initState() {
@@ -101,6 +103,14 @@ class _AppShellState extends ConsumerState<_AppShell>
       ref.read(alarmServiceProvider).processPendingAlarm();
       UpdateManager.checkAndShowUpdate(context, silent: true);
     });
+    _checkOnboarding();
+  }
+
+  void _checkOnboarding() {
+    final complete =
+        HiveHelper.settings.get('onboarding_complete', defaultValue: false)
+            as bool;
+    setState(() => _showOnboarding = !complete);
   }
 
   @override
@@ -152,6 +162,8 @@ class _AppShellState extends ConsumerState<_AppShell>
 
   @override
   Widget build(BuildContext context) {
+    if (_showOnboarding == null) return const SizedBox.shrink();
+    if (_showOnboarding!) return const OnboardingScreen();
     return const MainScreen();
   }
 }
