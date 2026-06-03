@@ -40,7 +40,7 @@ jobs:
         with:
           name: tempo-release-artifacts
           path: |
-            build/app/outputs/flutter-apk/
+            build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
 
@@ -104,10 +104,7 @@ jobs:
         id: find-apk
         shell: bash
         run: |
-          APK=$(ls build/app/outputs/flutter-apk/app-*-release.apk 2>/dev/null | head -1)
-          if [ -z "$APK" ]; then
-            APK=$(ls build/app/outputs/flutter-apk/*.apk 2>/dev/null | head -1)
-          fi
+          APK=$(ls build/app/outputs/flutter-apk/*.apk 2>/dev/null | head -1)
           AAB=build/app/outputs/bundle/release/app-release.aab
           echo "apk=$APK" >> $GITHUB_OUTPUT
           echo "aab=$AAB" >> $GITHUB_OUTPUT
