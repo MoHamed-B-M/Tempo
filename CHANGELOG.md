@@ -1,4 +1,13 @@
 # Changelog
+## [1.0.27] - 2026-06-03
+![Tempo v1.0.27](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.27.png)
+- Replaced alarms full-width expandable card list with a 2-column `SliverGrid` of compact cards
+- Each grid card shows `24px` time, label/repeat subtitle, and `Switch` toggle in a `ClipRRect` container with `20px` rounded corners
+- Tap a grid card opens a bottom sheet with the full alarm editor (label, repeat days, sound, delete)
+- Swipe-to-delete via `Dismissible(endToStart)` on each grid card
+- Removed `DashboardScreen`; restored `AlarmsTab` as the primary tab with `Icons.alarm_outlined`
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.26] - 2026-06-03
 ![Tempo v1.0.26](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.26.png)
 - Replaced traditional tab-based ListView with an expressive, non-uniform grid dashboard

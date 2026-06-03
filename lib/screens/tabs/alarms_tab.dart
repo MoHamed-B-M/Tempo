@@ -16,26 +16,6 @@ class AlarmsTab extends ConsumerStatefulWidget {
 }
 
 class _AlarmsTabState extends ConsumerState<AlarmsTab> {
-  final Set<String> _expandedIds = {};
-
-  bool _isExpanded(int index, List<AlarmModel> alarms) {
-    if (index >= alarms.length) return false;
-    return _expandedIds.contains(alarms[index].id);
-  }
-
-  void _toggleExpand(int index, List<AlarmModel> alarms) {
-    HapticFeedback.mediumImpact();
-    final id = alarms[index].id;
-    setState(() {
-      if (_expandedIds.contains(id)) {
-        _expandedIds.remove(id);
-      } else {
-        _expandedIds.clear();
-        _expandedIds.add(id);
-      }
-    });
-  }
-
   void _showCreateSheet() {
     final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
@@ -121,6 +101,37 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
     );
   }
 
+  void _showEditSheet(AlarmModel alarm) {
+    final cs = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        ),
+        child: _ExpandedAlarmPanel(
+          alarm: alarm,
+          cs: Theme.of(ctx).colorScheme,
+          onDelete: () {
+            ref.read(alarmListProvider.notifier).removeAlarm(alarm.id);
+            Navigator.pop(ctx);
+          },
+          onUpdateLabel: (label) =>
+              ref.read(alarmListProvider.notifier).updateAlarmLabel(alarm.id, label),
+          onUpdateRepeatDays: (days) =>
+              ref.read(alarmListProvider.notifier).updateAlarmRepeatDays(alarm.id, days),
+          onUpdateSound: (sound) =>
+              ref.read(alarmListProvider.notifier).updateAlarmSound(alarm.id, sound),
+        ),
+      ),
+    );
+  }
+
   String _getStatus(List<AlarmModel> alarms) {
     final active = alarms.where((a) => a.enabled).toList();
     if (active.isEmpty) return 'No alarms';
@@ -197,43 +208,33 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
                 child: _buildEmptyState(cs),
               )
             else
-              SliverM3EDismissibleCardList(
-                itemCount: alarms.length,
-                itemBuilder: (context, index) =>
-                    _buildAlarmCard(alarms, index, cs),
-                onDismiss: (index, direction) async {
-                  ref.read(alarmListProvider.notifier).removeAlarm(alarms[index].id);
-                  return true;
-                },
-                style: M3EDismissibleCardStyle(
-                  outerRadius: 20,
-                  innerRadius: 6,
-                  gap: 0,
-                  color: cs.surfaceContainerHigh,
-                  border: BorderSide(
-                    color: cs.outlineVariant.withValues(alpha: 0.5),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 140),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.15,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
                   ),
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  padding: EdgeInsets.zero,
-                  neighbourPull: 8,
-                  neighbourReach: 3,
-                  neighbourMotion:
-                      const M3EMotion.custom(stiffness: 800, damping: 0.7),
-                  snapBackMotion:
-                      const M3EMotion.custom(stiffness: 380, damping: 0.6),
-                  flyMotion:
-                      const M3EMotion.custom(stiffness: 400, damping: 0.8),
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 24),
-                    child: const Icon(Icons.delete_outline_rounded,
-                        color: Colors.red, size: 26),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _AlarmGridCard(
+                      alarm: alarms[index],
+                      onToggle: () {
+                        HapticFeedback.mediumImpact();
+                        ref
+                            .read(alarmListProvider.notifier)
+                            .toggleAlarm(alarms[index].id);
+                      },
+                      onTap: () => _showEditSheet(alarms[index]),
+                      onDelete: () => ref
+                          .read(alarmListProvider.notifier)
+                          .removeAlarm(alarms[index].id),
+                    ),
+                    childCount: alarms.length,
                   ),
-                  backgroundBorderRadius: 20,
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 140)),
           ],
         ),
         Positioned(
@@ -300,18 +301,35 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
       ),
     );
   }
+}
 
-  Widget _buildAlarmCard(List<AlarmModel> alarms, int index, ColorScheme cs) {
-    final alarm = alarms[index];
+class _AlarmGridCard extends StatelessWidget {
+  final AlarmModel alarm;
+  final VoidCallback onToggle;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  const _AlarmGridCard({
+    required this.alarm,
+    required this.onToggle,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final enabled = alarm.enabled;
+    final textColor =
+        enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.4);
+    final mutedColor =
+        cs.onSurfaceVariant.withValues(alpha: enabled ? 0.9 : 0.4);
     final timeStr =
         '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}';
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     String subtitle;
-    if (alarm.label.isNotEmpty && alarm.isRepeating) {
-      final d = alarm.repeatDays.map((d) => days[d - 1]).join(' ');
-      subtitle = '${alarm.label}  •  $d';
-    } else if (alarm.label.isNotEmpty) {
+    if (alarm.label.isNotEmpty) {
       subtitle = alarm.label;
     } else if (alarm.isRepeating) {
       subtitle = alarm.repeatDays.map((d) => days[d - 1]).join(' ');
@@ -319,113 +337,69 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
       subtitle = 'Once';
     }
 
-    final enabled = alarm.enabled;
-    final textColor =
-        enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.4);
-    final subtitleColor = enabled
-        ? cs.onSurfaceVariant
-        : cs.onSurfaceVariant.withValues(alpha: 0.4);
-
-    return buildM3EExpandableItem(
-      index: index,
-      totalCount: alarms.length,
-      isExpanded: _isExpanded(index, alarms),
-      decoration: M3EExpandableStyle(
-        outerRadius: 20,
-        innerRadius: 6,
-        gap: 0,
-        expandedRadius: 20,
-        color: Colors.transparent,
-        border: BorderSide.none,
-        elevation: 0,
-        margin: EdgeInsets.zero,
-        headerPadding: EdgeInsets.zero,
-        bodyPadding: EdgeInsets.zero,
-        useInkWell: true,
-        tapHeaderToToggle: true,
-        tapBodyToExpand: false,
-        tapBodyToCollapse: false,
-        expandIcon: null,
-        collapseIcon: null,
+    return Dismissible(
+      key: ValueKey(alarm.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: cs.error.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(Icons.delete_outline_rounded, color: cs.error, size: 22),
       ),
-      expandMotion: M3EMotion.expressiveSpatialFast,
-      collapseMotion: M3EMotion.standardSpatialFast,
-      onToggle: () => _toggleExpand(index, alarms),
-      headerBuilder: (context, idx, progress) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 8, 14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+      onDismissed: (_) => onDelete(),
+      child: GestureDetector(
+        onTap: onTap,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            color: enabled
+                ? cs.surfaceContainerHigh
+                : cs.surfaceContainerHigh.withValues(alpha: 0.5),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       timeStr,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 36,
+                        fontSize: 24,
                         fontWeight: FontWeight.w700,
                         color: textColor,
-                        letterSpacing: -1,
+                        letterSpacing: -0.5,
                         height: 1.1,
                       ),
                     ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: subtitleColor,
-                        ),
+                    Transform.scale(
+                      scale: 0.75,
+                      child: Switch(
+                        value: enabled,
+                        onChanged: (_) => onToggle(),
                       ),
-                    ],
+                    ),
                   ],
                 ),
-              ),
-              Switch(
-                value: enabled,
-                onChanged: (val) {
-                  HapticFeedback.mediumImpact();
-                  ref.read(alarmListProvider.notifier).toggleAlarm(alarm.id);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-      bodyBuilder: (context, idx, progress) {
-        return ClipRect(
-          child: Align(
-            heightFactor: progress,
-            alignment: Alignment.topCenter,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Divider(height: 1, indent: 20, endIndent: 20),
-                _ExpandedAlarmPanel(
-                  alarm: alarm,
-                  cs: cs,
-                  onDelete: () =>
-                      ref.read(alarmListProvider.notifier).removeAlarm(alarm.id),
-                  onUpdateLabel: (label) =>
-                      ref.read(alarmListProvider.notifier).updateAlarmLabel(alarm.id, label),
-                  onUpdateRepeatDays: (days) =>
-                      ref.read(alarmListProvider.notifier).updateAlarmRepeatDays(alarm.id, days),
-                  onUpdateSound: (sound) =>
-                      ref.read(alarmListProvider.notifier).updateAlarmSound(alarm.id, sound),
+                const Spacer(),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: mutedColor,
+                  ),
                 ),
               ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
