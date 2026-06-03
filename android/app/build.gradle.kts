@@ -4,6 +4,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
 android {
     namespace = "com.example.tempo"
     compileSdk = flutter.compileSdkVersion
@@ -15,12 +21,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
-    resourceConfigurations += setOf("en")
-
     val keystoreFile = file("upload-keystore.jks")
     if (!keystoreFile.exists()) {
         val keytool = System.getProperty("java.home") + File.separator +
@@ -28,7 +28,7 @@ android {
         val keytoolExe = if (File(keytool).exists()) keytool else "$keytool.exe"
         if (File(keytoolExe).exists()) {
             keystoreFile.parentFile.mkdirs()
-            exec {
+            project.exec {
                 commandLine(
                     keytoolExe, "-genkey", "-v",
                     "-keystore", keystoreFile.absolutePath,
