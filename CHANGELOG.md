@@ -1,4 +1,10 @@
 # Changelog
+## [1.0.31] - 2026-06-03
+![Tempo v1.0.31](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.31.png)
+- Replaced app launcher icon across all densities (mdpi–xxxhdpi) for monochrome, foreground, background, and combined layers
+- Reverted ABI build config to original: removed `ndk abiFilters` block, restored `x86_64` in splits and universal APK
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.30] - 2026-06-03
 ![Tempo v1.0.30](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.30.png)
 - Fixed ABI build conflict: aligned `ndk abiFilters` with `splits abi` config by clearing Flutter plugin defaults and re-adding only `arm64-v8a` and `armeabi-v7a`
