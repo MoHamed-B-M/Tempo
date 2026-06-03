@@ -1,5 +1,20 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+
+enum UpdateCheckResult {
+  available,
+  upToDate,
+  noReleases,
+  repoNotFound,
+  rateLimited,
+  networkError,
+  noConnection,
+}
 
 class ReleaseInfo {
   final String tagName;
@@ -16,7 +31,12 @@ class ReleaseInfo {
     this.apkDownloadUrl,
   });
 
-  String get version => tagName.startsWith('v') ? tagName.substring(1) : tagName;
+  String get version {
+    final stripped = tagName.startsWith(RegExp(r'[vV]'))
+        ? tagName.substring(1)
+        : tagName;
+    return stripped.toLowerCase();
+  }
 
   factory ReleaseInfo.fromJson(Map<String, dynamic> json) {
     final assets = json['assets'] as List?;
@@ -40,71 +60,112 @@ class ReleaseInfo {
   }
 }
 
+class UpdateCheckResponse {
+  final UpdateCheckResult result;
+  final ReleaseInfo? release;
+
+  UpdateCheckResponse({required this.result, this.release});
+}
+
 class UpdateService {
-  static const _apiUrl = 'https://api.github.com/repos/MoHamed-B-M/Tempo/releases';
+  static const _apiUrl =
+      'https://api.github.com/repos/MoHamed-B-M/Tempo/releases/latest';
+  static const _maxRetries = 3;
 
   final http.Client _client;
 
   UpdateService({http.Client? client}) : _client = client ?? http.Client();
 
-  Future<ReleaseInfo?> checkForUpdate(String channel) async {
+  Future<UpdateCheckResponse> checkForUpdate() async {
     try {
-      final response = await _client.get(
-        Uri.parse(_apiUrl),
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Tempo-App',
-        },
-      );
-
-      if (response.statusCode != 200) return null;
-
-      final List<dynamic> releases = jsonDecode(response.body) as List;
-
-      List<Map<String, dynamic>> filtered;
-      if (channel == 'beta') {
-        filtered = releases
-            .where((r) => r['prerelease'] == true)
-            .map((r) => r as Map<String, dynamic>)
-            .toList();
-      } else {
-        filtered = releases
-            .where((r) => r['prerelease'] == false)
-            .map((r) => r as Map<String, dynamic>)
-            .toList();
+      final connectivity = await Connectivity().checkConnectivity();
+      if (connectivity.contains(ConnectivityResult.none)) {
+        debugPrint('[UpdateService] No network connection');
+        return UpdateCheckResponse(result: UpdateCheckResult.noConnection);
       }
-
-      if (filtered.isEmpty) return null;
-
-      filtered.sort((a, b) {
-        final aTag = (a['tag_name'] as String?) ?? '';
-        final bTag = (b['tag_name'] as String?) ?? '';
-        return _compareVersions(bTag, aTag);
-      });
-
-      return ReleaseInfo.fromJson(filtered.first);
-    } catch (_) {
-      return null;
+    } catch (e) {
+      debugPrint('[UpdateService] Connectivity check failed: $e');
     }
-  }
 
-  int _compareVersions(String a, String b) {
-    final aParts = _parseVersion(a);
-    final bParts = _parseVersion(b);
-    for (var i = 0; i < 3; i++) {
-      if (aParts[i] != bParts[i]) return aParts[i].compareTo(bParts[i]);
+    for (var attempt = 0; attempt < _maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          final delay = Duration(
+            milliseconds: (pow(2, attempt) * 1000).toInt(),
+          );
+          debugPrint('[UpdateService] Retry $attempt after ${delay.inSeconds}s');
+          await Future.delayed(delay);
+        }
+
+        final response = await _client
+            .get(
+              Uri.parse(_apiUrl),
+              headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Tempo-App',
+              },
+            )
+            .timeout(const Duration(seconds: 10));
+
+        if (response.statusCode == 404) {
+          debugPrint('[UpdateService] Repo not found (404)');
+          return UpdateCheckResponse(result: UpdateCheckResult.repoNotFound);
+        }
+
+        if (response.statusCode == 403) {
+          debugPrint('[UpdateService] Rate limited (403)');
+          return UpdateCheckResponse(result: UpdateCheckResult.rateLimited);
+        }
+
+        if (response.statusCode != 200) {
+          debugPrint('[UpdateService] HTTP ${response.statusCode}');
+          if (attempt < _maxRetries - 1) continue;
+          return UpdateCheckResponse(result: UpdateCheckResult.networkError);
+        }
+
+        final body = response.body;
+        if (body.isEmpty) {
+          debugPrint('[UpdateService] Empty response body');
+          if (attempt < _maxRetries - 1) continue;
+          return UpdateCheckResponse(result: UpdateCheckResult.noReleases);
+        }
+
+        final json = jsonDecode(body) as Map<String, dynamic>;
+        final tagName = json['tag_name'] as String?;
+        if (tagName == null || tagName.isEmpty) {
+          debugPrint('[UpdateService] Missing tag_name in response');
+          if (attempt < _maxRetries - 1) continue;
+          return UpdateCheckResponse(result: UpdateCheckResult.noReleases);
+        }
+
+        return UpdateCheckResponse(
+          result: UpdateCheckResult.available,
+          release: ReleaseInfo.fromJson(json),
+        );
+      } on SocketException catch (e) {
+        debugPrint('[UpdateService] SocketException (attempt $attempt): $e');
+        if (attempt < _maxRetries - 1) continue;
+        return UpdateCheckResponse(result: UpdateCheckResult.networkError);
+      } on TimeoutException catch (e) {
+        debugPrint('[UpdateService] TimeoutException (attempt $attempt): $e');
+        if (attempt < _maxRetries - 1) continue;
+        return UpdateCheckResponse(result: UpdateCheckResult.networkError);
+      } on http.ClientException catch (e) {
+        debugPrint('[UpdateService] ClientException (attempt $attempt): $e');
+        if (attempt < _maxRetries - 1) continue;
+        return UpdateCheckResponse(result: UpdateCheckResult.networkError);
+      } on FormatException catch (e) {
+        debugPrint('[UpdateService] FormatException (attempt $attempt): $e');
+        if (attempt < _maxRetries - 1) continue;
+        return UpdateCheckResponse(result: UpdateCheckResult.networkError);
+      } catch (e) {
+        debugPrint('[UpdateService] Unexpected error (attempt $attempt): $e');
+        if (attempt < _maxRetries - 1) continue;
+        return UpdateCheckResponse(result: UpdateCheckResult.networkError);
+      }
     }
-    return 0;
-  }
 
-  List<int> _parseVersion(String tag) {
-    final v = tag.startsWith('v') ? tag.substring(1) : tag;
-    final parts = v.split('.');
-    return [
-      parts.length > 0 ? int.tryParse(parts[0]) ?? 0 : 0,
-      parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
-      parts.length > 2 ? int.tryParse(parts[2]) ?? 0 : 0,
-    ];
+    return UpdateCheckResponse(result: UpdateCheckResult.networkError);
   }
 
   void dispose() {

@@ -30,14 +30,18 @@ jobs:
         with:
           channel: stable
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Build release APK & App Bundle
+        run: |
+          flutter build apk --release --split-debug-info=build/debug-info --obfuscate
+          flutter build appbundle --release --split-debug-info=build/debug-info --obfuscate
 
-      - name: Upload APK to artifact
+      - name: Upload APK & AAB to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tempo-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: tempo-release-artifacts
+          path: |
+            build/app/outputs/flutter-apk/
+            build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
 
   release:
@@ -87,16 +91,34 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
-      - name: Build signed release APK
-        run: flutter build apk --release
+      - name: Build signed release APK & App Bundle
+        run: |
+          flutter build apk --release --split-debug-info=build/debug-info --obfuscate
+          flutter build appbundle --release --split-debug-info=build/debug-info --obfuscate
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
+      - name: Find APK file
+        id: find-apk
+        shell: bash
+        run: |
+          APK=$(ls build/app/outputs/flutter-apk/app-*-release.apk 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(ls build/app/outputs/flutter-apk/*.apk 2>/dev/null | head -1)
+          fi
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          echo "apk=$APK" >> $GITHUB_OUTPUT
+          echo "aab=$AAB" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK"
+          echo "AAB: $AAB"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           body_path: RELEASE_NOTES.md
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            ${{ steps.find-apk.outputs.apk }}
+            ${{ steps.find-apk.outputs.aab }}
           generate_release_notes: false

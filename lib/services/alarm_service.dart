@@ -1,28 +1,41 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:hive_flutter/hive_flutter.dart';
+import '../core/hive_helper.dart';
 import '../models/alarm_model.dart';
+import '../screens/alarm_ring_screen.dart';
+import 'screen_wake_handler.dart';
 
-class AlarmService extends ChangeNotifier {
-  static const _storageKey = 'alarms';
+class AlarmService {
   static const _channelId = 'tempo_alarm_channel';
   static const _channelName = 'Alarm Notifications';
+  static const _timerChannelId = 'tempo_timer_channel';
+  static const _timerChannelName = 'Timer Notifications';
+
+  static GlobalKey<NavigatorState>? navigatorKey;
 
   final FlutterLocalNotificationsPlugin _notifications;
-  List<AlarmModel> _alarms = [];
   bool _initialized = false;
+  String? _pendingAlarmId;
 
-  List<AlarmModel> get alarms => List.unmodifiable(_alarms);
+  /// Called when a notification stop action fires for a one-shot alarm.
+  late void Function(String alarmId) onStopFromNotification;
+
+  String? get pendingAlarmId => _pendingAlarmId;
 
   AlarmService(this._notifications);
 
   Future<void> initialize() async {
     if (_initialized) return;
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    tz_data.initializeTimeZones();
+    await _detectLocalTimezone();
+
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -35,11 +48,30 @@ class AlarmService extends ChangeNotifier {
     await _notifications.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTap,
+      onDidReceiveBackgroundNotificationResponse:
+          _backgroundNotificationHandler,
     );
 
     await _createNotificationChannel();
-    await _loadAlarms();
+
+    final launchDetails =
+        await _notifications.getNotificationAppLaunchDetails();
+    if (launchDetails?.didNotificationLaunchApp == true) {
+      _pendingAlarmId = launchDetails!.notificationResponse?.payload;
+    }
+
     _initialized = true;
+  }
+
+  Future<void> _detectLocalTimezone() async {
+    try {
+      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
+    } catch (_) {
+      try {
+        tz.setLocalLocation(tz.getLocation(DateTime.now().timeZoneName));
+      } catch (_) {}
+    }
   }
 
   Future<void> _createNotificationChannel() async {
@@ -47,7 +79,7 @@ class AlarmService extends ChangeNotifier {
       _channelId,
       _channelName,
       description: 'Plays when an alarm triggers',
-      importance: Importance.high,
+      importance: Importance.max,
       playSound: true,
       enableVibration: true,
       enableLights: true,
@@ -56,71 +88,50 @@ class AlarmService extends ChangeNotifier {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(androidChannel);
-  }
 
-  Future<void> _loadAlarms() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_storageKey);
-    if (data != null) {
-      final list = jsonDecode(data) as List;
-      _alarms = list
-          .map((e) => AlarmModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    }
-  }
-
-  Future<void> _saveAlarms() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = jsonEncode(_alarms.map((a) => a.toJson()).toList());
-    await prefs.setString(_storageKey, data);
-  }
-
-  Future<AlarmModel> addAlarm({
-    required int hour,
-    required int minute,
-    String sound = 'default',
-    List<int> repeatDays = const [],
-    String label = '',
-  }) async {
-    final alarm = AlarmModel(
-      id: const Uuid().v4(),
-      hour: hour,
-      minute: minute,
-      sound: sound,
-      repeatDays: repeatDays,
-      label: label,
+    const timerChannel = AndroidNotificationChannel(
+      _timerChannelId,
+      _timerChannelName,
+      description: 'Plays when the timer finishes',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
     );
-    _alarms.add(alarm);
-    await _saveAlarms();
-    await _scheduleAlarm(alarm);
-    notifyListeners();
-    return alarm;
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(timerChannel);
   }
 
-  Future<void> toggleAlarm(String id) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
-    if (index == -1) return;
-    final updated = _alarms[index].copyWith(enabled: !_alarms[index].enabled);
-    _alarms[index] = updated;
-    await _saveAlarms();
-    if (updated.enabled) {
-      await _scheduleAlarm(updated);
-    } else {
-      await _cancelAlarmNotification(updated);
-    }
-    notifyListeners();
+  AndroidNotificationDetails _buildAndroidDetails(String sound) {
+    final soundName =
+        sound != 'default' && sound != 'sound1' ? 'alarm_$sound' : 'sound1';
+    return AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: 'Plays when an alarm triggers',
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      playSound: true,
+      enableVibration: true,
+      category: AndroidNotificationCategory.alarm,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      sound: RawResourceAndroidNotificationSound(soundName),
+      actions: <AndroidNotificationAction>[
+        const AndroidNotificationAction('snooze', 'Snooze 5min',
+            showsUserInterface: true),
+        const AndroidNotificationAction('stop', 'Stop',
+            showsUserInterface: false),
+      ],
+    );
   }
 
-  Future<void> removeAlarm(String id) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
-    if (index == -1) return;
-    await _cancelAlarmNotification(_alarms[index]);
-    _alarms.removeAt(index);
-    await _saveAlarms();
-    notifyListeners();
-  }
+  int _notifId(AlarmModel alarm) => alarm.id.hashCode.abs();
+  int _notifIdForDay(AlarmModel alarm, int day) =>
+      (alarm.id.hashCode.abs() * 10) + day;
 
-  Future<void> _scheduleAlarm(AlarmModel alarm) async {
+  Future<void> scheduleAlarm(AlarmModel alarm) async {
     if (!alarm.enabled) return;
 
     final now = DateTime.now();
@@ -130,112 +141,259 @@ class AlarmService extends ChangeNotifier {
       now.day,
       alarm.hour,
       alarm.minute,
+      0,
+      0,
     );
 
     if (alarm.isRepeating) {
-      for (final day in alarm.repeatDays) {
-        var nextDay = scheduledDate;
-        while (nextDay.weekday != day) {
-          nextDay = nextDay.add(const Duration(days: 1));
-        }
-        if (nextDay.isBefore(now)) {
-          nextDay = nextDay.add(const Duration(days: 7));
-        }
-        await _scheduleRepeatingNotification(alarm.id, nextDay);
-      }
+      await _scheduleRepeatingNotifications(alarm, scheduledDate, now);
     } else {
       if (scheduledDate.isBefore(now)) {
         scheduledDate = scheduledDate.add(const Duration(days: 1));
       }
-      await _scheduleOneShotNotification(alarm.id, scheduledDate);
+      await _scheduleOneShot(alarm, scheduledDate);
     }
   }
 
-  Future<void> _scheduleOneShotNotification(
-    String alarmId,
-    DateTime date,
-  ) async {
-    final hour = DateFormat('HH:mm').format(date);
-    final androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: 'Plays when an alarm triggers',
-      importance: Importance.high,
-      priority: Priority.high,
-      fullScreenIntent: true,
-      playSound: true,
-      enableVibration: true,
-      category: AndroidNotificationCategory.alarm,
-    );
+  Future<void> _scheduleOneShot(AlarmModel alarm, DateTime date) async {
+    final androidDetails = _buildAndroidDetails(alarm.sound);
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
     );
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    final details =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    final id = alarmId.hashCode;
-    await _notifications.periodicallyShow(
-      id,
+    await _notifications.zonedSchedule(
+      _notifId(alarm),
       'Tempo Alarm',
-      'Alarm set for $hour',
-      RepeatInterval.daily,
+      alarm.label.isNotEmpty ? alarm.label : 'Alarm',
+      tz.TZDateTime.from(date, tz.local),
       details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: alarm.id,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
-  Future<void> _scheduleRepeatingNotification(
-    String alarmId,
-    DateTime date,
+  Future<void> _scheduleRepeatingNotifications(
+    AlarmModel alarm,
+    DateTime scheduledDate,
+    DateTime now,
   ) async {
-    final hour = DateFormat('HH:mm').format(date);
-    final androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: 'Plays when an alarm triggers',
-      importance: Importance.high,
-      priority: Priority.high,
-      fullScreenIntent: true,
-      playSound: true,
-      enableVibration: true,
-      category: AndroidNotificationCategory.alarm,
-    );
+    final androidDetails = _buildAndroidDetails(alarm.sound);
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
     );
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    final details =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    final id = alarmId.hashCode;
-    await _notifications.periodicallyShow(
-      id,
-      'Tempo Alarm',
-      'Alarm set for $hour',
-      RepeatInterval.daily,
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-    );
-  }
-
-  Future<void> _cancelAlarmNotification(AlarmModel alarm) async {
-    await _notifications.cancel(alarm.id.hashCode);
-  }
-
-  void _onNotificationTap(NotificationResponse response) {}
-
-  Future<void> rescheduleAll() async {
-    for (final alarm in _alarms) {
-      if (alarm.enabled) {
-        await _scheduleAlarm(alarm);
+    if (alarm.repeatDays.length == 7) {
+      await _notifications.zonedSchedule(
+        _notifId(alarm),
+        'Tempo Alarm',
+        alarm.label.isNotEmpty ? alarm.label : 'Alarm',
+        tz.TZDateTime.from(
+            scheduledDate.isBefore(now)
+                ? scheduledDate.add(const Duration(days: 1))
+                : scheduledDate,
+            tz.local),
+        details,
+        payload: alarm.id,
+        matchDateTimeComponents: DateTimeComponents.time,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } else {
+      for (final day in alarm.repeatDays) {
+        var nextDate = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          alarm.hour,
+          alarm.minute,
+        );
+        while (nextDate.weekday != day) {
+          nextDate = nextDate.add(const Duration(days: 1));
+        }
+        if (nextDate.isBefore(now)) {
+          nextDate = nextDate.add(const Duration(days: 7));
+        }
+        await _notifications.zonedSchedule(
+          _notifIdForDay(alarm, day),
+          'Tempo Alarm',
+          alarm.label.isNotEmpty ? alarm.label : 'Alarm',
+          tz.TZDateTime.from(nextDate, tz.local),
+          details,
+          payload: alarm.id,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
       }
+    }
+  }
+
+  Future<void> cancelAlarm(AlarmModel alarm) async {
+    await _notifications.cancel(_notifId(alarm));
+    if (alarm.isRepeating) {
+      for (final day in alarm.repeatDays) {
+        await _notifications.cancel(_notifIdForDay(alarm, day));
+      }
+    }
+  }
+
+  Future<void> scheduleAll(List<AlarmModel> alarms) async {
+    for (final alarm in alarms) {
+      await cancelAlarm(alarm);
+      if (alarm.enabled) {
+        await scheduleAlarm(alarm);
+      }
+    }
+  }
+
+  Future<void> stopAlarm(AlarmModel alarm) async {
+    await cancelAlarm(alarm);
+    if (alarm.isRepeating) {
+      await scheduleAlarm(alarm);
+    }
+  }
+
+  Future<void> snoozeAlarm(AlarmModel alarm) async {
+    await cancelAlarm(alarm);
+
+    final snoozeTime = DateTime.now().add(const Duration(minutes: 5));
+    final androidDetails = _buildAndroidDetails(alarm.sound);
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    final details =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _notifications.zonedSchedule(
+      _notifId(alarm),
+      'Tempo Alarm',
+      alarm.label.isNotEmpty ? alarm.label : 'Alarm',
+      tz.TZDateTime.from(snoozeTime, tz.local),
+      details,
+      payload: alarm.id,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  void _onNotificationTap(NotificationResponse response) {
+    debugPrint('[AlarmService] Notification tap: actionId=${response.actionId}, payload=${response.payload}');
+    _handleNotificationResponse(response);
+  }
+
+  void _handleNotificationResponse(NotificationResponse response) {
+    final alarmId = response.payload;
+    if (alarmId == null) {
+      debugPrint('[AlarmService] No payload in notification response');
+      return;
+    }
+
+    if (response.actionId == 'stop') {
+      debugPrint('[AlarmService] Stop action for alarm $alarmId');
+      _persistStopFlag(alarmId);
+      onStopFromNotification(alarmId);
+      navigatorKey?.currentState?.maybePop();
+      return;
+    }
+
+    if (response.actionId == 'reset') {
+      debugPrint('[AlarmService] Reset action for timer $alarmId');
+      _notifications.cancel(alarmId.hashCode.abs());
+      navigatorKey?.currentState?.maybePop();
+      return;
+    }
+
+    if (response.actionId == 'snooze') {
+      debugPrint('[AlarmService] Snooze action for alarm $alarmId');
+      final alarm = AlarmModel(
+        id: alarmId,
+        hour: 0,
+        minute: 0,
+        sound: 'default',
+      );
+      snoozeAlarm(alarm);
+      navigatorKey?.currentState?.maybePop();
+      return;
+    }
+
+    _showAlarmScreen(alarmId, 'Tempo Alarm');
+  }
+
+  Future<void> _persistStopFlag(String alarmId) async {
+    final stopped = HiveHelper.settings.get('stopped_alarms') as List<String>? ?? [];
+    if (!stopped.contains(alarmId)) {
+      stopped.add(alarmId);
+      await HiveHelper.settings.put('stopped_alarms', stopped);
+    }
+  }
+
+  void _showAlarmScreen(String alarmId, String title) {
+    final navigator = navigatorKey?.currentState;
+    if (navigator == null) {
+      _pendingAlarmId = alarmId;
+      return;
+    }
+
+    ScreenWakeHandler.enable();
+    navigator.push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => AlarmRingScreen(
+          alarm: AlarmModel(id: alarmId, hour: 0, minute: 0),
+        ),
+      ),
+    );
+  }
+
+  void processPendingAlarm() {
+    if (_pendingAlarmId == null) return;
+    final id = _pendingAlarmId!;
+    _pendingAlarmId = null;
+    _showAlarmScreen(id, 'Alarm');
+  }
+
+  Future<List<String>> fetchAndClearStoppedAlarms() async {
+    final stopped = HiveHelper.settings.get('stopped_alarms') as List<String>? ?? [];
+    await HiveHelper.settings.delete('stopped_alarms');
+    return stopped;
+  }
+
+  void checkMissedAlarms(List<AlarmModel> alarms) {
+    final now = DateTime.now();
+
+    for (final alarm in alarms) {
+      if (!alarm.enabled) continue;
+      if (alarm.isRepeating) continue;
+
+      final alarmDateTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        alarm.hour,
+        alarm.minute,
+      );
+      if (!alarmDateTime.isBefore(now)) continue;
+
+      final diff = now.difference(alarmDateTime);
+      if (diff.inMinutes > 2) continue;
+
+      _showAlarmScreen(alarm.id, alarm.label.isNotEmpty ? alarm.label : 'Alarm');
+      return;
     }
   }
 
@@ -245,6 +403,69 @@ class AlarmService extends ChangeNotifier {
             AndroidFlutterLocalNotificationsPlugin>();
     if (plugin != null) {
       await plugin.requestExactAlarmsPermission();
+    }
+  }
+
+  Future<void> launchAlarmFullScreen() async {
+    await ScreenWakeHandler.launchAlarmActivity();
+  }
+
+  Future<bool> ensureAlarmPermissions() async {
+    try {
+      await requestExactAlarmPermission();
+      await ScreenWakeHandler.requestFullScreenIntentPermission();
+      await ScreenWakeHandler.requestExactAlarmPermission();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
+@pragma('vm:entry-point')
+Future<void> _backgroundNotificationHandler(
+    NotificationResponse response) async {
+  debugPrint('[AlarmService Background] actionId=${response.actionId}, payload=${response.payload}');
+
+  final plugin = FlutterLocalNotificationsPlugin();
+  await plugin.cancel(response.id ?? -1);
+
+  if (response.actionId == 'reset') {
+    debugPrint('[AlarmService Background] Timer reset action');
+    return;
+  }
+
+  if (response.actionId == 'snooze') {
+    debugPrint('[AlarmService Background] Snooze action');
+    const androidDetails = AndroidNotificationDetails(
+      'tempo_alarm_channel',
+      'Alarm Notifications',
+      channelDescription: 'Plays when an alarm triggers',
+      importance: Importance.max,
+      priority: Priority.max,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.alarm,
+    );
+    await plugin.show(
+      (response.id ?? 0) + 1000,
+      'Tempo Alarm',
+      'Snoozed — ringing in 5 min',
+      NotificationDetails(android: androidDetails),
+    );
+  }
+
+  if (response.actionId == 'stop' || response.actionId == 'snooze') {
+    debugPrint('[AlarmService Background] Persisting stop flag');
+    try {
+      await Hive.initFlutter();
+      await Hive.openBox('settings');
+    } catch (_) {}
+    final settingsBox = Hive.box('settings');
+    final stopped = (settingsBox.get('stopped_alarms') as List<String>?) ?? [];
+    final id = response.payload;
+    if (id != null && !stopped.contains(id)) {
+      stopped.add(id);
+      await settingsBox.put('stopped_alarms', stopped);
     }
   }
 }
