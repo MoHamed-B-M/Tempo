@@ -62,10 +62,7 @@ jobs:
         id: find-apk
         shell: bash
         run: |
-          APK=$(ls apk/app-*-release.apk 2>/dev/null | head -1)
-          if [ -z "$APK" ]; then
-            APK=$(ls apk/*.apk 2>/dev/null | head -1)
-          fi
+          APK=$(ls apk/*.apk 2>/dev/null | head -1)
           echo "path=$APK" >> $GITHUB_OUTPUT
           echo "Found APK: $APK"
 
