@@ -8,7 +8,7 @@
 
   <br><br>
 
-  <img src="screenshots/alarms.png" width="200" alt="Alarms">
+  <img src="screenshots/alarm.png" width="200" alt="Alarms">
   <img src="screenshots/stopwatch.png" width="200" alt="Stopwatch">
   <img src="screenshots/Timer.png" width="200" alt="Timer">
   <img src="screenshots/lockscreen.png" width="200" alt="Lock Screen">
