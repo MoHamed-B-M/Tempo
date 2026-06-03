@@ -198,83 +198,86 @@ class _AlarmCard extends ConsumerWidget {
         ? alarms.firstWhere((a) => a.enabled)
         : null;
 
-    return M3EContainer.puffy(
-      color: cs.primaryContainer.withValues(alpha: 0.45),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.alarm, size: 16, color: cs.primary),
-              const SizedBox(width: 6),
-              Text(
-                'Next Alarm',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: cs.primary,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        color: cs.primaryContainer.withValues(alpha: 0.45),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.alarm, size: 16, color: cs.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'Next Alarm',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: cs.primary,
+                  ),
                 ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              nextAlarm != null
+                  ? '${nextAlarm.hour.toString().padLeft(2, '0')}:${nextAlarm.minute.toString().padLeft(2, '0')}'
+                  : '--:--',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 42,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -1,
+                color: cs.onSurface,
+                height: 1.1,
               ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            nextAlarm != null
-                ? '${nextAlarm.hour.toString().padLeft(2, '0')}:${nextAlarm.minute.toString().padLeft(2, '0')}'
-                : '--:--',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 42,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -1,
-              color: cs.onSurface,
-              height: 1.1,
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            nextAlarm?.label.isNotEmpty == true
-                ? nextAlarm!.label
-                : nextAlarm != null
-                    ? (nextAlarm.isRepeating
-                        ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-                            .where((d) => nextAlarm
-                                .repeatDays
-                                .contains(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-                                    .indexOf(d)))
-                            .join(', ')
-                        : 'One-time')
-                    : 'No alarms set',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-              color: cs.onSurfaceVariant,
+            const SizedBox(height: 4),
+            Text(
+              nextAlarm?.label.isNotEmpty == true
+                  ? nextAlarm!.label
+                  : nextAlarm != null
+                      ? (nextAlarm.isRepeating
+                          ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                              .where((d) => nextAlarm
+                                  .repeatDays
+                                  .contains(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                                      .indexOf(d)))
+                              .join(', ')
+                          : 'One-time')
+                      : 'No alarms set',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: cs.onSurfaceVariant,
+              ),
             ),
-          ),
-          const Spacer(),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: ['Wake Up', 'Relax']
-                .map((label) => Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: cs.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        label,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: cs.onSurface,
+            const Spacer(),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: ['Wake Up', 'Relax']
+                  .map((label) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                    ))
-                .toList(),
-          ),
-        ],
+                        child: Text(
+                          label,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -290,57 +293,60 @@ class _ClockCard extends StatelessWidget {
     final timeStr = DateFormat('h:mm').format(now);
     final periodStr = DateFormat('a').format(now);
 
-    return M3EContainer.puffy(
-      color: cs.secondaryContainer.withValues(alpha: 0.4),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Expanded(
-            child: CustomPaint(
-              size: const Size.fromRadius(60),
-              painter: _GeometricClockPainter(
-                primaryColor: cs.secondary,
-                containerColor: cs.secondaryContainer,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                timeStr,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.5,
-                  color: cs.onSurface,
-                  height: 1,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        color: cs.secondaryContainer.withValues(alpha: 0.4),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Expanded(
+              child: CustomPaint(
+                size: const Size.fromRadius(60),
+                painter: _GeometricClockPainter(
+                  primaryColor: cs.secondary,
+                  containerColor: cs.secondaryContainer,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2, left: 2),
-                child: Text(
-                  periodStr,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  timeStr,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: cs.onSurfaceVariant,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.5,
+                    color: cs.onSurface,
+                    height: 1,
                   ),
                 ),
-              ),
-            ],
-          ),
-          Text(
-            DateFormat('EEEE, d MMM').format(now),
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w400,
-              color: cs.onSurfaceVariant,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2, left: 2),
+                  child: Text(
+                    periodStr,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            Text(
+              DateFormat('EEEE, d MMM').format(now),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -381,91 +387,94 @@ class _WorldClockCardState extends ConsumerState<_WorldClockCard> {
     final offsetStr = _offsetString(location);
     final cityName = location.split('/').last.replaceAll('_', ' ');
 
-    return M3EContainer.puffy(
-      color: cs.tertiaryContainer.withValues(alpha: 0.35),
-      padding: const EdgeInsets.all(20),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -10,
-            top: -10,
-            child: SizedBox(
-              width: 140,
-              height: 100,
-              child: CustomPaint(
-                painter: _WorldMapPainter(
-                  primaryColor: cs.tertiary.withValues(alpha: 0.2),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        color: cs.tertiaryContainer.withValues(alpha: 0.35),
+        padding: const EdgeInsets.all(20),
+        child: Stack(
+          children: [
+            Positioned(
+              right: 0,
+              top: 0,
+              child: SizedBox(
+                width: 120,
+                height: 90,
+                child: CustomPaint(
+                  painter: _WorldMapPainter(
+                    primaryColor: cs.tertiary.withValues(alpha: 0.2),
+                  ),
                 ),
               ),
             ),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.public, size: 14, color: cs.tertiary),
-                        const SizedBox(width: 6),
-                        Text(
-                          'World Clock',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: cs.tertiary,
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.public, size: 14, color: cs.tertiary),
+                          const SizedBox(width: 6),
+                          Text(
+                            'World Clock',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: cs.tertiary,
+                            ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        cityName,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'GMT$offsetStr',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
                     Text(
-                      cityName,
+                      timeStr,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 17,
+                        fontSize: 32,
                         fontWeight: FontWeight.w600,
+                        letterSpacing: -0.5,
                         color: cs.onSurface,
+                        height: 1.1,
                       ),
                     ),
-                    const SizedBox(height: 2),
                     Text(
-                      'GMT$offsetStr',
+                      periodStr,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w400,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                         color: cs.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    timeStr,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.5,
-                      color: cs.onSurface,
-                      height: 1.1,
-                    ),
-                  ),
-                  Text(
-                    periodStr,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -562,64 +571,67 @@ class _TimerCardState extends State<_TimerCard>
     final minutes = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
     final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
 
-    return M3EContainer.puffy(
-      color: cs.tertiaryContainer.withValues(alpha: 0.35),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 72,
-            height: 72,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CustomPaint(
-                  size: const Size(72, 72),
-                  painter: _CircularProgressPainter(
-                    progress: progress,
-                    progressColor: cs.tertiary,
-                    trackColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: _toggleTimer,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      _isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      key: ValueKey(_isRunning),
-                      size: 24,
-                      color: cs.onSurface,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        color: cs.tertiaryContainer.withValues(alpha: 0.35),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 72,
+              height: 72,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CustomPaint(
+                    size: const Size(72, 72),
+                    painter: _CircularProgressPainter(
+                      progress: progress,
+                      progressColor: cs.tertiary,
+                      trackColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          GestureDetector(
-            onTap: _resetTimer,
-            child: Text(
-              '$minutes:$seconds',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-                color: cs.onSurface,
+                  GestureDetector(
+                    onTap: _toggleTimer,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        _isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                        key: ValueKey(_isRunning),
+                        size: 24,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            _isRunning ? 'Running' : _remainingSeconds < _totalSeconds ? 'Paused' : 'Timer',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: cs.onSurfaceVariant,
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: _resetTimer,
+              child: Text(
+                '$minutes:$seconds',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                  color: cs.onSurface,
+                ),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            Text(
+              _isRunning ? 'Running' : _remainingSeconds < _totalSeconds ? 'Paused' : 'Timer',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -637,70 +649,73 @@ class _StopwatchCard extends ConsumerWidget {
     final minutes = (swState.elapsedMs ~/ 60000).toString().padLeft(2, '0');
     final seconds = ((swState.elapsedMs ~/ 1000) % 60).toString().padLeft(2, '0');
 
-    return M3EContainer.puffy(
-      color: cs.primaryContainer.withValues(alpha: 0.3),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            swState.isRunning ? 'LIVE' : 'STOPPED',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
-              color: swState.isRunning ? cs.primary : cs.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '$minutes:$seconds',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-              color: cs.onSurface,
-            ),
-          ),
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _MediaButton(
-                icon: Icons.skip_previous_rounded,
-                onTap: swNotifier.reset,
-                cs: cs,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        color: cs.primaryContainer.withValues(alpha: 0.3),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              swState.isRunning ? 'LIVE' : 'STOPPED',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+                color: swState.isRunning ? cs.primary : cs.onSurfaceVariant,
               ),
-              const SizedBox(width: 12),
-              M3EContainer.circle(
-                color: swState.isRunning ? cs.primary : cs.primary.withValues(alpha: 0.8),
-                width: 40,
-                height: 40,
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.mediumImpact();
-                    if (swState.isRunning) {
-                      swNotifier.stop();
-                    } else {
-                      swNotifier.start();
-                    }
-                  },
-                  child: Icon(
-                    swState.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    size: 20,
-                    color: cs.onPrimary,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '$minutes:$seconds',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+                color: cs.onSurface,
+              ),
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _MediaButton(
+                  icon: Icons.skip_previous_rounded,
+                  onTap: swNotifier.reset,
+                  cs: cs,
+                ),
+                const SizedBox(width: 12),
+                M3EContainer.circle(
+                  color: swState.isRunning ? cs.primary : cs.primary.withValues(alpha: 0.8),
+                  width: 40,
+                  height: 40,
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      if (swState.isRunning) {
+                        swNotifier.stop();
+                      } else {
+                        swNotifier.start();
+                      }
+                    },
+                    child: Icon(
+                      swState.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      size: 20,
+                      color: cs.onPrimary,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              _MediaButton(
-                icon: Icons.skip_next_rounded,
-                onTap: swNotifier.reset,
-                cs: cs,
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 12),
+                _MediaButton(
+                  icon: Icons.skip_next_rounded,
+                  onTap: swNotifier.reset,
+                  cs: cs,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
