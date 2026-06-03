@@ -1,4 +1,11 @@
 # Changelog
+## [1.0.25] - 2026-06-02
+- Refactored main layout shell: unified `Scaffold(backgroundColor: cs.surface)` as single root background colour across all tabs — eliminates patchy dark/light container splits
+- Made `SliverAppBar` in alarms tab transparent so `cs.surface` floods uninterrupted from top to bottom
+- Added `android/releases/` to `.gitignore` to prevent tracking release screenshots
+- Fixed release screenshot URL in changelog — changed from broken GitHub releases path to correct repo-relative path
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.24] - 2026-06-02
 ![Tempo v1.0.24](android/releases/1.0.24.png)
 - Rebuilt `ThemeData.light()` with `ColorScheme.fromSeed(seedColor: Color(0xFF616161), brightness: Brightness.light)` for clean monochromatic light colours
@@ -9,10 +16,6 @@
 - Fixed `navigationBarTheme.iconTheme` returning `Color` instead of `IconThemeData`
 - Fixed `const SizedBox` containing non-const `CircularProgressIndicator` in settings update channel
 - Removed `const` from sleep-timer `Icon(Icons.add, ...)` to allow dynamic theme colour
-- Refactored main layout shell: unified `Scaffold(backgroundColor: cs.surface)` as single root background colour across all tabs
-- Made `SliverAppBar` in alarms tab transparent so `cs.surface` floods uninterrupted from top to bottom
-- All tab content backgrounds are now inherited from the unified Scaffold surface — no isolated dark containers or opaque splits
-- M3E alarm cards and world clock location cards retain `surfaceContainerHigh` to float contrastingly over the unified background
 - Verified with `dart analyze` — 0 errors, 0 warnings
 
 ## [1.0.23] - 2026-06-02
