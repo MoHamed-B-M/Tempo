@@ -308,18 +308,21 @@ class _AlarmGridCard extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final Color? cardBackgroundColor;
 
   const _AlarmGridCard({
     required this.alarm,
     required this.onToggle,
     required this.onTap,
     required this.onDelete,
+    this.cardBackgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final enabled = alarm.enabled;
+    final cardColor = cardBackgroundColor ?? cs.primaryContainer;
     final textColor =
         enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.4);
     final mutedColor =
@@ -345,7 +348,7 @@ class _AlarmGridCard extends StatelessWidget {
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
           color: cs.error.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
         ),
         child: Icon(Icons.delete_outline_rounded, color: cs.error, size: 22),
       ),
@@ -353,12 +356,10 @@ class _AlarmGridCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(28),
           child: Container(
-            color: enabled
-                ? cs.surfaceContainerHigh
-                : cs.surfaceContainerHigh.withValues(alpha: 0.5),
-            padding: const EdgeInsets.all(14),
+            color: enabled ? cardColor : cardColor.withValues(alpha: 0.45),
+            padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -368,7 +369,7 @@ class _AlarmGridCard extends StatelessWidget {
                     Text(
                       timeStr,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 24,
+                        fontSize: 26,
                         fontWeight: FontWeight.w700,
                         color: textColor,
                         letterSpacing: -0.5,
@@ -384,7 +385,7 @@ class _AlarmGridCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const Spacer(),
+                const SizedBox(height: 4),
                 Text(
                   subtitle,
                   maxLines: 1,
