@@ -1,4 +1,6 @@
 # Changelog
+## [1.0.33] - 2026-06-03
+- Optimize over all app and animations
 ## [1.0.32] - 2026-06-03
 ![Tempo v1.0.32](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.32.png)
 - Implemented Material 3 Container Transform on alarm grid cards using `OpenContainer` from `animations` package
