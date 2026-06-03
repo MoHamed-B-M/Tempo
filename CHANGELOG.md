@@ -1,4 +1,9 @@
 # Changelog
+## [1.0.30] - 2026-06-03
+![Tempo v1.0.30](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.30.png)
+- Fixed ABI build conflict: aligned `ndk abiFilters` with `splits abi` config by clearing Flutter plugin defaults and re-adding only `arm64-v8a` and `armeabi-v7a`
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.29] - 2026-06-03
 - Refactored alarm grid cards with M3 Expressive container styling: distinct `primaryContainer` card background, `BorderRadius.circular(28)` expressive shape, improved inner padding
 - Added optional `cardBackgroundColor` parameter to `_AlarmGridCard` for per-alarm custom card colors (falls back to `primaryContainer`)
