@@ -1,6 +1,6 @@
 # Changelog
 ## [1.0.28] - 2026-06-03
-![Tempo v1.0.28](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.28.png)
+![Tempo v1.0.28](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.28.jpg)
 - Refactored alarm grid cards with M3 Expressive container styling: distinct `primaryContainer` card background, `BorderRadius.circular(28)` expressive shape, improved inner padding
 - Added optional `cardBackgroundColor` parameter to `_AlarmGridCard` for per-alarm custom card colors (falls back to `primaryContainer`)
 - Disabled alarms now render at 45% opacity on the card color
