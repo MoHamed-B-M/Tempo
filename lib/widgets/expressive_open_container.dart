@@ -37,11 +37,7 @@ class ExpressiveOpenContainer extends StatelessWidget {
       transitionDuration: transitionDuration,
       transitionType: ContainerTransitionType.fadeThrough,
       closedBuilder: (context, action) => RepaintBoundary(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(closedBorderRadius),
-          clipBehavior: Clip.antiAliasWithSaveLayer,
-          child: closedChild,
-        ),
+        child: closedChild,
       ),
       openBuilder: (context, action) => RepaintBoundary(
         child: openBuilder(context),

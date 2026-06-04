@@ -21,7 +21,10 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
   late List<int> _repeatDays;
   late String _sound;
   late final M3EDropdownController<String> _soundController;
+  late final TextEditingController _labelController;
   Timer? _labelDebounce;
+
+  bool _ready = false;
 
   static const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const _sounds = [
@@ -40,7 +43,24 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
     _repeatDays = List.from(widget.alarm.repeatDays);
     _sound = widget.alarm.sound;
     _soundController = M3EDropdownController<String>();
+    _labelController = TextEditingController(text: _label);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route?.animation == null) {
+        _markReady();
+        return;
+      }
+      if (route!.animation!.status == AnimationStatus.completed) {
+        _markReady();
+      } else {
+        route.animation!.addStatusListener(_onAnimStatus);
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final match = _sounds.firstWhere(
         (s) => s.$1 == _sound,
         orElse: () => _sounds.first,
@@ -51,8 +71,23 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
     });
   }
 
+  void _onAnimStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      final route = ModalRoute.of(context);
+      route?.animation?.removeStatusListener(_onAnimStatus);
+      _markReady();
+    }
+  }
+
+  void _markReady() {
+    if (mounted) setState(() => _ready = true);
+  }
+
   @override
   void dispose() {
+    final route = ModalRoute.of(context);
+    route?.animation?.removeStatusListener(_onAnimStatus);
+    _labelController.dispose();
     _labelDebounce?.cancel();
     _soundController.dispose();
     super.dispose();
@@ -92,6 +127,35 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    return _ready ? _buildFull(context) : _buildPlaceholder(context);
+  }
+
+  Widget _buildPlaceholder(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      backgroundColor: cs.surface,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        foregroundColor: cs.onSurface,
+        elevation: 0,
+        leading: const BackButton(),
+      ),
+      body: Center(
+        child: Text(
+          '${widget.alarm.hour.toString().padLeft(2, '0')}:${widget.alarm.minute.toString().padLeft(2, '0')}',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 56,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -2,
+            color: cs.onSurface,
+            height: 1.1,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFull(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -128,8 +192,7 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
             ),
             const SizedBox(height: 32),
             TextField(
-              controller: TextEditingController(text: _label)
-                ..selection = TextSelection.collapsed(offset: _label.length),
+              controller: _labelController,
               onChanged: _saveLabel,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
