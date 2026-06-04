@@ -7,7 +7,7 @@
 >
 > The app is **under development** and will continue to improve with updates.
 
-![Tempo v1.5.0](https://github.com/MoHamed-B-M/Tempo/blob/main/android/releases/1.5.0.png)
+![Tempo v1.5.0](android/releases/1.5.0.png)
 
 ### What is Tempo?
 
