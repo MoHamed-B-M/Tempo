@@ -1,6 +1,11 @@
 # Changelog
-## [1.0.33] - 2026-06-03
-- Optimize over all app and animations
+## [1.0.35] - 2026-06-04
+- Eliminated transition jank in Card Transform animation — replaced expensive `Clip.antiAliasWithSaveLayer` with `OpenContainer`'s built-in clipping, removing GPU save‑layer bottleneck during scale
+- Deferred `AlarmEditPage` heavy widget building (TextField, day selectors, dropdown, delete button) until after the container transition completes, preventing layout jank on the first animation frames
+- Cached `TextEditingController` as a field instead of recreating it on every `build()` call
+- Removed ABI splits from `build.gradle.kts` to resolve shrunk‑resources conflict with AAB builds
+- Updated APK lookup globs in CI workflows for universal APK naming
+- Rewrote beta CI workflow with Pub/Gradle caching, rolling `preview` tag, and automatic changelog extraction
 ## [1.0.32] - 2026-06-03
 ![Tempo v1.0.32](https://github.com/MoHamed-B-M/Tempo/blob/beta/android/releases/1.0.32.png)
 - Implemented Material 3 Container Transform on alarm grid cards using `OpenContainer` from `animations` package
