@@ -1,9 +1,12 @@
-name: Beta Build
+name: Beta Preview Build
 
 on:
   push:
     branches:
       - beta
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -19,10 +22,26 @@ jobs:
           java-version: 17
           distribution: temurin
 
+      # Restore Flutter SDK + Pub cache + Gradle cache on cache hit,
+      # otherwise they'll be populated after the build for next run.
+      # Key includes runner OS, Flutter channel, and pubspec.lock hash
+      # so that any dependency change invalidates the cache.
+      - name: Cache Flutter SDK, Pub deps, and Gradle
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-flutter-stable-${{ hashFiles('**/pubspec.lock') }}
+          path: |
+            ~/.pub-cache
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
 
       - name: Decode Keystore
         run: |
@@ -35,18 +54,21 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Upload APK to artifact
+      - name: Prepare APK artifact
+        run: |
+          mkdir -p outputs
+          cp build/app/outputs/flutter-apk/app-release.apk outputs/tempo-preview.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tempo-beta-apk
-          path: build/app/outputs/flutter-apk/
-          retention-days: 30
+          name: tempo-preview-apk
+          path: outputs/tempo-preview.apk
+          retention-days: 7
 
   release:
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout repository
@@ -55,52 +77,41 @@ jobs:
       - name: Download APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: tempo-beta-apk
-          path: apk
+          name: tempo-preview-apk
+          path: outputs
 
-      - name: Find APK file
-        id: find-apk
-        shell: bash
-        run: |
-          APK=$(ls apk/*.apk 2>/dev/null | head -1)
-          echo "path=$APK" >> $GITHUB_OUTPUT
-          echo "Found APK: $APK"
+      # Delete the old rolling "preview" tag and release so the new
+      # one replaces it cleanly.  The || true ignores errors that
+      # occur on the very first run when no preview release exists yet.
+      - name: Delete old preview release
+        run: gh release delete preview --cleanup-tag -y || true
+        env:
+          GH_TOKEN: ${{ github.token }}
 
-      - name: Generate version tag from pubspec
-        id: version
+      # Extract only the top-most changelog entry (everything between
+      # the first ## Version header and the second one, or EOF).
+      #   - Matches lines starting with "## "
+      #   - On first match sets found=1 and skips the header line
+      #   - On second match exits immediately (stops reading)
+      #   - Prints all lines while found==1
+      # This gives us just the release notes for the current version.
+      - name: Extract latest changelog entry
+        id: changelog
         run: |
-          FULL_VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //' | tr -d ' ')
-          VERSION=$(echo "$FULL_VERSION" | sed 's/+.*//')
-          TAG="v${VERSION}-beta.${GITHUB_RUN_NUMBER}"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Extract changelog for this version
-        shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          awk -v ver="$VERSION" '
-            BEGIN { found = 0 }
-            /^## \[/ {
-              if (found) exit
-              if (index($0, "[" ver "]") > 0 || index($0, ver) > 0) found = 1
-              next
-            }
-            found { print }
-          ' CHANGELOG.md > RELEASE_NOTES.md 2>/dev/null || true
+          awk '/^## /{if(found) exit; found=1; next} found' CHANGELOG.md > RELEASE_NOTES.md
           if [ ! -s RELEASE_NOTES.md ]; then
-            echo "No changelog section found for v$VERSION. Generating from commits." > RELEASE_NOTES.md
-            echo "" >> RELEASE_NOTES.md
-            git log --oneline --no-decorate -20 2>/dev/null >> RELEASE_NOTES.md || true
+            echo "No changelog entries found." > RELEASE_NOTES.md
           fi
+          echo "Extracted changelog:"
+          head -5 RELEASE_NOTES.md
 
-      - name: Create Prerelease
-        uses: softprops/action-gh-release@v2
+      - name: Publish preview release
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: Beta ${{ steps.version.outputs.tag }}
-          body_path: RELEASE_NOTES.md
-          files: ${{ steps.find-apk.outputs.path }}
+          tag: preview
+          name: "Preview Build"
+          bodyFile: RELEASE_NOTES.md
+          artifacts: outputs/tempo-preview.apk
           prerelease: true
-          generate_release_notes: true
+          replacesArtifacts: true
+          token: ${{ github.token }}
