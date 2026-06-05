@@ -2,11 +2,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:m3e_core/m3e_core.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/update_manager.dart';
+import '../widgets/expressive_settings_tile.dart';
 import 'about_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -102,151 +102,189 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'SETTINGS',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: cs.onSurface,
-            letterSpacing: 1,
-          ),
+          'Settings',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: cs.onSurface,
+              ),
         ),
-        centerTitle: true,
+        centerTitle: false,
       ),
-      body: SingleChildScrollView(
+      body: ListView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionTitle(cs, 'ALARM'),
-            const SizedBox(height: 12),
-            _buildMonochromaticToggle(
-              cs: cs,
-              icon: Icons.vibration_outlined,
-              label: 'Vibrate on alarm',
-              enabled: alarmSettings.vibrateOnAlarm,
-              onTap: () => ref
-                  .read(alarmSettingsProvider.notifier)
-                  .setVibrateOnAlarm(!alarmSettings.vibrateOnAlarm),
-            ),
-            const SizedBox(height: 12),
-            _buildAutoDismissTile(cs, alarmSettings),
-            const SizedBox(height: 12),
-            _buildMonochromaticSlider(
-              cs: cs,
-              icon: Icons.volume_up_outlined,
-              label: 'Alarm volume',
-              value: alarmSettings.volume,
-              onChanged: (v) =>
-                  ref.read(alarmSettingsProvider.notifier).setVolume(v),
-            ),
-            const SizedBox(height: 32),
-            _buildSectionTitle(cs, 'APPEARANCE'),
-            const SizedBox(height: 12),
-            _buildCustomSettingToggle(
-              cs: cs,
-              icon: Icons.dark_mode_outlined,
-              label: isDark
-                  ? 'Dark Mode'
-                  : (themeMode == ThemeMode.light
-                      ? 'Light Mode'
-                      : 'System Theme'),
-              enabled: isDark,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                ref.read(themeModeProvider.notifier).toggle();
-              },
-            ),
-            const SizedBox(height: 12),
-            _buildNavigationTile(
-                cs,
-                Icons.info_outline,
-                'About',
-                () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AboutPage()),
-                    )),
-            const SizedBox(height: 32),
-            _buildSectionTitle(cs, 'APP VERSION'),
-            const SizedBox(height: 12),
-            _buildInfoTile(cs, Icons.info_outline, 'Current Version',
-                _appVersion.isNotEmpty ? 'v$_appVersion' : 'Loading...'),
-            const SizedBox(height: 32),
-            _buildSectionTitle(cs, 'UPDATE CHANNEL'),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: M3EButton.icon(
-                    onPressed: () => _setChannel('stable'),
-                    icon: Icon(Icons.shield_outlined,
-                        color: _channel == 'stable' ? cs.onPrimary : null,
-                        size: 18),
-                    label: Text(
-                      'Stable',
-                      style: TextStyle(
-                          color: _channel == 'stable' ? cs.onPrimary : null),
-                    ),
-                    style: _channel == 'stable'
-                        ? M3EButtonStyle.filled
-                        : M3EButtonStyle.outlined,
-                    size: M3EButtonSize.md,
-                    decoration: M3EButtonDecoration(
-                      backgroundColor: _channel == 'stable'
-                          ? WidgetStatePropertyAll(cs.primary)
-                          : null,
-                      side: _channel == 'stable'
-                          ? null
-                          : WidgetStatePropertyAll(
-                              BorderSide(color: cs.outlineVariant)),
-                    ),
-                  ),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+        children: [
+          _ExpressiveCard(
+            children: [
+              ExpressiveSettingsTile(
+                icon: Icons.vibration_outlined,
+                title: 'Vibrate on alarm',
+                trailing: Switch(
+                  value: alarmSettings.vibrateOnAlarm,
+                  onChanged: (v) => ref
+                      .read(alarmSettingsProvider.notifier)
+                      .setVibrateOnAlarm(v),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: M3EButton.icon(
-                    onPressed: () => _setChannel('beta'),
-                    icon: Icon(Icons.science_outlined,
-                        color: _channel == 'beta' ? cs.onPrimary : null,
-                        size: 18),
-                    label: Text(
-                      'Beta',
-                      style: TextStyle(
-                          color: _channel == 'beta' ? cs.onPrimary : null),
-                    ),
-                    style: _channel == 'beta'
-                        ? M3EButtonStyle.filled
-                        : M3EButtonStyle.outlined,
-                    size: M3EButtonSize.md,
-                    decoration: M3EButtonDecoration(
-                      backgroundColor: _channel == 'beta'
-                          ? WidgetStatePropertyAll(cs.primary)
-                          : null,
-                      side: _channel == 'beta'
-                          ? null
-                          : WidgetStatePropertyAll(
-                              BorderSide(color: cs.outlineVariant)),
-                    ),
-                  ),
+                onTap: () => ref
+                    .read(alarmSettingsProvider.notifier)
+                    .setVibrateOnAlarm(!alarmSettings.vibrateOnAlarm),
+              ),
+              const Divider(height: 1, indent: 72),
+              ExpressiveSettingsTile.navigation(
+                icon: Icons.timer_outlined,
+                title: 'Auto-dismiss alarm',
+                subtitle: alarmSettings.autoDismissEnabled
+                    ? 'After ${alarmSettings.autoDismissMinutes} min'
+                    : 'Off',
+                onTap: _showAutoDismissSheet,
+              ),
+              const Divider(height: 1, indent: 72),
+              _VolumeTile(cs: cs, value: alarmSettings.volume, onChanged: (v) {
+                ref.read(alarmSettingsProvider.notifier).setVolume(v);
+              }),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _ExpressiveCard(
+            children: [
+              ExpressiveSettingsTile(
+                icon: isDark
+                    ? Icons.dark_mode_outlined
+                    : Icons.light_mode_outlined,
+                title: isDark
+                    ? 'Dark Mode'
+                    : (themeMode == ThemeMode.light
+                        ? 'Light Mode'
+                        : 'System Theme'),
+                trailing: Switch(
+                  value: isDark,
+                  onChanged: (_) {
+                    HapticFeedback.selectionClick();
+                    ref.read(themeModeProvider.notifier).toggle();
+                  },
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                _channel == 'stable'
-                    ? 'Only stable releases will be shown.'
-                    : 'Pre-release versions will be included.',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: cs.onSurfaceVariant,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref.read(themeModeProvider.notifier).toggle();
+                },
+              ),
+              const Divider(height: 1, indent: 72),
+              ExpressiveSettingsTile.navigation(
+                icon: Icons.info_outline,
+                title: 'About',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AboutPage()),
                 ),
               ),
-            ),
-            const SizedBox(height: 48),
-            M3EButton.icon(
+            ],
+          ),
+          const SizedBox(height: 12),
+          _ExpressiveCard(
+            children: [
+              ExpressiveSettingsTile.info(
+                icon: Icons.info_outline,
+                title: 'Current Version',
+                subtitle: _appVersion.isNotEmpty ? 'v$_appVersion' : 'Loading...',
+                trailing: Text(
+                  'v$_appVersion',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: cs.primary,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _ExpressiveCard(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Text(
+                  'UPDATE CHANNEL',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        letterSpacing: 1.5,
+                      ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: M3EButton.icon(
+                        onPressed: () => _setChannel('stable'),
+                        icon: Icon(Icons.shield_outlined,
+                            color: _channel == 'stable' ? cs.onPrimary : null,
+                            size: 18),
+                        label: Text(
+                          'Stable',
+                          style: TextStyle(
+                              color: _channel == 'stable'
+                                  ? cs.onPrimary
+                                  : null),
+                        ),
+                        style: _channel == 'stable'
+                            ? M3EButtonStyle.filled
+                            : M3EButtonStyle.outlined,
+                        size: M3EButtonSize.md,
+                        decoration: M3EButtonDecoration(
+                          backgroundColor: _channel == 'stable'
+                              ? WidgetStatePropertyAll(cs.primary)
+                              : null,
+                          side: _channel == 'stable'
+                              ? null
+                              : WidgetStatePropertyAll(
+                                  BorderSide(color: cs.outlineVariant)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: M3EButton.icon(
+                        onPressed: () => _setChannel('beta'),
+                        icon: Icon(Icons.science_outlined,
+                            color: _channel == 'beta' ? cs.onPrimary : null,
+                            size: 18),
+                        label: Text(
+                          'Beta',
+                          style: TextStyle(
+                              color: _channel == 'beta' ? cs.onPrimary : null),
+                        ),
+                        style: _channel == 'beta'
+                            ? M3EButtonStyle.filled
+                            : M3EButtonStyle.outlined,
+                        size: M3EButtonSize.md,
+                        decoration: M3EButtonDecoration(
+                          backgroundColor: _channel == 'beta'
+                              ? WidgetStatePropertyAll(cs.primary)
+                              : null,
+                          side: _channel == 'beta'
+                              ? null
+                              : WidgetStatePropertyAll(
+                                  BorderSide(color: cs.outlineVariant)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Text(
+                  _channel == 'stable'
+                      ? 'Only stable releases will be shown.'
+                      : 'Pre-release versions will be included.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _ExpressiveCard(
+            child: M3EButton.icon(
               onPressed: _checking ? null : _checkForUpdates,
               icon: _checking
                   ? SizedBox(
@@ -270,353 +308,136 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 borderRadius: 18,
               ),
             ),
-            const SizedBox(height: 32),
-            if (_currentQuote.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  '"$_currentQuote"',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: cs.onSurfaceVariant,
-                    fontStyle: FontStyle.italic,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    'Tempo',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: cs.onSurfaceVariant,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'v$_appVersion',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(ColorScheme cs, String title) {
-    return Text(
-      title,
-      style: GoogleFonts.plusJakartaSans(
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-        color: cs.onSurfaceVariant,
-        letterSpacing: 1.5,
-      ),
-    );
-  }
-
-  Widget _buildMonochromaticToggle({
-    required ColorScheme cs,
-    required IconData icon,
-    required String label,
-    required bool enabled,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: cs.outlineVariant, width: 1),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: cs.onSurfaceVariant, size: 22),
-            const SizedBox(width: 16),
-            Expanded(
+          ),
+          const SizedBox(height: 24),
+          if (_currentQuote.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface,
-                ),
-              ),
-            ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 48,
-              height: 28,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                color: enabled ? cs.primary : cs.outlineVariant,
-              ),
-              padding: const EdgeInsets.all(3),
-              child: Align(
-                alignment:
-                    enabled ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: enabled ? cs.onPrimary : cs.surface,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAutoDismissTile(ColorScheme cs, AlarmSettingsState settings) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _showAutoDismissSheet,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: cs.outlineVariant, width: 1),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.timer_outlined, color: cs.onSurfaceVariant, size: 22),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Auto-dismiss alarm',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    settings.autoDismissEnabled
-                        ? 'After ${settings.autoDismissMinutes} min'
-                        : 'Off',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                '"$_currentQuote"',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
+                      fontStyle: FontStyle.italic,
+                      height: 1.5,
                     ),
-                  ),
-                ],
               ),
             ),
-            Icon(Icons.chevron_right, color: cs.onSurfaceVariant, size: 20),
-          ],
-        ),
+          const SizedBox(height: 24),
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  'Tempo',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        letterSpacing: 2,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'v$_appVersion',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildMonochromaticSlider({
-    required ColorScheme cs,
-    required IconData icon,
-    required String label,
-    required double value,
-    required ValueChanged<double> onChanged,
-  }) {
+class _ExpressiveCard extends StatelessWidget {
+  final Widget child;
+  final List<Widget> children;
+
+  const _ExpressiveCard({
+    this.child = const SizedBox.shrink(),
+    this.children = const [],
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final content = children.isNotEmpty ? children : [child];
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.outlineVariant, width: 1),
+        borderRadius: BorderRadius.circular(24),
       ),
+      clipBehavior: Clip.hardEdge,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: content,
+      ),
+    );
+  }
+}
+
+class _VolumeTile extends StatelessWidget {
+  final ColorScheme cs;
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  const _VolumeTile({
+    required this.cs,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: cs.onSurfaceVariant, size: 22),
-              const SizedBox(width: 16),
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface,
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.volume_up_outlined,
+                  size: 20,
+                  color: cs.onPrimaryContainer,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Alarm volume',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: cs.onSurface,
+                      ),
+                ),
+              ),
               Text(
                 '${(value * 100).round()}%',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurfaceVariant,
-                ),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: cs.primary,
+                    ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _DotMatrixSlider(
             cs: cs,
             value: value,
             onChanged: onChanged,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCustomSettingToggle({
-    required ColorScheme cs,
-    required IconData icon,
-    required String label,
-    required bool enabled,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        decoration: BoxDecoration(
-          color: enabled ? cs.primary : cs.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: enabled ? Colors.transparent : cs.outlineVariant,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon,
-                color: enabled ? cs.onPrimary : cs.onSurface, size: 22),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: enabled ? cs.onPrimary : cs.onSurface,
-                ),
-              ),
-            ),
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: enabled ? cs.onPrimary : Colors.transparent,
-                border: Border.all(
-                  color: enabled
-                      ? cs.onPrimary
-                      : cs.onSurfaceVariant.withValues(alpha: 0.4),
-                  width: 1.5,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: enabled
-                  ? Icon(Icons.check, size: 14, color: cs.primary)
-                  : null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoTile(
-      ColorScheme cs, IconData icon, String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.outlineVariant, width: 1),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: cs.onSurfaceVariant, size: 22),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: cs.onSurface,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: cs.primary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavigationTile(
-      ColorScheme cs, IconData icon, String label, VoidCallback onTap) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: cs.outlineVariant, width: 1),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: cs.onSurfaceVariant, size: 22),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface,
-                ),
-              ),
-            ),
-            Icon(Icons.chevron_right, color: cs.onSurfaceVariant, size: 22),
-          ],
-        ),
       ),
     );
   }
@@ -735,12 +556,10 @@ class _AutoDismissSheetState extends State<_AutoDismissSheet> {
           const SizedBox(height: 20),
           Text(
             'AUTO-DISMISS ALARM',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: cs.onSurfaceVariant,
-              letterSpacing: 1.5,
-            ),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  letterSpacing: 1.5,
+                ),
           ),
           const SizedBox(height: 16),
           ..._options.map((minutes) {
@@ -769,11 +588,9 @@ class _AutoDismissSheetState extends State<_AutoDismissSheet> {
                   children: [
                     Text(
                       minutes == 0 ? 'Off' : '$minutes minutes',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: isSelected ? cs.onPrimary : cs.onSurface,
-                      ),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: isSelected ? cs.onPrimary : cs.onSurface,
+                          ),
                     ),
                     if (isSelected)
                       Icon(Icons.check, color: cs.onPrimary, size: 18),
