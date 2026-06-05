@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class ExpressiveOpenContainer extends StatelessWidget {
   final Widget closedChild;
-  final WidgetBuilder openBuilder;
+  final Widget openChild;
   final Color closedColor;
   final Color openColor;
   final double closedBorderRadius;
@@ -14,7 +14,7 @@ class ExpressiveOpenContainer extends StatelessWidget {
   const ExpressiveOpenContainer({
     super.key,
     required this.closedChild,
-    required this.openBuilder,
+    required this.openChild,
     required this.closedColor,
     this.openColor = Colors.transparent,
     this.closedBorderRadius = 28.0,
@@ -37,10 +37,14 @@ class ExpressiveOpenContainer extends StatelessWidget {
       transitionDuration: transitionDuration,
       transitionType: ContainerTransitionType.fadeThrough,
       closedBuilder: (context, action) => RepaintBoundary(
-        child: closedChild,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(closedBorderRadius),
+          clipBehavior: Clip.hardEdge,
+          child: closedChild,
+        ),
       ),
       openBuilder: (context, action) => RepaintBoundary(
-        child: openBuilder(context),
+        child: openChild,
       ),
     );
   }

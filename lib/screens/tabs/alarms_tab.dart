@@ -272,43 +272,62 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
   }
 }
 
-class _AlarmGridCard extends StatelessWidget {
+class _AlarmGridCard extends StatefulWidget {
   final AlarmModel alarm;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
-  final Color? cardBackgroundColor;
 
   const _AlarmGridCard({
     required this.alarm,
     required this.onToggle,
     required this.onDelete,
-    this.cardBackgroundColor,
   });
+
+  @override
+  State<_AlarmGridCard> createState() => _AlarmGridCardState();
+}
+
+class _AlarmGridCardState extends State<_AlarmGridCard> {
+  late AlarmEditPage _editPage;
+
+  @override
+  void initState() {
+    super.initState();
+    _editPage = AlarmEditPage(alarm: widget.alarm);
+  }
+
+  @override
+  void didUpdateWidget(_AlarmGridCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.alarm.id != widget.alarm.id) {
+      _editPage = AlarmEditPage(alarm: widget.alarm);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final enabled = alarm.enabled;
-    final cardColor = cardBackgroundColor ?? cs.primaryContainer;
+    final enabled = widget.alarm.enabled;
+    final cardColor = cs.primaryContainer;
     final textColor =
         enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.4);
     final mutedColor =
         cs.onSurfaceVariant.withValues(alpha: enabled ? 0.9 : 0.4);
     final timeStr =
-        '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}';
+        '${widget.alarm.hour.toString().padLeft(2, '0')}:${widget.alarm.minute.toString().padLeft(2, '0')}';
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     String subtitle;
-    if (alarm.label.isNotEmpty) {
-      subtitle = alarm.label;
-    } else if (alarm.isRepeating) {
-      subtitle = alarm.repeatDays.map((d) => days[d - 1]).join(' ');
+    if (widget.alarm.label.isNotEmpty) {
+      subtitle = widget.alarm.label;
+    } else if (widget.alarm.isRepeating) {
+      subtitle = widget.alarm.repeatDays.map((d) => days[d - 1]).join(' ');
     } else {
       subtitle = 'Once';
     }
 
     return Dismissible(
-      key: ValueKey(alarm.id),
+      key: ValueKey(widget.alarm.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
@@ -319,10 +338,11 @@ class _AlarmGridCard extends StatelessWidget {
         ),
         child: Icon(Icons.delete_outline_rounded, color: cs.error, size: 22),
       ),
-      onDismissed: (_) => onDelete(),
+      onDismissed: (_) => widget.onDelete(),
       child: ExpressiveOpenContainer(
         closedColor: enabled ? cardColor : cardColor.withValues(alpha: 0.45),
         openColor: cs.surface,
+        openChild: _editPage,
         closedChild: Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
           child: Column(
@@ -343,9 +363,29 @@ class _AlarmGridCard extends StatelessWidget {
                   ),
                   Transform.scale(
                     scale: 0.75,
-                    child: Switch(
-                      value: enabled,
-                      onChanged: (_) => onToggle(),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        switchTheme: SwitchThemeData(
+                          thumbColor:
+                              WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return cs.onPrimary;
+                            }
+                            return cs.onSurfaceVariant;
+                          }),
+                          trackColor:
+                              WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return cs.primary;
+                            }
+                            return cs.surfaceContainerHighest;
+                          }),
+                        ),
+                      ),
+                      child: Switch(
+                        value: enabled,
+                        onChanged: (_) => widget.onToggle(),
+                      ),
                     ),
                   ),
                 ],
@@ -364,7 +404,6 @@ class _AlarmGridCard extends StatelessWidget {
             ],
           ),
         ),
-        openBuilder: (context) => AlarmEditPage(alarm: alarm),
       ),
     );
   }
