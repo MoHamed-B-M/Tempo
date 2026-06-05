@@ -29,6 +29,8 @@ dependencies:
   connectivity_plus: ^6.1.0
   flutter_local_notifications: ^17.2.0
   shared_preferences: ^2.2.0
+  flutter_animate: ^4.5.0
+  material_color_utilities: ^0.13.0
 
 dev_dependencies:
   flutter_test:

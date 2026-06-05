@@ -1,24 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'design_tokens.dart';
+import 'theme_extensions.dart';
 
 class AppTheme {
   AppTheme._();
 
   static ThemeData light({ColorScheme? dynamicColor}) {
-    final cs = dynamicColor ??
-        ColorScheme.fromSeed(
-          seedColor: const Color(0xFF616161),
-          brightness: Brightness.light,
-        );
+    final cs = DesignTokens.lightColorScheme(dynamicColor: dynamicColor);
     return _build(cs);
   }
 
   static ThemeData dark({ColorScheme? dynamicColor}) {
-    final cs = dynamicColor ??
-        ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1A1A1A),
-          brightness: Brightness.dark,
-        );
+    final cs = DesignTokens.darkColorScheme(dynamicColor: dynamicColor);
     return _build(cs);
   }
 
@@ -27,12 +20,17 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: cs,
       brightness: cs.brightness,
-      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
+      textTheme: DesignTokens.textTheme(),
       scaffoldBackgroundColor: cs.surface,
+      extensions: const [
+        ExpressiveSpacing(),
+        ExpressiveRadius(),
+        ExpressiveMotion(),
+      ],
       pageTransitionsTheme: PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: _FadeSlidePageTransitionBuilder(),
-          TargetPlatform.iOS: _FadeSlidePageTransitionBuilder(),
+          TargetPlatform.android: _ExpressivePageTransitionBuilder(),
+          TargetPlatform.iOS: _ExpressivePageTransitionBuilder(),
         },
       ),
       appBarTheme: AppBarTheme(
@@ -43,7 +41,11 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: cs.surfaceContainerHigh,
-        contentTextStyle: GoogleFonts.inter(color: cs.onSurface),
+        contentTextStyle: const TextStyle(
+          fontFamily: 'RobotoFlex',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
         behavior: SnackBarBehavior.floating,
       ),
       dividerTheme: DividerThemeData(
@@ -101,14 +103,14 @@ class AppTheme {
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.plusJakartaSans(
-              color: cs.onPrimary,
+            return const TextStyle(
+              fontFamily: 'RobotoFlex',
               fontSize: 12,
               fontWeight: FontWeight.w600,
             );
           }
-          return GoogleFonts.plusJakartaSans(
-            color: cs.onSurfaceVariant,
+          return const TextStyle(
+            fontFamily: 'RobotoFlex',
             fontSize: 12,
             fontWeight: FontWeight.w500,
           );
@@ -132,7 +134,7 @@ class AppTheme {
   }
 }
 
-class _FadeSlidePageTransitionBuilder extends PageTransitionsBuilder {
+class _ExpressivePageTransitionBuilder extends PageTransitionsBuilder {
   @override
   Widget buildTransitions<T>(
     PageRoute<T> route,
@@ -149,7 +151,7 @@ class _FadeSlidePageTransitionBuilder extends PageTransitionsBuilder {
           end: Offset.zero,
         ).animate(CurvedAnimation(
           parent: animation,
-          curve: Curves.easeInOutCubic,
+          curve: const Cubic(0.05, 0.7, 0.1, 1.0),
         )),
         child: child,
       ),
