@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:m3e_core/m3e_core.dart';
+import '../core/navigation.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/update_manager.dart';
@@ -115,115 +116,117 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         children: [
           _SettingsSection(
             label: 'ALARM',
-            child: _ExpressiveCard(
-              children: [
-                ExpressiveSettingsTile(
-                  icon: Icons.vibration_outlined,
-                  title: 'Vibrate on alarm',
-                  trailing: Switch(
-                    value: alarmSettings.vibrateOnAlarm,
-                    onChanged: (v) => ref
-                        .read(alarmSettingsProvider.notifier)
-                        .setVibrateOnAlarm(v),
-                  ),
-                  onTap: () => ref
+            child: _buildCardWithTheme(context, cs, [
+              ExpressiveSettingsTile(
+                icon: Icons.vibration_outlined,
+                title: 'Vibrate on alarm',
+                iconBackground: cs.surfaceContainerHighest,
+                iconColor: cs.onSurfaceVariant,
+                trailing: Switch(
+                  value: alarmSettings.vibrateOnAlarm,
+                  onChanged: (v) => ref
                       .read(alarmSettingsProvider.notifier)
-                      .setVibrateOnAlarm(!alarmSettings.vibrateOnAlarm),
+                      .setVibrateOnAlarm(v),
                 ),
-                const Divider(height: 1, indent: 72),
-                ExpressiveSettingsTile.navigation(
-                  icon: Icons.timer_outlined,
-                  title: 'Auto-dismiss alarm',
-                  subtitle: alarmSettings.autoDismissEnabled
-                      ? 'After ${alarmSettings.autoDismissMinutes} min'
-                      : 'Off',
-                  onTap: _showAutoDismissSheet,
-                ),
-                const Divider(height: 1, indent: 72),
-                _VolumeTile(cs: cs, value: alarmSettings.volume, onChanged: (v) {
-                  ref.read(alarmSettingsProvider.notifier).setVolume(v);
-                }),
-              ],
-            ),
+                onTap: () => ref
+                    .read(alarmSettingsProvider.notifier)
+                    .setVibrateOnAlarm(!alarmSettings.vibrateOnAlarm),
+              ),
+              const Divider(height: 1, indent: 72),
+              ExpressiveSettingsTile.navigation(
+                icon: Icons.timer_outlined,
+                title: 'Auto-dismiss alarm',
+                subtitle: alarmSettings.autoDismissEnabled
+                    ? 'After ${alarmSettings.autoDismissMinutes} min'
+                    : 'Off',
+                iconBackground: cs.surfaceContainerHighest,
+                iconColor: cs.onSurfaceVariant,
+                onTap: _showAutoDismissSheet,
+              ),
+              const Divider(height: 1, indent: 72),
+              _VolumeTile(cs: cs, value: alarmSettings.volume, onChanged: (v) {
+                ref.read(alarmSettingsProvider.notifier).setVolume(v);
+              }),
+            ]),
           ),
           const SizedBox(height: 12),
           _SettingsSection(
             label: 'APPEARANCE',
-            child: _ExpressiveCard(
-              children: [
-                ExpressiveSettingsTile(
-                  icon: isDark
-                      ? Icons.dark_mode_outlined
-                      : Icons.light_mode_outlined,
-                  title: isDark
-                      ? 'Dark Mode'
-                      : (themeMode == ThemeMode.light
-                          ? 'Light Mode'
-                          : 'System Theme'),
-                  trailing: Switch(
-                    value: isDark,
-                    onChanged: (_) {
-                      HapticFeedback.selectionClick();
-                      ref.read(themeModeProvider.notifier).toggle();
-                    },
-                  ),
-                  onTap: () {
+            child: _buildCardWithTheme(context, cs, [
+              ExpressiveSettingsTile(
+                icon: isDark
+                    ? Icons.dark_mode_outlined
+                    : Icons.light_mode_outlined,
+                title: isDark
+                    ? 'Dark Mode'
+                    : (themeMode == ThemeMode.light
+                        ? 'Light Mode'
+                        : 'System Theme'),
+                iconBackground: cs.surfaceContainerHighest,
+                iconColor: cs.onSurfaceVariant,
+                trailing: Switch(
+                  value: isDark,
+                  onChanged: (_) {
                     HapticFeedback.selectionClick();
                     ref.read(themeModeProvider.notifier).toggle();
                   },
                 ),
-                const Divider(height: 1, indent: 72),
-                ExpressiveSettingsTile.navigation(
-                  icon: Icons.palette_outlined,
-                  title: 'About Tempo',
-                  subtitle: 'Version $_appVersion',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AboutPage()),
-                  ),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref.read(themeModeProvider.notifier).toggle();
+                },
+              ),
+              const Divider(height: 1, indent: 72),
+              ExpressiveSettingsTile.navigation(
+                icon: Icons.palette_outlined,
+                title: 'About Tempo',
+                subtitle: 'Version $_appVersion',
+                iconBackground: cs.surfaceContainerHighest,
+                iconColor: cs.onSurfaceVariant,
+                onTap: () => SmoothNavigator.push(
+                  context,
+                  const AboutPage(),
                 ),
-              ],
-            ),
+              ),
+            ]),
           ),
           const SizedBox(height: 12),
           _SettingsSection(
             label: 'GENERAL',
-            child: _ExpressiveCard(
-              children: [
-                ..._buildUpdateChannelSection(cs),
-                const Divider(height: 1, indent: 72),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: M3EButton.icon(
-                      onPressed: _checking ? null : _checkForUpdates,
-                      icon: _checking
-                          ? SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: cs.onPrimary,
-                              ),
-                            )
-                          : const Icon(Icons.refresh, size: 18),
-                      label: Text(
-                        _checking ? 'CHECKING...' : 'CHECK FOR UPDATES',
-                        style: TextStyle(color: cs.onPrimary),
-                      ),
-                      style: M3EButtonStyle.filled,
-                      size: M3EButtonSize.md,
-                      decoration: M3EButtonDecoration(
-                        backgroundColor: WidgetStatePropertyAll(cs.primary),
-                        foregroundColor: WidgetStatePropertyAll(cs.onPrimary),
-                        borderRadius: 18,
-                      ),
+            child: _buildCardWithTheme(context, cs, [
+              ..._buildUpdateChannelSection(cs),
+              const Divider(height: 1, indent: 72),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: M3EButton.icon(
+                    onPressed: _checking ? null : _checkForUpdates,
+                    icon: _checking
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: cs.onPrimary,
+                            ),
+                          )
+                        : const Icon(Icons.refresh, size: 18),
+                    label: Text(
+                      _checking ? 'CHECKING...' : 'CHECK FOR UPDATES',
+                      style: TextStyle(color: cs.onPrimary),
+                    ),
+                    style: M3EButtonStyle.filled,
+                    size: M3EButtonSize.md,
+                    decoration: M3EButtonDecoration(
+                      backgroundColor: WidgetStatePropertyAll(cs.primary),
+                      foregroundColor: WidgetStatePropertyAll(cs.onPrimary),
+                      borderRadius: 18,
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ]),
           ),
           const SizedBox(height: 24),
           if (_currentQuote.isNotEmpty)
@@ -263,6 +266,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+
+  Widget _buildCardWithTheme(BuildContext context, ColorScheme cs, List<Widget> children) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: Theme.of(context).textTheme.apply(
+          bodyColor: cs.onPrimaryContainer,
+          displayColor: cs.onPrimaryContainer,
+        ),
+        dividerColor: cs.onPrimaryContainer.withValues(alpha: 0.12),
+      ),
+      child: _ExpressiveCard(children: children),
     );
   }
 
@@ -399,7 +415,7 @@ class _ExpressiveCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
+        color: cs.primaryContainer,
         borderRadius: BorderRadius.circular(28),
       ),
       clipBehavior: Clip.hardEdge,
@@ -435,7 +451,7 @@ class _VolumeTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: cs.primaryContainer,
+                  color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 alignment: Alignment.center,
@@ -450,7 +466,7 @@ class _VolumeTile extends StatelessWidget {
                 child: Text(
                   'Alarm volume',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: cs.onSurface,
+                        color: cs.onPrimaryContainer,
                       ),
                 ),
               ),

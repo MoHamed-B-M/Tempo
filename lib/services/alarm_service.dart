@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -7,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../core/hive_helper.dart';
 import '../models/alarm_model.dart';
 import '../screens/alarm_ring_screen.dart';
+import 'foreground_service_handler.dart';
 import 'screen_wake_handler.dart';
 
 class AlarmService {
@@ -104,8 +106,6 @@ class AlarmService {
   }
 
   AndroidNotificationDetails _buildAndroidDetails(String sound) {
-    final soundName =
-        sound != 'default' && sound != 'sound1' ? 'alarm_$sound' : 'sound1';
     return AndroidNotificationDetails(
       _channelId,
       _channelName,
@@ -117,11 +117,11 @@ class AlarmService {
       enableVibration: true,
       category: AndroidNotificationCategory.alarm,
       audioAttributesUsage: AudioAttributesUsage.alarm,
-      sound: RawResourceAndroidNotificationSound(soundName),
+      sound: RawResourceAndroidNotificationSound('sound1'),
       actions: <AndroidNotificationAction>[
-        const AndroidNotificationAction('snooze', 'Snooze 5min',
+        AndroidNotificationAction('snooze', 'Snooze 5min',
             showsUserInterface: true),
-        const AndroidNotificationAction('stop', 'Stop',
+        AndroidNotificationAction('stop', 'Stop',
             showsUserInterface: false),
       ],
     );
@@ -306,6 +306,7 @@ class AlarmService {
     if (response.actionId == 'stop') {
       debugPrint('[AlarmService] Stop action for alarm $alarmId');
       _persistStopFlag(alarmId);
+      ForegroundServiceHandler.stop();
       onStopFromNotification(alarmId);
       navigatorKey?.currentState?.maybePop();
       return;
@@ -313,6 +314,7 @@ class AlarmService {
 
     if (response.actionId == 'reset') {
       debugPrint('[AlarmService] Reset action for timer $alarmId');
+      ForegroundServiceHandler.stop();
       _notifications.cancel(alarmId.hashCode.abs());
       navigatorKey?.currentState?.maybePop();
       return;
@@ -320,6 +322,7 @@ class AlarmService {
 
     if (response.actionId == 'snooze') {
       debugPrint('[AlarmService] Snooze action for alarm $alarmId');
+      ForegroundServiceHandler.stop();
       final alarm = AlarmModel(
         id: alarmId,
         hour: 0,
@@ -350,6 +353,7 @@ class AlarmService {
     }
 
     ScreenWakeHandler.enable();
+    ForegroundServiceHandler.start();
     navigator.push(
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -410,14 +414,20 @@ class AlarmService {
     await ScreenWakeHandler.launchAlarmActivity();
   }
 
-  Future<bool> ensureAlarmPermissions() async {
+  Future<void> ensureAlarmPermissions() async {
     try {
       await requestExactAlarmPermission();
       await ScreenWakeHandler.requestFullScreenIntentPermission();
       await ScreenWakeHandler.requestExactAlarmPermission();
-      return true;
-    } catch (_) {
-      return false;
+    } catch (_) {}
+  }
+
+  Future<void> rescheduleAll(List<AlarmModel> alarms) async {
+    debugPrint('[AlarmService] Rescheduling ${alarms.length} alarms after reboot');
+    for (final alarm in alarms) {
+      if (alarm.enabled) {
+        await scheduleAlarm(alarm);
+      }
     }
   }
 }
@@ -437,7 +447,7 @@ Future<void> _backgroundNotificationHandler(
 
   if (response.actionId == 'snooze') {
     debugPrint('[AlarmService Background] Snooze action');
-    const androidDetails = AndroidNotificationDetails(
+    const snoozeDetails = AndroidNotificationDetails(
       'tempo_alarm_channel',
       'Alarm Notifications',
       channelDescription: 'Plays when an alarm triggers',
@@ -450,7 +460,7 @@ Future<void> _backgroundNotificationHandler(
       (response.id ?? 0) + 1000,
       'Tempo Alarm',
       'Snoozed — ringing in 5 min',
-      NotificationDetails(android: androidDetails),
+      NotificationDetails(android: snoozeDetails),
     );
   }
 
@@ -467,5 +477,13 @@ Future<void> _backgroundNotificationHandler(
       stopped.add(id);
       await settingsBox.put('stopped_alarms', stopped);
     }
+  }
+
+  if (response.actionId == 'stop') {
+    debugPrint('[AlarmService Background] Stopping foreground service');
+    try {
+      final channel = MethodChannel('com.example.tempo/foreground_service');
+      await channel.invokeMethod('stop');
+    } catch (_) {}
   }
 }

@@ -339,69 +339,75 @@ class _AlarmGridCardState extends State<_AlarmGridCard> {
         child: Icon(Icons.delete_outline_rounded, color: cs.error, size: 22),
       ),
       onDismissed: (_) => widget.onDelete(),
-      child: ExpressiveOpenContainer(
-        closedColor: enabled ? cardColor : cardColor.withValues(alpha: 0.45),
-        openColor: cs.surface,
-        openChild: _editPage,
-        closedChild: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: RepaintBoundary(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          clipBehavior: Clip.hardEdge,
+          child: ExpressiveOpenContainer(
+            closedColor: enabled ? cardColor : cardColor.withValues(alpha: 0.45),
+            openColor: cs.surface,
+            openChild: _editPage,
+            closedChild: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    timeStr,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                      letterSpacing: -0.5,
-                      height: 1.1,
-                    ),
-                  ),
-                  Transform.scale(
-                    scale: 0.75,
-                    child: Theme(
-                      data: Theme.of(context).copyWith(
-                        switchTheme: SwitchThemeData(
-                          thumbColor:
-                              WidgetStateProperty.resolveWith((states) {
-                            if (states.contains(WidgetState.selected)) {
-                              return cs.onPrimary;
-                            }
-                            return cs.onSurfaceVariant;
-                          }),
-                          trackColor:
-                              WidgetStateProperty.resolveWith((states) {
-                            if (states.contains(WidgetState.selected)) {
-                              return cs.primary;
-                            }
-                            return cs.surfaceContainerHighest;
-                          }),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        timeStr,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                          letterSpacing: -0.5,
+                          height: 1.1,
                         ),
                       ),
-                      child: Switch(
-                        value: enabled,
-                        onChanged: (_) => widget.onToggle(),
+                      Transform.scale(
+                        scale: 0.75,
+                        child: Theme(
+                          data: Theme.of(context).copyWith(
+                            switchTheme: SwitchThemeData(
+                              thumbColor:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return cs.onPrimary;
+                                }
+                                return cs.onSurfaceVariant;
+                              }),
+                              trackColor:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return cs.primary;
+                                }
+                                return cs.surfaceContainerHighest;
+                              }),
+                            ),
+                          ),
+                          child: Switch(
+                            value: enabled,
+                            onChanged: (_) => widget.onToggle(),
+                          ),
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: mutedColor,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: mutedColor,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

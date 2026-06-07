@@ -1,7 +1,7 @@
-import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/navigation.dart';
 import 'settings_page.dart';
 import 'tabs/alarms_tab.dart';
 import 'tabs/world_clock_tab.dart';
@@ -90,11 +90,9 @@ class _MainScreenState extends ConsumerState<MainScreen>
                       behavior: HitTestBehavior.opaque,
                       onTap: () {
                         HapticFeedback.mediumImpact();
-                        Navigator.push(
+                        SmoothNavigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const SettingsPage(),
-                          ),
+                          const SettingsPage(),
                         );
                       },
                       child: Padding(
@@ -149,36 +147,33 @@ class _MainScreenState extends ConsumerState<MainScreen>
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final itemWidth = (constraints.maxWidth) / 4;
-              return Stack(
-                children: [
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.easeInOutCubic,
-                    left: _currentIndex * itemWidth + 6,
-                    top: 6,
-                    bottom: 6,
-                    child: Container(
-                      width: itemWidth - 12,
-                      decoration: BoxDecoration(
-                        color: cs.primary,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
+      clipBehavior: Clip.hardEdge,
+      child: RepaintBoundary(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = (constraints.maxWidth) / 4;
+            return Stack(
+              children: [
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOutCubic,
+                  left: _currentIndex * itemWidth + 6,
+                  top: 6,
+                  bottom: 6,
+                  child: Container(
+                    width: itemWidth - 12,
+                    decoration: BoxDecoration(
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(24),
                     ),
                   ),
-                  Row(
-                    children: List.generate(4, (i) => _buildNavItem(i)),
-                  ),
-                ],
-              );
-            },
-          ),
+                ),
+                Row(
+                  children: List.generate(4, (i) => _buildNavItem(i)),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

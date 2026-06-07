@@ -11,6 +11,7 @@ import 'providers/timer_provider.dart';
 import 'screens/main_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/alarm_service.dart';
+import 'services/foreground_service_handler.dart';
 import 'services/screen_wake_handler.dart';
 import 'services/update_manager.dart';
 
@@ -27,6 +28,10 @@ void main() async {
 
   final alarmService = AlarmService(notificationsPlugin);
   AlarmService.navigatorKey = navigatorKey;
+  alarmService.onStopFromNotification = (alarmId) {
+    debugPrint('[Main] Stop from notification — alarm $alarmId');
+    navigatorKey.currentState?.maybePop();
+  };
   await alarmService.initialize();
 
   runApp(
@@ -101,9 +106,20 @@ class _AppShellState extends ConsumerState<_AppShell>
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(alarmServiceProvider).processPendingAlarm();
+      _checkBootReschedule();
       UpdateManager.checkAndShowUpdate(context, silent: true);
     });
     _checkOnboarding();
+  }
+
+  Future<void> _checkBootReschedule() async {
+    final bootFlag = await ForegroundServiceHandler.checkBootCompleted();
+    if (bootFlag) {
+      debugPrint('[Main] Boot completed flag detected — rescheduling alarms');
+      final alarmService = ref.read(alarmServiceProvider);
+      final alarms = ref.read(alarmListProvider);
+      await alarmService.rescheduleAll(alarms);
+    }
   }
 
   void _checkOnboarding() {

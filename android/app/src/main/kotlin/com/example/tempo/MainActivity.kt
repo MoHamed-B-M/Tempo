@@ -12,9 +12,11 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.tempo/screen_wake"
+    private val FG_CHANNEL = "com.example.tempo/foreground_service"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "enable" -> {
@@ -40,6 +42,41 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, FG_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    AlarmForegroundService.start(this)
+                    result.success(true)
+                }
+                "stop" -> {
+                    AlarmForegroundService.stop(this)
+                    result.success(true)
+                }
+                "isRunning" -> {
+                    result.success(isForegroundServiceRunning())
+                }
+                "bootCompleted" -> {
+                    val prefs = getSharedPreferences("tempo_boot", Context.MODE_PRIVATE)
+                    val flag = prefs.getBoolean("boot_completed", false)
+                    if (flag) {
+                        prefs.edit().putBoolean("boot_completed", false).apply()
+                    }
+                    result.success(flag)
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun isForegroundServiceRunning(): Boolean {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+        for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (AlarmForegroundService::class.java.name == service.service.className) {
+                return true
+            }
+        }
+        return false
     }
 
     override fun onNewIntent(intent: Intent) {
