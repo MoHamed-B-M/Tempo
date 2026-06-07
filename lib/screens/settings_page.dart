@@ -113,200 +113,116 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
-          _ExpressiveCard(
-            children: [
-              ExpressiveSettingsTile(
-                icon: Icons.vibration_outlined,
-                title: 'Vibrate on alarm',
-                trailing: Switch(
-                  value: alarmSettings.vibrateOnAlarm,
-                  onChanged: (v) => ref
+          _SettingsSection(
+            label: 'ALARM',
+            child: _ExpressiveCard(
+              children: [
+                ExpressiveSettingsTile(
+                  icon: Icons.vibration_outlined,
+                  title: 'Vibrate on alarm',
+                  trailing: Switch(
+                    value: alarmSettings.vibrateOnAlarm,
+                    onChanged: (v) => ref
+                        .read(alarmSettingsProvider.notifier)
+                        .setVibrateOnAlarm(v),
+                  ),
+                  onTap: () => ref
                       .read(alarmSettingsProvider.notifier)
-                      .setVibrateOnAlarm(v),
+                      .setVibrateOnAlarm(!alarmSettings.vibrateOnAlarm),
                 ),
-                onTap: () => ref
-                    .read(alarmSettingsProvider.notifier)
-                    .setVibrateOnAlarm(!alarmSettings.vibrateOnAlarm),
-              ),
-              const Divider(height: 1, indent: 72),
-              ExpressiveSettingsTile.navigation(
-                icon: Icons.timer_outlined,
-                title: 'Auto-dismiss alarm',
-                subtitle: alarmSettings.autoDismissEnabled
-                    ? 'After ${alarmSettings.autoDismissMinutes} min'
-                    : 'Off',
-                onTap: _showAutoDismissSheet,
-              ),
-              const Divider(height: 1, indent: 72),
-              _VolumeTile(cs: cs, value: alarmSettings.volume, onChanged: (v) {
-                ref.read(alarmSettingsProvider.notifier).setVolume(v);
-              }),
-            ],
+                const Divider(height: 1, indent: 72),
+                ExpressiveSettingsTile.navigation(
+                  icon: Icons.timer_outlined,
+                  title: 'Auto-dismiss alarm',
+                  subtitle: alarmSettings.autoDismissEnabled
+                      ? 'After ${alarmSettings.autoDismissMinutes} min'
+                      : 'Off',
+                  onTap: _showAutoDismissSheet,
+                ),
+                const Divider(height: 1, indent: 72),
+                _VolumeTile(cs: cs, value: alarmSettings.volume, onChanged: (v) {
+                  ref.read(alarmSettingsProvider.notifier).setVolume(v);
+                }),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          _ExpressiveCard(
-            children: [
-              ExpressiveSettingsTile(
-                icon: isDark
-                    ? Icons.dark_mode_outlined
-                    : Icons.light_mode_outlined,
-                title: isDark
-                    ? 'Dark Mode'
-                    : (themeMode == ThemeMode.light
-                        ? 'Light Mode'
-                        : 'System Theme'),
-                trailing: Switch(
-                  value: isDark,
-                  onChanged: (_) {
+          _SettingsSection(
+            label: 'APPEARANCE',
+            child: _ExpressiveCard(
+              children: [
+                ExpressiveSettingsTile(
+                  icon: isDark
+                      ? Icons.dark_mode_outlined
+                      : Icons.light_mode_outlined,
+                  title: isDark
+                      ? 'Dark Mode'
+                      : (themeMode == ThemeMode.light
+                          ? 'Light Mode'
+                          : 'System Theme'),
+                  trailing: Switch(
+                    value: isDark,
+                    onChanged: (_) {
+                      HapticFeedback.selectionClick();
+                      ref.read(themeModeProvider.notifier).toggle();
+                    },
+                  ),
+                  onTap: () {
                     HapticFeedback.selectionClick();
                     ref.read(themeModeProvider.notifier).toggle();
                   },
                 ),
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  ref.read(themeModeProvider.notifier).toggle();
-                },
-              ),
-              const Divider(height: 1, indent: 72),
-              ExpressiveSettingsTile.navigation(
-                icon: Icons.info_outline,
-                title: 'About',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AboutPage()),
+                const Divider(height: 1, indent: 72),
+                ExpressiveSettingsTile.navigation(
+                  icon: Icons.palette_outlined,
+                  title: 'About Tempo',
+                  subtitle: 'Version $_appVersion',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AboutPage()),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          _ExpressiveCard(
-            children: [
-              ExpressiveSettingsTile.info(
-                icon: Icons.info_outline,
-                title: 'Current Version',
-                subtitle: _appVersion.isNotEmpty ? 'v$_appVersion' : 'Loading...',
-                trailing: Text(
-                  'v$_appVersion',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: cs.primary,
+          _SettingsSection(
+            label: 'GENERAL',
+            child: _ExpressiveCard(
+              children: [
+                ..._buildUpdateChannelSection(cs),
+                const Divider(height: 1, indent: 72),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: M3EButton.icon(
+                      onPressed: _checking ? null : _checkForUpdates,
+                      icon: _checking
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: cs.onPrimary,
+                              ),
+                            )
+                          : const Icon(Icons.refresh, size: 18),
+                      label: Text(
+                        _checking ? 'CHECKING...' : 'CHECK FOR UPDATES',
+                        style: TextStyle(color: cs.onPrimary),
                       ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _ExpressiveCard(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Text(
-                  'UPDATE CHANNEL',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        letterSpacing: 1.5,
-                      ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: M3EButton.icon(
-                        onPressed: () => _setChannel('stable'),
-                        icon: Icon(Icons.shield_outlined,
-                            color: _channel == 'stable' ? cs.onPrimary : null,
-                            size: 18),
-                        label: Text(
-                          'Stable',
-                          style: TextStyle(
-                              color: _channel == 'stable'
-                                  ? cs.onPrimary
-                                  : null),
-                        ),
-                        style: _channel == 'stable'
-                            ? M3EButtonStyle.filled
-                            : M3EButtonStyle.outlined,
-                        size: M3EButtonSize.md,
-                        decoration: M3EButtonDecoration(
-                          backgroundColor: _channel == 'stable'
-                              ? WidgetStatePropertyAll(cs.primary)
-                              : null,
-                          side: _channel == 'stable'
-                              ? null
-                              : WidgetStatePropertyAll(
-                                  BorderSide(color: cs.outlineVariant)),
-                        ),
+                      style: M3EButtonStyle.filled,
+                      size: M3EButtonSize.md,
+                      decoration: M3EButtonDecoration(
+                        backgroundColor: WidgetStatePropertyAll(cs.primary),
+                        foregroundColor: WidgetStatePropertyAll(cs.onPrimary),
+                        borderRadius: 18,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: M3EButton.icon(
-                        onPressed: () => _setChannel('beta'),
-                        icon: Icon(Icons.science_outlined,
-                            color: _channel == 'beta' ? cs.onPrimary : null,
-                            size: 18),
-                        label: Text(
-                          'Beta',
-                          style: TextStyle(
-                              color: _channel == 'beta' ? cs.onPrimary : null),
-                        ),
-                        style: _channel == 'beta'
-                            ? M3EButtonStyle.filled
-                            : M3EButtonStyle.outlined,
-                        size: M3EButtonSize.md,
-                        decoration: M3EButtonDecoration(
-                          backgroundColor: _channel == 'beta'
-                              ? WidgetStatePropertyAll(cs.primary)
-                              : null,
-                          side: _channel == 'beta'
-                              ? null
-                              : WidgetStatePropertyAll(
-                                  BorderSide(color: cs.outlineVariant)),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: Text(
-                  _channel == 'stable'
-                      ? 'Only stable releases will be shown.'
-                      : 'Pre-release versions will be included.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _ExpressiveCard(
-            child: M3EButton.icon(
-              onPressed: _checking ? null : _checkForUpdates,
-              icon: _checking
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: cs.onPrimary,
-                      ),
-                    )
-                  : const Icon(Icons.refresh, size: 18),
-              label: Text(
-                _checking ? 'CHECKING...' : 'CHECK FOR UPDATES',
-                style: TextStyle(color: cs.onPrimary),
-              ),
-              style: M3EButtonStyle.filled,
-              size: M3EButtonSize.md,
-              decoration: M3EButtonDecoration(
-                backgroundColor: WidgetStatePropertyAll(cs.primary),
-                foregroundColor: WidgetStatePropertyAll(cs.onPrimary),
-                borderRadius: 18,
-              ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
@@ -349,32 +265,147 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ),
     );
   }
+
+  List<Widget> _buildUpdateChannelSection(ColorScheme cs) {
+    return [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: Text(
+          'UPDATE CHANNEL',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                letterSpacing: 1.5,
+              ),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: M3EButton.icon(
+                onPressed: () => _setChannel('stable'),
+                icon: Icon(Icons.shield_outlined,
+                    color: _channel == 'stable' ? cs.onPrimary : null,
+                    size: 18),
+                label: Text(
+                  'Stable',
+                  style: TextStyle(
+                      color: _channel == 'stable' ? cs.onPrimary : null),
+                ),
+                style: _channel == 'stable'
+                    ? M3EButtonStyle.filled
+                    : M3EButtonStyle.outlined,
+                size: M3EButtonSize.md,
+                decoration: M3EButtonDecoration(
+                  backgroundColor: _channel == 'stable'
+                      ? WidgetStatePropertyAll(cs.primary)
+                      : null,
+                  side: _channel == 'stable'
+                      ? null
+                      : WidgetStatePropertyAll(
+                          BorderSide(color: cs.outlineVariant)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: M3EButton.icon(
+                onPressed: () => _setChannel('beta'),
+                icon: Icon(Icons.science_outlined,
+                    color: _channel == 'beta' ? cs.onPrimary : null,
+                    size: 18),
+                label: Text(
+                  'Beta',
+                  style: TextStyle(
+                      color: _channel == 'beta' ? cs.onPrimary : null),
+                ),
+                style: _channel == 'beta'
+                    ? M3EButtonStyle.filled
+                    : M3EButtonStyle.outlined,
+                size: M3EButtonSize.md,
+                decoration: M3EButtonDecoration(
+                  backgroundColor: _channel == 'beta'
+                      ? WidgetStatePropertyAll(cs.primary)
+                      : null,
+                  side: _channel == 'beta'
+                      ? null
+                      : WidgetStatePropertyAll(
+                          BorderSide(color: cs.outlineVariant)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Text(
+          _channel == 'stable'
+              ? 'Only stable releases will be shown.'
+              : 'Pre-release versions will be included.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+        ),
+      ),
+    ];
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  final String label;
+  final Widget child;
+
+  const _SettingsSection({
+    required this.label,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  letterSpacing: 1.5,
+                ),
+          ),
+        ),
+        child,
+      ],
+    );
+  }
 }
 
 class _ExpressiveCard extends StatelessWidget {
-  final Widget child;
   final List<Widget> children;
 
   const _ExpressiveCard({
-    this.child = const SizedBox.shrink(),
     this.children = const [],
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final content = children.isNotEmpty ? children : [child];
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(24),
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(28),
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: content,
+        children: children,
       ),
     );
   }
