@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/hive_helper.dart';
 import 'update_service.dart';
@@ -17,54 +16,33 @@ class UpdateManager {
   }
 
   static Future<String> getCurrentVersion() async {
-    final info = await PackageInfo.fromPlatform();
-    return info.version;
-  }
-
-  static String stripV(String tag) {
-    final stripped =
-        tag.startsWith(RegExp(r'[vV]')) ? tag.substring(1) : tag;
-    return stripped.toLowerCase();
-  }
-
-  static List<int> parseVersion(String v) {
-    final parts = v.split('.');
-    return [
-      parts.isNotEmpty ? int.tryParse(parts[0]) ?? 0 : 0,
-      parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
-      parts.length > 2 ? int.tryParse(parts[2]) ?? 0 : 0,
-    ];
-  }
-
-  static bool isNewer(String remoteVersion, String currentVersion) {
-    final remote = parseVersion(remoteVersion);
-    final current = parseVersion(currentVersion);
-    for (var i = 0; i < 3; i++) {
-      if (remote[i] > current[i]) return true;
-      if (remote[i] < current[i]) return false;
+    try {
+      final service = UpdateService.instance;
+      return await service.getCurrentVersion();
+    } catch (_) {
+      return '0.0.0';
     }
-    return false;
   }
 
   static Future<void> checkAndShowUpdate(
     BuildContext context, {
     bool silent = false,
   }) async {
-    final service = UpdateService();
-    final response = await service.checkForUpdate();
-    service.dispose();
+    final channelStr = await getSavedChannel();
+    final channel = UpdateChannelX.fromString(channelStr);
+
+    final service = UpdateService.instance;
+    final response = await service.checkForUpdate(
+      channel: channel,
+      forceRefresh: !silent,
+    );
 
     if (!context.mounted) return;
 
     switch (response.result) {
-      case UpdateCheckResult.repoNotFound:
+      case UpdateCheckResult.networkError:
         if (!silent) {
-          _showSnackBar(context, 'Update check failed: repository not found');
-        }
-        break;
-      case UpdateCheckResult.rateLimited:
-        if (!silent) {
-          _showSnackBar(context, 'Rate limited. Try again later.');
+          _showSnackBar(context, 'Could not check for updates. Check your connection.');
         }
         break;
       case UpdateCheckResult.noConnection:
@@ -72,17 +50,9 @@ class UpdateManager {
           _showSnackBar(context, 'No internet connection');
         }
         break;
-      case UpdateCheckResult.networkError:
+      case UpdateCheckResult.invalidResponse:
         if (!silent) {
-          _showSnackBar(
-            context,
-            'Could not check for updates. Check your connection.',
-          );
-        }
-        break;
-      case UpdateCheckResult.noReleases:
-        if (!silent) {
-          _showSnackBar(context, 'No releases found');
+          _showSnackBar(context, 'Update check failed: invalid response');
         }
         break;
       case UpdateCheckResult.upToDate:
@@ -91,19 +61,9 @@ class UpdateManager {
         }
         break;
       case UpdateCheckResult.available:
-        final release = response.release!;
-        final currentVersion = await getCurrentVersion();
-        final remoteVersion = stripV(release.tagName);
-
-        if (!isNewer(remoteVersion, currentVersion)) {
-          if (!silent) {
-            _showSnackBar(context, 'You are on the latest version');
-          }
-          return;
-        }
-
+        final info = response.info!;
         if (context.mounted) {
-          _showUpdateSheet(context, release);
+          _showUpdateSheet(context, info, channel);
         }
         break;
     }
@@ -126,7 +86,11 @@ class UpdateManager {
     );
   }
 
-  static void _showUpdateSheet(BuildContext context, ReleaseInfo release) {
+  static void _showUpdateSheet(
+    BuildContext context,
+    VersionInfo info,
+    UpdateChannel channel,
+  ) {
     final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
@@ -189,7 +153,7 @@ class UpdateManager {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Version ${release.version}',
+                        'Version ${info.version} (${channel.label})',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -200,7 +164,7 @@ class UpdateManager {
                   ),
                 ],
               ),
-              if (release.body.isNotEmpty) ...[
+              if (info.changelog.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 Container(
                   width: double.infinity,
@@ -210,7 +174,7 @@ class UpdateManager {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    release.body,
+                    info.changelog,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
@@ -229,7 +193,7 @@ class UpdateManager {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(ctx);
-                    _launchDownload(release);
+                    _launchDownload(info.downloadUrl);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: sheetCs.primary,
@@ -274,8 +238,7 @@ class UpdateManager {
     );
   }
 
-  static Future<void> _launchDownload(ReleaseInfo release) async {
-    final url = release.apkDownloadUrl ?? release.url;
+  static Future<void> _launchDownload(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
