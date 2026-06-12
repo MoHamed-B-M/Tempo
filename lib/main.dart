@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/app_theme.dart';
+import 'core/dynamic_theme_manager.dart';
 import 'core/hive_helper.dart';
 import 'providers/alarm_provider.dart';
 import 'providers/theme_provider.dart';
@@ -19,6 +20,15 @@ final FlutterLocalNotificationsPlugin notificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+/// Increment to force DynamicColorBuilder to re-mount and re-fetch platform
+/// colors (e.g. after a wallpaper change).
+final wallpaperRefreshProvider = StateProvider<int>((_) => 0);
+
+/// Timestamp of the last wallpaper check — used to throttle refreshes.
+final lastWallpaperCheckProvider = StateProvider<DateTime>(
+  (_) => DateTime(2000),
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,6 +62,12 @@ class _TempoApp extends ConsumerStatefulWidget {
 }
 
 class _TempoAppState extends ConsumerState<_TempoApp> {
+  // Short splash delay so the platform channel can resolve before the first
+  // real frame, preventing a null-dynamic-colour → dynamic-colour shift.
+  static final _splashDone = Future<void>.delayed(
+    const Duration(milliseconds: 16),
+  );
+
   @override
   void initState() {
     super.initState();
@@ -72,18 +88,59 @@ class _TempoAppState extends ConsumerState<_TempoApp> {
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
-    return DynamicColorBuilder(
-      builder: (lightDynamic, darkDynamic) {
-        return MaterialApp(
-          title: 'Tempo',
-          debugShowCheckedModeBanner: false,
-          navigatorKey: navigatorKey,
-          themeMode: themeMode,
-          theme: AppTheme.light(dynamicColor: lightDynamic),
-          darkTheme: AppTheme.dark(dynamicColor: darkDynamic),
-          home: const _AppShell(),
+    final refreshKey = ref.watch(wallpaperRefreshProvider);
+
+    return FutureBuilder<void>(
+      future: _splashDone,
+      builder: (context, snapshot) {
+        final showApp = snapshot.connectionState == ConnectionState.done;
+
+        return DynamicColorBuilder(
+          // Unique key forces re-mount + re-fetch from the platform when
+          // the wallpaper refresh counter increments.
+          key: ValueKey(refreshKey),
+          builder: (lightDynamic, darkDynamic) {
+            final light =
+                DynamicThemeManager.instance.processLight(lightDynamic);
+            final dark =
+                DynamicThemeManager.instance.processDark(darkDynamic);
+            return MaterialApp(
+              title: 'Tempo',
+              debugShowCheckedModeBanner: false,
+              navigatorKey: navigatorKey,
+              themeMode: themeMode,
+              theme: AppTheme.light(dynamicColor: light),
+              darkTheme: AppTheme.dark(dynamicColor: dark),
+              home: showApp ? const _AppShell() : const _SplashScreen(),
+            );
+          },
         );
       },
+    );
+  }
+}
+
+/// Brief branded splash shown while the platform dynamic-colour channel
+/// resolves.  Uses the current (fallback or dynamic) theme seamlessly.
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      backgroundColor: cs.surface,
+      body: Center(
+        child: Text(
+          'Tempo',
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w200,
+            color: cs.primary,
+            letterSpacing: 4,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -139,7 +196,16 @@ class _AppShellState extends ConsumerState<_AppShell>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _onResume();
+      _checkWallpaperRefresh();
     }
+  }
+
+  Future<void> _checkWallpaperRefresh() async {
+    const minInterval = Duration(seconds: 30);
+    final lastCheck = ref.read(lastWallpaperCheckProvider);
+    if (DateTime.now().difference(lastCheck) < minInterval) return;
+    ref.read(lastWallpaperCheckProvider.notifier).state = DateTime.now();
+    ref.read(wallpaperRefreshProvider.notifier).state++;
   }
 
   Future<void> _onResume() async {

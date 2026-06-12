@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/alarm_model.dart';
 import '../providers/alarm_provider.dart';
 import '../providers/settings_provider.dart';
-import '../services/screen_wake_handler.dart';
 import '../widgets/lock_screen.dart';
 
 class AlarmRingScreen extends ConsumerWidget {
@@ -19,13 +18,11 @@ class AlarmRingScreen extends ConsumerWidget {
     final alarmService = ref.read(alarmServiceProvider);
 
     void snooze() {
-      ScreenWakeHandler.enable();
       alarmService.snoozeAlarm(alarm);
       Navigator.of(context).pop();
     }
 
     void dismiss() {
-      ScreenWakeHandler.enable();
       alarmService.stopAlarm(alarm);
       if (!alarm.isRepeating) {
         ref.read(alarmListProvider.notifier).disableAlarm(alarm.id);

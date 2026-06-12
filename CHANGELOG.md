@@ -1,4 +1,15 @@
 # Changelog
+## [1.5.1] - 2026-06-12
+- Created `DynamicThemeManager` with Hct tone-mapping (material_color_utilities) — clamps seed colours to tone 40 (light) / 75 (dark) for guaranteed WCAG contrast, enforces minimum chroma 24 to prevent muddy desaturated greys from low-quality wallpapers
+- Replaced static grey fallback (`0xFF616161`/`0xFF1A1A1A`) with premium brand palette — rich deep teal (`0xFF005F56` light, `0xFF53C3B4` dark) for expressive appearance when dynamic colour is unavailable
+- Wrapped `DynamicColorBuilder` in `FutureBuilder` with 16ms branded splash — eliminates null→dynamic colour flash by giving the platform channel time to resolve before the first real frame
+- Added `wallpaperRefreshProvider` + `lastWallpaperCheckProvider` for throttled wallpaper change detection (30s cooldown) on app resume, with `ValueKey` forcing DynamicColorBuilder to re-mount and re-fetch platform colours
+- Added `invalidateCache()` method to force fresh extraction when wallpaper changes
+- Fixed `AlarmForegroundService.kt` — added missing `import android.content.BroadcastReceiver` to resolve `Unresolved reference BroadcastReceiver` and `'onReceive' overrides nothing` compilation errors
+- Fixed `AlarmRingScreen` — removed redundant `ScreenWakeHandler.enable()` calls from `snooze()` and `dismiss()` (LockScreen already manages wake lock lifecycle via `initState`/`dispose`)
+- Fixed deprecated Color API usage: replaced `color.value` with `color.toARGB32()`, `color.red/green/blue` with `color.r/g/b` (double 0–1)
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [1.0.35] - 2026-06-04
 - Eliminated transition jank in Card Transform animation — replaced expensive `Clip.antiAliasWithSaveLayer` with `OpenContainer`'s built-in clipping, removing GPU save‑layer bottleneck during scale
 - Deferred `AlarmEditPage` heavy widget building (TextField, day selectors, dropdown, delete button) until after the container transition completes, preventing layout jank on the first animation frames

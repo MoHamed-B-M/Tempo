@@ -36,12 +36,10 @@ class DynamicThemeManager {
       _lastLight = _regenerate(dynamicScheme.primary, Brightness.light);
       return _lastLight!;
     }
-    if (_lastLight == null) {
-      _lastLight = ColorScheme.fromSeed(
-        seedColor: _brandSeed,
-        brightness: Brightness.light,
-      );
-    }
+    _lastLight ??= ColorScheme.fromSeed(
+      seedColor: _brandSeed,
+      brightness: Brightness.light,
+    );
     return _lastLight!;
   }
 
@@ -51,12 +49,10 @@ class DynamicThemeManager {
       _lastDark = _regenerate(dynamicScheme.primary, Brightness.dark);
       return _lastDark!;
     }
-    if (_lastDark == null) {
-      _lastDark = ColorScheme.fromSeed(
-        seedColor: _brandSeedDark,
-        brightness: Brightness.dark,
-      );
-    }
+    _lastDark ??= ColorScheme.fromSeed(
+      seedColor: _brandSeedDark,
+      brightness: Brightness.dark,
+    );
     return _lastDark!;
   }
 
@@ -81,7 +77,7 @@ class DynamicThemeManager {
   /// a range that guarantees accessible contrast against the app surface.
   /// Also enforces a minimum chroma (≥ 18) to avoid muddy desaturated greys.
   Color _adjustTone(Color color, {required bool isDark}) {
-    final hct = Hct.fromInt(color.value);
+    final hct = Hct.fromInt(color.toARGB32());
     hct.tone = isDark ? 75.0 : 40.0;
     if (hct.chroma < 18.0) hct.chroma = 24.0;
     return Color(hct.toInt());
@@ -92,15 +88,16 @@ class DynamicThemeManager {
   // ---------------------------------------------------------------------------
 
   static double _relativeLuminance(Color c) {
-    final r = _srgbLinear(c.red);
-    final g = _srgbLinear(c.green);
-    final b = _srgbLinear(c.blue);
+    final r = _srgbLinear(c.r);
+    final g = _srgbLinear(c.g);
+    final b = _srgbLinear(c.b);
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   }
 
-  static double _srgbLinear(int component) {
-    final v = component / 255.0;
-    return v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4).toDouble();
+  static double _srgbLinear(double component) {
+    return component <= 0.04045
+        ? component / 12.92
+        : pow((component + 0.055) / 1.055, 2.4).toDouble();
   }
 
   static double _contrastRatio(Color a, Color b) {
