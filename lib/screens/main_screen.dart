@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:animated_bubble_navigation_bar/animated_bubble_navigation_bar.dart';
+import '../packages/animated_bubble_nav/animated_bubble_nav.dart';
 import '../core/navigation.dart';
 import '../providers/nav_style_provider.dart';
 import 'settings_page.dart';
