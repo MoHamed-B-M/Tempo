@@ -1,9 +1,7 @@
 enum BubbleShape {
   circular,
-  square,
-}
+  square;
 
-extension BubbleShapeExtension on BubbleShape {
   double get shape {
     switch (this) {
       case BubbleShape.circular:
