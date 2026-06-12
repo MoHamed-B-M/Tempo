@@ -1,5 +1,5 @@
 # Changelog
-## [1.5.1] - 2026-06-12
+## [preview] - 2026-06-12
 - Created `DynamicThemeManager` with Hct tone-mapping (material_color_utilities) — clamps seed colours to tone 40 (light) / 75 (dark) for guaranteed WCAG contrast, enforces minimum chroma 24 to prevent muddy desaturated greys from low-quality wallpapers
 - Replaced static grey fallback (`0xFF616161`/`0xFF1A1A1A`) with premium brand palette — rich deep teal (`0xFF005F56` light, `0xFF53C3B4` dark) for expressive appearance when dynamic colour is unavailable
 - Wrapped `DynamicColorBuilder` in `FutureBuilder` with 16ms branded splash — eliminates null→dynamic colour flash by giving the platform channel time to resolve before the first real frame
