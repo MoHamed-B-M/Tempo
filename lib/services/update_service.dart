@@ -135,10 +135,8 @@ class UpdateService {
     }
 
     final cached = await _readCached();
-    if (!forceRefresh && cached != null) {
-      return cached;
-    }
 
+    // Try the network
     try {
       final response = await _client
           .get(
@@ -147,20 +145,28 @@ class UpdateService {
           )
           .timeout(const Duration(seconds: 10));
 
-      if (response.statusCode != 200) {
-        debugPrint('[UpdateService] HTTP ${response.statusCode}, using cache');
-        return cached;
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        _lastFetched = json;
+        _lastFetchTime = DateTime.now();
+        await _writeCache(json);
+        return json;
       }
 
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      _lastFetched = json;
-      _lastFetchTime = DateTime.now();
-      await _writeCache(json);
-      return json;
+      debugPrint('[UpdateService] HTTP ${response.statusCode}');
     } catch (e) {
-      debugPrint('[UpdateService] Fetch failed: $e, using cache');
+      debugPrint('[UpdateService] Fetch failed: $e');
+    }
+
+    // Network failed — use stale cache if available
+    if (cached != null) {
+      debugPrint('[UpdateService] Using stale cache');
       return cached;
     }
+
+    // No cache — write a default so subsequent checks have a fallback
+    await _writeDefaultCache();
+    return null;
   }
 
   Future<String> getCurrentVersion() async {
@@ -197,6 +203,24 @@ class UpdateService {
     try {
       final box = HiveHelper.settings;
       await box.put(_cacheKey, jsonEncode(json));
+      await box.put(_cacheTimestampKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (_) {}
+  }
+
+  Future<void> _writeDefaultCache() async {
+    try {
+      final box = HiveHelper.settings;
+      final exists = box.get(_cacheKey) != null;
+      if (exists) return;
+      const fallback = {
+        'latest_stable_version': '0.0.0',
+        'latest_stable_url': '',
+        'changelog_stable': '',
+        'latest_beta_version': '0.0.0',
+        'latest_beta_url': '',
+        'changelog_beta': '',
+      };
+      await box.put(_cacheKey, jsonEncode(fallback));
       await box.put(_cacheTimestampKey, DateTime.now().millisecondsSinceEpoch);
     } catch (_) {}
   }

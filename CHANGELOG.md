@@ -9,6 +9,17 @@
 - Fixed `AlarmRingScreen` — removed redundant `ScreenWakeHandler.enable()` calls from `snooze()` and `dismiss()` (LockScreen already manages wake lock lifecycle via `initState`/`dispose`)
 - Fixed deprecated Color API usage: replaced `color.value` with `color.toARGB32()`, `color.red/green/blue` with `color.r/g/b` (double 0–1)
 - Verified with `dart analyze` — 0 errors, 0 warnings
+- Customised M3 SwitchThemeData — active track uses `primary` (vibrant), active thumb uses `onPrimary` (high contrast); inactive track stays `surfaceContainerHighest` with `onSurfaceVariant` thumb
+- Replaced single-toggle theme switcher with M3 `SegmentedButton<ThemeMode>` — three-segment horizontal group (Light / Dark / System) with expressive 14px rounded corners, removing manual `toggle()` cycling
+- Removed unused `isDark` local variable from `settings_page.dart`
+- Fixed update checker failing with "could not check for updates" — created `version.json` manifest at project root matching the `UpdateService` JSON schema (keys: `latest_stable_version`, `latest_stable_url`, `changelog_stable`, `latest_beta_version`, `latest_beta_url`, `changelog_beta`)
+- Made `_fetchVersionJson` resilient: falls back to stale cache when the network request fails; writes a default cache entry on first run so subsequent checks never 404 immediately
+- Provided app-size optimisation checklist: R8 minification/shrinking audit, asset re-encoding, unused package detection via `dart pub deps`, and `flutter build --obfuscate --split-debug-info`
+- Rewrote `DynamicThemeManager._forgeScheme` — extracts **only the hue** from the platform dynamic seed, discards the OEM's chroma/tone (bypassing ColorOS/MIUI restrictions), and builds a fresh `ColorScheme.fromSeed` with guaranteed-vibrant chroma and WCAG-safe tone
+- Added green-hue chroma boost (90–150° → chroma 52) — prevents the desaturated look that dynamic colour engines produce for wallpaper greens, keeping `primaryContainer` and `secondary` vibrant
+- Replaced brand fallback from teal to explicit green hex: `#2E7D32` (light) / `#66BB6A` (dark)
+- Added `CorePalette` pre-load in `_TempoAppState.initState()` via `DynamicColorPlugin.getCorePalette()` — primes the manager's cache before the first frame by extracting the primary accent at tone 40 from the raw platform palette
+- Verified with `dart analyze` — 0 errors, 0 warnings
 
 ## [1.0.35] - 2026-06-04
 - Eliminated transition jank in Card Transform animation — replaced expensive `Clip.antiAliasWithSaveLayer` with `OpenContainer`'s built-in clipping, removing GPU save‑layer bottleneck during scale

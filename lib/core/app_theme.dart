@@ -119,13 +119,13 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return cs.onPrimaryContainer;
+            return cs.onPrimary;
           }
           return cs.onSurfaceVariant;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return cs.primaryContainer;
+            return cs.primary;
           }
           return cs.surfaceContainerHighest;
         }),

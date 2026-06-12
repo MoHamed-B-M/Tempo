@@ -71,6 +71,10 @@ class _TempoAppState extends ConsumerState<_TempoApp> {
   @override
   void initState() {
     super.initState();
+    // Pre-load the raw CorePalette from the platform so the DynamicThemeManager
+    // can cache a forced-extraction scheme before DynamicColorBuilder fires.
+    _preloadCorePalette();
+
     ref.listen(themeModeProvider, (prev, next) {
       SystemChrome.setSystemUIOverlayStyle(
         SystemUiOverlayStyle(
@@ -83,6 +87,26 @@ class _TempoAppState extends ConsumerState<_TempoApp> {
         ),
       );
     });
+  }
+
+  /// Fetch the platform [CorePalette] early and feed it to the theme manager
+  /// so schemes are cached before the first frame paints.
+  Future<void> _preloadCorePalette() async {
+    try {
+      final cp = await DynamicColorPlugin.getCorePalette();
+      if (!mounted || cp == null) return;
+      // The manager's _forgeScheme only uses the hue, so we pass the primary
+      // accent colour at tone 40 (standard light primary tone) as a seed.
+      final seed = Color(cp.primary.get(40));
+      DynamicThemeManager.instance.processLight(
+        ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.light),
+      );
+      DynamicThemeManager.instance.processDark(
+        ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.dark),
+      );
+    } catch (_) {
+      // Platform channel failed — DynamicColorBuilder will retry later.
+    }
   }
 
   @override

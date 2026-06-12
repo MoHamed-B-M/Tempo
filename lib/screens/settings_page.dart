@@ -88,7 +88,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
-    final isDark = themeMode == ThemeMode.dark;
     final alarmSettings = ref.watch(alarmSettingsProvider);
     final cs = Theme.of(context).colorScheme;
 
@@ -153,28 +152,56 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           _SettingsSection(
             label: 'APPEARANCE',
             child: _buildCardWithTheme(context, cs, [
-              ExpressiveSettingsTile(
-                icon: isDark
-                    ? Icons.dark_mode_outlined
-                    : Icons.light_mode_outlined,
-                title: isDark
-                    ? 'Dark Mode'
-                    : (themeMode == ThemeMode.light
-                        ? 'Light Mode'
-                        : 'System Theme'),
-                iconBackground: cs.surfaceContainerHighest,
-                iconColor: cs.onSurfaceVariant,
-                trailing: Switch(
-                  value: isDark,
-                  onChanged: (_) {
-                    HapticFeedback.selectionClick();
-                    ref.read(themeModeProvider.notifier).toggle();
-                  },
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'THEME',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            letterSpacing: 1.5,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: SegmentedButton<ThemeMode>(
+                        segments: const [
+                          ButtonSegment(
+                            value: ThemeMode.light,
+                            icon: Icon(Icons.light_mode_outlined),
+                            label: Text('Light'),
+                          ),
+                          ButtonSegment(
+                            value: ThemeMode.dark,
+                            icon: Icon(Icons.dark_mode_outlined),
+                            label: Text('Dark'),
+                          ),
+                          ButtonSegment(
+                            value: ThemeMode.system,
+                            icon: Icon(Icons.settings_outlined),
+                            label: Text('System'),
+                          ),
+                        ],
+                        selected: {themeMode},
+                        onSelectionChanged: (selected) {
+                          HapticFeedback.selectionClick();
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setMode(selected.first);
+                        },
+                        showSelectedIcon: false,
+                        style: SegmentedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  ref.read(themeModeProvider.notifier).toggle();
-                },
               ),
               const Divider(height: 1, indent: 72),
               ExpressiveSettingsTile.navigation(
