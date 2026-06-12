@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:animated_bubble_navigation_bar/animated_bubble_navigation_bar.dart';
 import '../core/navigation.dart';
+import '../providers/nav_style_provider.dart';
 import 'settings_page.dart';
 import 'tabs/alarms_tab.dart';
 import 'tabs/world_clock_tab.dart';
@@ -29,6 +31,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     Icons.hourglass_bottom,
   ];
 
+  static const _labels = ['Alarm', 'Clock', 'Timer', 'Stopwatch'];
+
   final List<Widget> _tabs = const [
     AlarmsTab(),
     WorldClockTab(),
@@ -49,10 +53,19 @@ class _MainScreenState extends ConsumerState<MainScreen>
         curve: Curves.easeInOutCubic,
       ),
     );
+    selectedIndexNotifier.addListener(_onBubbleNavChanged);
+  }
+
+  void _onBubbleNavChanged() {
+    final index = selectedIndexNotifier.value;
+    if (index != _currentIndex && index < _tabs.length) {
+      _switchTab(index);
+    }
   }
 
   @override
   void dispose() {
+    selectedIndexNotifier.removeListener(_onBubbleNavChanged);
     _slideController.dispose();
     super.dispose();
   }
@@ -62,7 +75,10 @@ class _MainScreenState extends ConsumerState<MainScreen>
     _tabSwitchLock = true;
     HapticFeedback.selectionClick();
     _slideController.forward(from: 0.0);
-    setState(() => _currentIndex = index);
+    setState(() {
+      _currentIndex = index;
+      selectedIndexNotifier.value = index;
+    });
     Future.delayed(const Duration(milliseconds: 400), () {
       _tabSwitchLock = false;
     });
@@ -73,6 +89,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final cs = Theme.of(context).colorScheme;
     final topPad = MediaQuery.of(context).padding.top;
     final bottomInset = MediaQuery.of(context).padding.bottom;
+    final useBubble = ref.watch(navStyleProvider).useBubbleNav;
+
     return Scaffold(
       extendBody: true,
       backgroundColor: cs.surface,
@@ -122,9 +140,41 @@ class _MainScreenState extends ConsumerState<MainScreen>
             left: 20,
             right: 20,
             bottom: bottomInset + 20,
-            child: _buildFloatingBar(cs),
+            child: useBubble ? _buildBubbleNav(cs) : _buildFloatingBar(cs),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBubbleNav(ColorScheme cs) {
+    return CustomBubbleNavBar(
+      items: List.generate(4, (i) => BubbleItem(label: _labels[i], icon: _icons[i])),
+      bubbleDecoration: BubbleDecoration(
+        backgroundColor: cs.surfaceContainer.withValues(alpha: 0.92),
+        selectedBubbleBackgroundColor: cs.primary,
+        unSelectedBubbleBackgroundColor: Colors.transparent,
+        selectedBubbleIconColor: cs.onPrimary,
+        unSelectedBubbleIconColor: cs.onSurfaceVariant.withValues(alpha: 0.6),
+        iconSize: 22,
+        shapes: BubbleShape.square,
+        squareBordersRadius: 32,
+        bubbleItemSize: 10,
+        innerIconLabelSpacing: 4,
+        padding: const EdgeInsets.all(6),
+        margin: EdgeInsets.zero,
+        alignment: Alignment.bottomCenter,
+        bubbleDuration: const Duration(milliseconds: 300),
+        selectedBubbleLabelStyle: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: cs.onPrimary,
+        ),
+        unSelectedBubbleLabelStyle: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+        ),
       ),
     );
   }

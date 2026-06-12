@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:m3e_core/m3e_core.dart';
 import '../core/navigation.dart';
+import '../providers/nav_style_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/update_manager.dart';
@@ -214,6 +215,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   context,
                   const AboutPage(),
                 ),
+              ),
+              const Divider(height: 1, indent: 72),
+              ExpressiveSettingsTile(
+                icon: Icons.bubble_chart_outlined,
+                title: 'Bubble Navigation',
+                iconBackground: cs.surfaceContainerHighest,
+                iconColor: cs.onSurfaceVariant,
+                trailing: Switch(
+                  value: ref.watch(navStyleProvider).useBubbleNav,
+                  onChanged: (_) =>
+                      ref.read(navStyleProvider.notifier).toggle(),
+                ),
+                onTap: () => ref.read(navStyleProvider.notifier).toggle(),
               ),
             ]),
           ),
