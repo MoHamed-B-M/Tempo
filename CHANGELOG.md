@@ -7,6 +7,35 @@
 - `WorldClockNotifier` persists favorites via Hive (`jsonEncode`/`jsonDecode`), defaults to New York/London/Tokyo
 - Fixed ABI build conflict — added `ndk { abiFilters.clear() }` in `defaultConfig` to resolve `Conflicting configuration` error between plugin `ndk abiFilters` and `splits abi`
 - Verified with `dart analyze` — 0 errors, 0 warnings
+
+### Build & CI
+- Fixed release build failure on CI (GitHub Actions) — removed custom Gradle build directory redirect from `android/build.gradle.kts` that sent outputs to `<repo_root>/build` instead of the default location, causing Flutter tool to report "Gradle build failed to produce an .apk file"
+- Fixed silent OOM in Gradle daemon — reduced `org.gradle.jvmargs` heap from `-Xmx8G` to `-Xmx4G` in `android/gradle.properties` (GitHub Actions runners have 7GB RAM; 8G caused JVM thrashing)
+- Fixed R8 minification stripping plugin classes loaded via reflection — replaced aggressive `-repackageclasses`/`-mergeinterfacesaggressively` flags with comprehensive `-keep` rules for `flutter_timezone`, `connectivity_plus`, `hive`, `kotlinx.coroutines`, and all `MethodChannel` handler base classes in `android/app/proguard-rules.pro`
+- Removed outdated Gradle-level ABI splits (`splits { abi { ... } }`) and bundle config from `android/app/build.gradle.kts` — single universal APK now produced, matching Flutter tool's expected output pattern
+
+### Performance
+- Added `const` keyword to 9 constructor invocations across `alarm_edit_page.dart`, `sleep_timer_tab.dart`, `timer_tab.dart`, `alarm_service.dart` to reduce widget rebuild overhead
+- `WorldClockCard` owns isolated `Timer.periodic(1s)` + `RepaintBoundary` — ticking animations never rebuild parent list or header clock
+
+### World Clock
+- Extracted `TimezoneService` singleton — initializes IANA database once via `tz_data.initializeTimeZones()`, provides `search(query)`, `cityName()`, and `location()` helpers; eliminates redundant init on every tab visit
+- Created `SearchableTimezonePicker` bottom sheet in `widgets/searchable_timezone_picker.dart` — 150ms debounced search via `Timer` prevents frame drops during typing, uses `ListView.builder` for large timezone lists, clear button in search field
+- Extracted `WorldClockCard` into `widgets/world_clock_card.dart` — each card owns its own `Timer.periodic(1s)` and `RepaintBoundary` so ticking animations never rebuild the parent list or header clock
+- Refactored `WorldClockTab` — delegates to `TimezoneService`, `SearchableTimezonePicker`, and `WorldClockCard`; header local clock uses its own `Timer.periodic` isolated from the list
+- `WorldClockNotifier` persists favorites via Hive (`jsonEncode`/`jsonDecode`), defaults to New York/London/Tokyo
+
+### Bubble Navigation
+- Integrated animated bubble navigation bar as drop-in replacement for default pill bar — 4 presets available (Bubble, Pill, Minimal, Compact) with toggle in Settings → APPEARANCE → Bubble Navigation
+- Added `NavBarPreset` enum with per-preset `BubbleDecoration` configurations — circular (Bubble), rounded-square (Pill), transparent (Minimal), tight-spacing (Compact)
+- Added `navStyleProvider` (Riverpod + Hive) — persists `useBubbleNav` boolean and `selectedPreset` index across restarts
+- Inlined `CustomBubbleNavBar` source into `lib/packages/animated_bubble_nav/` — removed path dependency that failed in CI, fixed `BubbleShape.shape` getter by moving from extension to enum instance member
+- Reduced universal APK size — removed `x86_64` from ABI splits and disabled `isUniversalApk` in `android/app/build.gradle.kts`, targeting only `arm64-v8a` and `armeabi-v7a` (~7-8MB per-ABI)
+
+### Maintenance
+- Fixed `Icons.shrink` → `Icons.space_dashboard` in `nav_style_provider.dart:34` (undefined icon constant)
+- Removed unused `services` import from `world_clock_tab.dart:6` and unused `_buildSearchBox` variable on `world_clock_tab.dart:71` — `dart analyze` now passes with 0 errors
+
 - Integrated animated bubble navigation bar as drop-in replacement for default pill bar — 4 presets available (Bubble, Pill, Minimal, Compact) with toggle in Settings → APPEARANCE → Bubble Navigation
 - Added `NavBarPreset` enum with per-preset `BubbleDecoration` configurations — circular (Bubble), rounded-square (Pill), transparent (Minimal), tight-spacing (Compact)
 - Added `navStyleProvider` (Riverpod + Hive) — persists `useBubbleNav` boolean and `selectedPreset` index across restarts
