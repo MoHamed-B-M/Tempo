@@ -188,6 +188,7 @@ class _AppShellState extends ConsumerState<_AppShell>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(alarmServiceProvider).processPendingAlarm();
       _checkBootReschedule();
+      UpdateManager.checkForVersionChange(context);
       UpdateManager.checkAndShowUpdate(context, silent: true);
     });
     _checkOnboarding();

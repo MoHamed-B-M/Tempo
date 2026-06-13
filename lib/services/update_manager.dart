@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pub_semver/pub_semver.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/changelog_dialog.dart';
+import '../core/changelog_parser.dart';
 import '../core/hive_helper.dart';
 import 'update_service.dart';
 
@@ -22,6 +25,44 @@ class UpdateManager {
     } catch (_) {
       return '0.0.0';
     }
+  }
+
+  static Future<void> checkForVersionChange(BuildContext context) async {
+    const lastSeenKey = 'last_seen_version';
+    final box = HiveHelper.settings;
+    final lastSeen = box.get(lastSeenKey) as String?;
+
+    final currentVersion = await getCurrentVersion();
+    if (currentVersion == '0.0.0') return;
+
+    if (lastSeen == null || lastSeen.isEmpty) {
+      await box.put(lastSeenKey, currentVersion);
+      return;
+    }
+
+    if (currentVersion == lastSeen) return;
+
+    try {
+      final current = Version.parse(currentVersion);
+      final last = Version.parse(lastSeen);
+      if (current <= last) {
+        await box.put(lastSeenKey, currentVersion);
+        return;
+      }
+    } catch (_) {
+      return;
+    }
+
+    final entries =
+        await ChangelogParser.getChangelogForVersion(currentVersion);
+    if (entries.isEmpty) {
+      await box.put(lastSeenKey, currentVersion);
+      return;
+    }
+
+    if (!context.mounted) return;
+    await showChangelogDialog(context, currentVersion, entries);
+    await box.put(lastSeenKey, currentVersion);
   }
 
   static Future<void> checkAndShowUpdate(
