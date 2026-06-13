@@ -1,5 +1,5 @@
 # Changelog
-## [preview] - 2026-06-13
+## [1.5.1] - 2026-06-13
 - Extracted `TimezoneService` singleton — initializes IANA database once via `tz_data.initializeTimeZones()`, provides `search(query)`, `cityName()`, and `location()` helpers; eliminates redundant init on every tab visit
 - Created `SearchableTimezonePicker` bottom sheet in `widgets/searchable_timezone_picker.dart` — 150ms debounced search via `Timer` prevents frame drops during typing, uses `ListView.builder` for large timezone lists, clear button in search field
 - Extracted `WorldClockCard` into `widgets/world_clock_card.dart` — each card owns its own `Timer.periodic(1s)` and `RepaintBoundary` so ticking animations never rebuild the parent list or header clock
