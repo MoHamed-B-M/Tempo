@@ -304,7 +304,7 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
                 child: M3EFilledButton(
                   onPressed: _saveSleepSchedule,
                   size: M3EButtonSize.md,
-                  decoration: M3EButtonDecoration(
+                  decoration: const M3EButtonDecoration(
                     borderRadius: 16,
                   ),
                 child: Text(

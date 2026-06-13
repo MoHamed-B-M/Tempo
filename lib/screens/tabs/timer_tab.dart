@@ -119,7 +119,8 @@ class _TimerTabState extends State<TimerTab> {
       DateTime.now().millisecondsSinceEpoch.hashCode,
       'Timer Finished',
       'Your countdown timer has ended.',
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+
     );
   }
 
@@ -217,7 +218,7 @@ class _TimerTabState extends State<TimerTab> {
           child: M3EFilledButton(
             onPressed: _setDuration,
             size: M3EButtonSize.md,
-            decoration: M3EButtonDecoration(
+            decoration: const M3EButtonDecoration(
               borderRadius: 18,
             ),
             child: Text(

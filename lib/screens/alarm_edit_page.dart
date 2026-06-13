@@ -303,7 +303,7 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
                 containerRadius: 12,
                 maxHeight: 300,
               ),
-              itemStyle: M3EDropdownItemStyle(
+              itemStyle: const M3EDropdownItemStyle(
                 outerRadius: 8,
                 innerRadius: 4,
               ),

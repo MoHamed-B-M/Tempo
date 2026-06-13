@@ -31,7 +31,7 @@ enum NavBarPreset {
       case NavBarPreset.minimal:
         return Icons.horizontal_rule;
       case NavBarPreset.compact:
-        return Icons.shrink;
+        return Icons.space_dashboard;
     }
   }
 

@@ -117,11 +117,11 @@ class AlarmService {
       enableVibration: true,
       category: AndroidNotificationCategory.alarm,
       audioAttributesUsage: AudioAttributesUsage.alarm,
-      sound: RawResourceAndroidNotificationSound('sound1'),
+      sound: const RawResourceAndroidNotificationSound('sound1'),
       actions: <AndroidNotificationAction>[
-        AndroidNotificationAction('snooze', 'Snooze 5min',
+        const AndroidNotificationAction('snooze', 'Snooze 5min',
             showsUserInterface: true),
-        AndroidNotificationAction('stop', 'Stop',
+        const AndroidNotificationAction('stop', 'Stop',
             showsUserInterface: false),
       ],
     );
@@ -482,7 +482,7 @@ Future<void> _backgroundNotificationHandler(
   if (response.actionId == 'stop') {
     debugPrint('[AlarmService Background] Stopping foreground service');
     try {
-      final channel = MethodChannel('com.example.tempo/foreground_service');
+      const channel = MethodChannel('com.example.tempo/foreground_service');
       await channel.invokeMethod('stop');
     } catch (_) {}
   }
