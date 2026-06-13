@@ -1,5 +1,12 @@
 # Changelog
 ## [preview] - 2026-06-13
+- Extracted `TimezoneService` singleton — initializes IANA database once via `tz_data.initializeTimeZones()`, provides `search(query)`, `cityName()`, and `location()` helpers; eliminates redundant init on every tab visit
+- Created `SearchableTimezonePicker` bottom sheet in `widgets/searchable_timezone_picker.dart` — 150ms debounced search via `Timer` prevents frame drops during typing, uses `ListView.builder` for large timezone lists, clear button in search field
+- Extracted `WorldClockCard` into `widgets/world_clock_card.dart` — each card owns its own `Timer.periodic(1s)` and `RepaintBoundary` so ticking animations never rebuild the parent list or header clock
+- Refactored `WorldClockTab` — delegates to `TimezoneService`, `SearchableTimezonePicker`, and `WorldClockCard`; header local clock uses its own `Timer.periodic` isolated from the list
+- `WorldClockNotifier` persists favorites via Hive (`jsonEncode`/`jsonDecode`), defaults to New York/London/Tokyo
+- Fixed ABI build conflict — added `ndk { abiFilters.clear() }` in `defaultConfig` to resolve `Conflicting configuration` error between plugin `ndk abiFilters` and `splits abi`
+- Verified with `dart analyze` — 0 errors, 0 warnings
 - Integrated animated bubble navigation bar as drop-in replacement for default pill bar — 4 presets available (Bubble, Pill, Minimal, Compact) with toggle in Settings → APPEARANCE → Bubble Navigation
 - Added `NavBarPreset` enum with per-preset `BubbleDecoration` configurations — circular (Bubble), rounded-square (Pill), transparent (Minimal), tight-spacing (Compact)
 - Added `navStyleProvider` (Riverpod + Hive) — persists `useBubbleNav` boolean and `selectedPreset` index across restarts
