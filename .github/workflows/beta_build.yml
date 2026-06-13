@@ -1,12 +1,9 @@
-name: Beta Preview Build
+name: Beta Build
 
 on:
   push:
     branches:
       - beta
-
-permissions:
-  contents: write
 
 jobs:
   build:
@@ -22,53 +19,34 @@ jobs:
           java-version: 17
           distribution: temurin
 
-      # Restore Flutter SDK + Pub cache + Gradle cache on cache hit,
-      # otherwise they'll be populated after the build for next run.
-      # Key includes runner OS, Flutter channel, and pubspec.lock hash
-      # so that any dependency change invalidates the cache.
-      - name: Cache Flutter SDK, Pub deps, and Gradle
-        uses: actions/cache@v4
-        with:
-          key: ${{ runner.os }}-flutter-stable-${{ hashFiles('**/pubspec.lock') }}
-          path: |
-            ~/.pub-cache
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-
-      - name: Install dependencies
-        run: flutter pub get
 
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
       - name: Build release APK
-        run: flutter build apk --release --split-debug-info=build/debug-info --obfuscate --target-platform android-arm64
+        run: flutter build apk --release --split-debug-info=build/debug-info --obfuscate
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Prepare APK artifact
-        run: |
-          mkdir -p outputs
-          cp build/app/outputs/flutter-apk/app-release.apk outputs/tempo-preview.apk
-
-      - name: Upload APK artifact
+      - name: Upload APK to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tempo-preview-apk
-          path: outputs/tempo-preview.apk
-          retention-days: 7
+          name: tempo-beta-apk
+          path: build/app/outputs/flutter-apk/
+          retention-days: 30
 
   release:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -77,41 +55,55 @@ jobs:
       - name: Download APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: tempo-preview-apk
-          path: outputs
+          name: tempo-beta-apk
+          path: apk
 
-      # Delete the old rolling "preview" tag and release so the new
-      # one replaces it cleanly.  The || true ignores errors that
-      # occur on the very first run when no preview release exists yet.
-      - name: Delete old preview release
-        run: gh release delete preview --cleanup-tag -y || true
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      # Extract only the top-most changelog entry (everything between
-      # the first ## Version header and the second one, or EOF).
-      #   - Matches lines starting with "## "
-      #   - On first match sets found=1 and skips the header line
-      #   - On second match exits immediately (stops reading)
-      #   - Prints all lines while found==1
-      # This gives us just the release notes for the current version.
-      - name: Extract latest changelog entry
-        id: changelog
+      - name: Find APK file
+        id: find-apk
+        shell: bash
         run: |
-          awk '/^## /{if(found) exit; found=1; next} found' CHANGELOG.md > RELEASE_NOTES.md
-          if [ ! -s RELEASE_NOTES.md ]; then
-            echo "No changelog entries found." > RELEASE_NOTES.md
+          APK=$(ls apk/app-*-release.apk 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(ls apk/*.apk 2>/dev/null | head -1)
           fi
-          echo "Extracted changelog:"
-          head -5 RELEASE_NOTES.md
+          echo "path=$APK" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK"
 
-      - name: Publish preview release
-        uses: ncipollo/release-action@v1
+      - name: Generate version tag from pubspec
+        id: version
+        run: |
+          FULL_VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION=$(echo "$FULL_VERSION" | sed 's/+.*//')
+          TAG="v${VERSION}-beta.${GITHUB_RUN_NUMBER}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog for this version
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          awk -v ver="$VERSION" '
+            BEGIN { found = 0 }
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "[" ver "]") > 0 || index($0, ver) > 0) found = 1
+              next
+            }
+            found { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md 2>/dev/null || true
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "No changelog section found for v$VERSION. Generating from commits." > RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+            git log --oneline --no-decorate -20 2>/dev/null >> RELEASE_NOTES.md || true
+          fi
+
+      - name: Create Prerelease
+        uses: softprops/action-gh-release@v2
         with:
-          tag: preview
-          name: "Preview Build"
-          bodyFile: RELEASE_NOTES.md
-          artifacts: outputs/tempo-preview.apk
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Beta ${{ steps.version.outputs.tag }}
+          body_path: RELEASE_NOTES.md
+          files: ${{ steps.find-apk.outputs.path }}
           prerelease: true
-          replacesArtifacts: true
-          token: ${{ github.token }}
+          generate_release_notes: true
