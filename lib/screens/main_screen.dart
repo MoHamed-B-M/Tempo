@@ -89,7 +89,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
     final cs = Theme.of(context).colorScheme;
     final topPad = MediaQuery.of(context).padding.top;
     final bottomInset = MediaQuery.of(context).padding.bottom;
-    final useBubble = ref.watch(navStyleProvider).useBubbleNav;
+    final navState = ref.watch(navStyleProvider);
+    final useBubble = navState.useBubbleNav;
 
     return Scaffold(
       extendBody: true,
@@ -140,42 +141,17 @@ class _MainScreenState extends ConsumerState<MainScreen>
             left: 20,
             right: 20,
             bottom: bottomInset + 20,
-            child: useBubble ? _buildBubbleNav(cs) : _buildFloatingBar(cs),
+            child: useBubble ? _buildBubbleNav(cs, navState.selectedPreset) : _buildFloatingBar(cs),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBubbleNav(ColorScheme cs) {
+  Widget _buildBubbleNav(ColorScheme cs, NavBarPreset preset) {
     return CustomBubbleNavBar(
       items: List.generate(4, (i) => BubbleItem(label: _labels[i], icon: _icons[i])),
-      bubbleDecoration: BubbleDecoration(
-        backgroundColor: cs.surfaceContainer.withValues(alpha: 0.92),
-        selectedBubbleBackgroundColor: cs.primary,
-        unSelectedBubbleBackgroundColor: Colors.transparent,
-        selectedBubbleIconColor: cs.onPrimary,
-        unSelectedBubbleIconColor: cs.onSurfaceVariant.withValues(alpha: 0.6),
-        iconSize: 22,
-        shapes: BubbleShape.square,
-        squareBordersRadius: 32,
-        bubbleItemSize: 10,
-        innerIconLabelSpacing: 4,
-        padding: const EdgeInsets.all(6),
-        margin: EdgeInsets.zero,
-        alignment: Alignment.bottomCenter,
-        bubbleDuration: const Duration(milliseconds: 300),
-        selectedBubbleLabelStyle: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: cs.onPrimary,
-        ),
-        unSelectedBubbleLabelStyle: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-        ),
-      ),
+      bubbleDecoration: preset.decoration(cs),
     );
   }
 

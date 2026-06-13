@@ -1,4 +1,12 @@
 # Changelog
+## [preview] - 2026-06-13
+- Integrated animated bubble navigation bar as drop-in replacement for default pill bar — 4 presets available (Bubble, Pill, Minimal, Compact) with toggle in Settings → APPEARANCE → Bubble Navigation
+- Added `NavBarPreset` enum with per-preset `BubbleDecoration` configurations — circular (Bubble), rounded-square (Pill), transparent (Minimal), tight-spacing (Compact)
+- Added `navStyleProvider` (Riverpod + Hive) — persists `useBubbleNav` boolean and `selectedPreset` index across restarts
+- Inlined `CustomBubbleNavBar` source into `lib/packages/animated_bubble_nav/` — removed path dependency that failed in CI, fixed `BubbleShape.shape` getter by moving from extension to enum instance member
+- Reduced universal APK size — removed `x86_64` from ABI splits and disabled `isUniversalApk` in `android/app/build.gradle.kts`, targeting only `arm64-v8a` and `armeabi-v7a` (~7-8MB per-ABI)
+- Verified with `dart analyze` — 0 errors, 0 warnings
+
 ## [preview] - 2026-06-12
 - Created `DynamicThemeManager` with Hct tone-mapping (material_color_utilities) — clamps seed colours to tone 40 (light) / 75 (dark) for guaranteed WCAG contrast, enforces minimum chroma 24 to prevent muddy desaturated greys from low-quality wallpapers
 - Replaced static grey fallback (`0xFF616161`/`0xFF1A1A1A`) with premium brand palette — rich deep teal (`0xFF005F56` light, `0xFF53C3B4` dark) for expressive appearance when dynamic colour is unavailable
