@@ -121,7 +121,7 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
                   child: Text(
                     labelBuilder(value),
                     style: TextStyle(
-                      fontFamily: 'GoogleFonts.plusJakartaSans',
+                      fontFamily: 'Nunito',
                       fontSize: 28,
                       fontWeight: isSelected ? FontWeight.w800 : FontWeight.w300,
                       color: isSelected ? cs.onSurface : cs.onSurfaceVariant,
@@ -171,7 +171,7 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
                 children: [
                   Text('HOUR',
                       style: TextStyle(
-                        fontFamily: 'GoogleFonts.plusJakartaSans',
+                        fontFamily: 'Nunito',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: cs.onSurfaceVariant,
@@ -179,7 +179,7 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
                       )),
                   Text('MIN',
                       style: TextStyle(
-                        fontFamily: 'GoogleFonts.plusJakartaSans',
+                        fontFamily: 'Nunito',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: cs.onSurfaceVariant,

@@ -52,7 +52,7 @@ class _AboutPageState extends State<AboutPage> {
         elevation: 0,
         title: Text(
           'ABOUT',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.nunito(
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: cs.onSurface,
@@ -118,7 +118,7 @@ class _AboutPageState extends State<AboutPage> {
                       ),
                       child: Text(
                         'Version v$_appVersion',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: cs.onPrimaryContainer,
@@ -129,7 +129,7 @@ class _AboutPageState extends State<AboutPage> {
                     const SizedBox(height: 24),
                     // Description
                     Text(
-                      'A Nothing OS-inspired alarm, timer, and stopwatch app crafted with Flutter.',
+                      'A Material 3 expressive  alarm, timer, and stopwatch app crafted with Flutter.',
                       textAlign: TextAlign.center,
                       style: textTheme.bodyMedium?.copyWith(
                         color: cs.onSurfaceVariant,
@@ -197,7 +197,7 @@ class _AboutPageState extends State<AboutPage> {
                             const SizedBox(width: 8),
                             Text(
                               "WHAT'S NEW IN v$_appVersion",
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.nunito(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: cs.onSurfaceVariant,
@@ -229,7 +229,7 @@ class _AboutPageState extends State<AboutPage> {
                       const SizedBox(width: 8),
                       Text(
                         "WHAT'S NEW IN v$_appVersion",
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: cs.onSurfaceVariant,
@@ -274,7 +274,7 @@ class _AboutPageState extends State<AboutPage> {
           const SizedBox(width: 6),
           Text(
             label,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.nunito(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: cs.primary,
@@ -314,7 +314,7 @@ class _AboutPageState extends State<AboutPage> {
               const SizedBox(width: 8),
               Text(
                 label,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: cs.primary,
@@ -346,7 +346,7 @@ class _AboutPageState extends State<AboutPage> {
           padding: const EdgeInsets.only(top: 16, bottom: 8),
           child: Text(
             display.toUpperCase(),
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.nunito(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: cs.primary,
@@ -379,7 +379,7 @@ class _AboutPageState extends State<AboutPage> {
             Expanded(
               child: Text(
                 display,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                   color: cs.onSurface,

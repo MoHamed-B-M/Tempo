@@ -95,7 +95,7 @@ class _HeaderRow extends StatelessWidget {
       children: [
         Text(
           'Tempo',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.nunito(
             fontSize: 28,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
@@ -172,7 +172,7 @@ class _CategoryChips extends StatelessWidget {
               child: Center(
                 child: Text(
                   chip,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.nunito(
                     fontSize: 13,
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                     color: isActive ? cs.onPrimary : cs.onSurfaceVariant,
@@ -212,7 +212,7 @@ class _AlarmCard extends ConsumerWidget {
                 const SizedBox(width: 6),
                 Text(
                   'Next Alarm',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.nunito(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: cs.primary,
@@ -225,7 +225,7 @@ class _AlarmCard extends ConsumerWidget {
               nextAlarm != null
                   ? '${nextAlarm.hour.toString().padLeft(2, '0')}:${nextAlarm.minute.toString().padLeft(2, '0')}'
                   : '--:--',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.nunito(
                 fontSize: 42,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -1,
@@ -247,7 +247,7 @@ class _AlarmCard extends ConsumerWidget {
                               .join(', ')
                           : 'One-time')
                       : 'No alarms set',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.nunito(
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
                 color: cs.onSurfaceVariant,
@@ -267,7 +267,7 @@ class _AlarmCard extends ConsumerWidget {
                         ),
                         child: Text(
                           label,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.nunito(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             color: cs.onSurface,
@@ -316,7 +316,7 @@ class _ClockCard extends StatelessWidget {
               children: [
                 Text(
                   timeStr,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.nunito(
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.5,
@@ -328,7 +328,7 @@ class _ClockCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 2, left: 2),
                   child: Text(
                     periodStr,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: cs.onSurfaceVariant,
@@ -339,7 +339,7 @@ class _ClockCard extends StatelessWidget {
             ),
             Text(
               DateFormat('EEEE, d MMM').format(now),
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.nunito(
                 fontSize: 11,
                 fontWeight: FontWeight.w400,
                 color: cs.onSurfaceVariant,
@@ -419,7 +419,7 @@ class _WorldClockCardState extends ConsumerState<_WorldClockCard> {
                           const SizedBox(width: 6),
                           Text(
                             'World Clock',
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.nunito(
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
                               color: cs.tertiary,
@@ -430,7 +430,7 @@ class _WorldClockCardState extends ConsumerState<_WorldClockCard> {
                       const SizedBox(height: 8),
                       Text(
                         cityName,
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 17,
                           fontWeight: FontWeight.w600,
                           color: cs.onSurface,
@@ -439,7 +439,7 @@ class _WorldClockCardState extends ConsumerState<_WorldClockCard> {
                       const SizedBox(height: 2),
                       Text(
                         'GMT$offsetStr',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 11,
                           fontWeight: FontWeight.w400,
                           color: cs.onSurfaceVariant,
@@ -453,7 +453,7 @@ class _WorldClockCardState extends ConsumerState<_WorldClockCard> {
                   children: [
                     Text(
                       timeStr,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.nunito(
                         fontSize: 32,
                         fontWeight: FontWeight.w600,
                         letterSpacing: -0.5,
@@ -463,7 +463,7 @@ class _WorldClockCardState extends ConsumerState<_WorldClockCard> {
                     ),
                     Text(
                       periodStr,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.nunito(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: cs.onSurfaceVariant,
@@ -613,7 +613,7 @@ class _TimerCardState extends State<_TimerCard>
               onTap: _resetTimer,
               child: Text(
                 '$minutes:$seconds',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.3,
@@ -624,7 +624,7 @@ class _TimerCardState extends State<_TimerCard>
             const SizedBox(height: 2),
             Text(
               _isRunning ? 'Running' : _remainingSeconds < _totalSeconds ? 'Paused' : 'Timer',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.nunito(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: cs.onSurfaceVariant,
@@ -659,7 +659,7 @@ class _StopwatchCard extends ConsumerWidget {
           children: [
             Text(
               swState.isRunning ? 'LIVE' : 'STOPPED',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.nunito(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 1.2,
@@ -669,7 +669,7 @@ class _StopwatchCard extends ConsumerWidget {
             const SizedBox(height: 6),
             Text(
               '$minutes:$seconds',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.nunito(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.3,

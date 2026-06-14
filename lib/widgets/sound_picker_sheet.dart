@@ -59,7 +59,7 @@ class SoundPickerSheet extends StatelessWidget {
           Text(
             'ALARM SOUND',
             style: TextStyle(
-              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontFamily: 'Nunito',
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: cs.onSurfaceVariant,
@@ -121,7 +121,7 @@ class _SoundTile extends StatelessWidget {
             Text(
               label.toUpperCase(),
               style: TextStyle(
-                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontFamily: 'Nunito',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: isSelected ? cs.primary : cs.onSurfaceVariant,

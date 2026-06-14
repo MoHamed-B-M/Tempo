@@ -143,7 +143,7 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
       body: Center(
         child: Text(
           '${widget.alarm.hour.toString().padLeft(2, '0')}:${widget.alarm.minute.toString().padLeft(2, '0')}',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.nunito(
             fontSize: 56,
             fontWeight: FontWeight.w700,
             letterSpacing: -2,
@@ -167,7 +167,7 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
         leading: const BackButton(),
         title: Text(
           'Edit Alarm',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.nunito(
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -181,7 +181,7 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
             Center(
               child: Text(
                 '${widget.alarm.hour.toString().padLeft(2, '0')}:${widget.alarm.minute.toString().padLeft(2, '0')}',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 56,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -2,
@@ -194,14 +194,14 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
             TextField(
               controller: _labelController,
               onChanged: _saveLabel,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.nunito(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: cs.onSurface,
               ),
               decoration: InputDecoration(
                 hintText: 'Alarm label',
-                hintStyle: GoogleFonts.plusJakartaSans(
+                hintStyle: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: cs.onSurfaceVariant,
@@ -227,7 +227,7 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
             const SizedBox(height: 28),
             Text(
               'REPEAT',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.nunito(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: cs.onSurfaceVariant,
@@ -268,7 +268,7 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
                     alignment: Alignment.center,
                     child: Text(
                       _dayNames[i],
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.nunito(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: selected ? cs.onPrimary : cs.onSurface,
@@ -318,7 +318,7 @@ class _AlarmEditPageState extends ConsumerState<AlarmEditPage> {
                     color: cs.error, size: 20),
                 label: Text(
                   'Delete alarm',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.nunito(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: cs.error,

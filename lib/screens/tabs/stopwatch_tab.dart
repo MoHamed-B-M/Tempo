@@ -112,7 +112,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
         title: Text(
           'EDIT TASK DETAILS',
           style: TextStyle(
-            fontFamily: 'GoogleFonts.plusJakartaSans',
+            fontFamily: 'Nunito',
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: cs.onSurfaceVariant,
@@ -125,7 +125,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
             TextField(
               controller: titleController,
               style: TextStyle(
-                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontFamily: 'Nunito',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: cs.onSurface,
@@ -133,7 +133,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
               decoration: InputDecoration(
                 labelText: 'TASK NAME',
                 labelStyle: TextStyle(
-                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                  fontFamily: 'Nunito',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: cs.onSurfaceVariant,
@@ -147,7 +147,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
             TextField(
               controller: statusController,
               style: TextStyle(
-                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontFamily: 'Nunito',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: cs.onSurface,
@@ -155,7 +155,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
               decoration: InputDecoration(
                 labelText: 'TASK STATUS',
                 labelStyle: TextStyle(
-                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                  fontFamily: 'Nunito',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: cs.onSurfaceVariant,
@@ -169,7 +169,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
             TextField(
               controller: progressController,
               style: TextStyle(
-                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontFamily: 'Nunito',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: cs.onSurface,
@@ -178,7 +178,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
               decoration: InputDecoration(
                 labelText: 'PROGRESS PERCENT (%)',
                 labelStyle: TextStyle(
-                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                  fontFamily: 'Nunito',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: cs.onSurfaceVariant,
@@ -196,7 +196,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
             child: Text(
               'CANCEL',
               style: TextStyle(
-                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontFamily: 'Nunito',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: cs.onSurfaceVariant,
@@ -222,7 +222,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
             child: Text(
               'SAVE',
               style: TextStyle(
-                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontFamily: 'Nunito',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: cs.primary,
@@ -249,7 +249,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
           Text(
             'StopWatch',
             style: TextStyle(
-              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontFamily: 'Nunito',
               fontSize: 32,
               fontWeight: FontWeight.w800,
               color: cs.onSurface,
@@ -292,7 +292,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
                           _formatTime(elapsedMs),
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'GoogleFonts.plusJakartaSans',
+                            fontFamily: 'Nunito',
                             fontSize: 36,
                             fontWeight: FontWeight.w800,
                             color: cs.onSurface,
@@ -303,7 +303,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
                       Text(
                         isRunning ? 'ELAPSED' : 'STOPPED',
                         style: TextStyle(
-                          fontFamily: 'GoogleFonts.plusJakartaSans',
+                          fontFamily: 'Nunito',
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: cs.onSurfaceVariant,
@@ -315,7 +315,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
                         Text(
                           'Lap ${_formatTime(_laps.first)}',
                           style: TextStyle(
-                            fontFamily: 'GoogleFonts.plusJakartaSans',
+                            fontFamily: 'Nunito',
                             fontSize: 13,
                             color: cs.primary,
                             fontWeight: FontWeight.w700,
@@ -359,7 +359,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
                               Text(
                                 'Lap ${lapIndex + 1}',
                                 style: TextStyle(
-                                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                                  fontFamily: 'Nunito',
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: cs.onSurfaceVariant,
@@ -369,7 +369,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
                               Text(
                                 _formatTime(lapMs),
                                 style: TextStyle(
-                                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                                  fontFamily: 'Nunito',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: cs.onSurface,
@@ -394,7 +394,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
                   Text(
                     _taskTitle,
                     style: TextStyle(
-                      fontFamily: 'GoogleFonts.plusJakartaSans',
+                      fontFamily: 'Nunito',
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: cs.onSurface,
@@ -404,7 +404,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
                   Text(
                     _taskStatus,
                     style: TextStyle(
-                      fontFamily: 'GoogleFonts.plusJakartaSans',
+                      fontFamily: 'Nunito',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: cs.onSurfaceVariant,
@@ -417,7 +417,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
                     child: Text(
                       '${_customProgressPercent.round()}% work done  (Tap to edit)',
                       style: TextStyle(
-                        fontFamily: 'GoogleFonts.plusJakartaSans',
+                        fontFamily: 'Nunito',
                         fontSize: 12,
                         color: cs.onSurfaceVariant,
                       ),

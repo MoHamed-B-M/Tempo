@@ -116,7 +116,7 @@ class UpdateManager {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.nunito(
             fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
@@ -185,7 +185,7 @@ class UpdateManager {
                     children: [
                       Text(
                         'UPDATE AVAILABLE',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: sheetCs.onSurface,
@@ -195,7 +195,7 @@ class UpdateManager {
                       const SizedBox(height: 2),
                       Text(
                         'Version ${info.version} (${channel.label})',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                           color: sheetCs.onSurfaceVariant,
@@ -216,7 +216,7 @@ class UpdateManager {
                   ),
                   child: Text(
                     info.changelog,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
                       color: sheetCs.onSurface,
@@ -246,7 +246,7 @@ class UpdateManager {
                   ),
                   child: Text(
                     'DOWNLOAD',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: sheetCs.onPrimary,
@@ -263,7 +263,7 @@ class UpdateManager {
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
                     'NOT NOW',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: sheetCs.onSurfaceVariant,

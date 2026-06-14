@@ -64,7 +64,7 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
           content: Text(
             'Sleep alarm scheduled for ${_selectedTime.format(context)}',
             style: TextStyle(
-              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontFamily: 'Nunito',
               fontSize: 14,
               color: cs.onPrimary,
             ),
@@ -99,7 +99,7 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
           Text(
             'Sleep Timer',
             style: TextStyle(
-              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontFamily: 'Nunito',
               fontSize: 32,
               fontWeight: FontWeight.w800,
               color: cs.onSurface,
@@ -110,7 +110,7 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
           Text(
             'Set a regular wake-up alarm'.toUpperCase(),
             style: TextStyle(
-              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontFamily: 'Nunito',
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: cs.onSurfaceVariant,
@@ -151,7 +151,7 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
                           .format(context)
                           .replaceAll(RegExp(r'[a-zA-Z\s]'), ''),
                       style: TextStyle(
-                        fontFamily: 'GoogleFonts.plusJakartaSans',
+                        fontFamily: 'Nunito',
                         fontSize: 64,
                         fontWeight: FontWeight.w200,
                         color: cs.onSurface,
@@ -164,7 +164,7 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
                           .trim()
                           .toLowerCase(),
                       style: TextStyle(
-                        fontFamily: 'GoogleFonts.plusJakartaSans',
+                        fontFamily: 'Nunito',
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
                         color: cs.onSurfaceVariant,
@@ -222,7 +222,7 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
                   child: Text(
                     _days[index],
                     style: TextStyle(
-                      fontFamily: 'GoogleFonts.plusJakartaSans',
+                      fontFamily: 'Nunito',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: isSelected ? cs.onPrimary : cs.onSurface,
@@ -359,7 +359,7 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
                   Text(
                     title,
                     style: TextStyle(
-                      fontFamily: 'GoogleFonts.plusJakartaSans',
+                      fontFamily: 'Nunito',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: enabled ? cs.onPrimary : cs.onSurface,
@@ -370,7 +370,7 @@ class _SleepTimerTabState extends ConsumerState<SleepTimerTab> {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontFamily: 'GoogleFonts.plusJakartaSans',
+                        fontFamily: 'Nunito',
                         fontSize: 12,
                         color: enabled
                             ? cs.onPrimary.withValues(alpha: 0.7)

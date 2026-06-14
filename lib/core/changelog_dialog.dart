@@ -39,7 +39,7 @@ Future<void> showChangelogDialog(
               const SizedBox(height: 20),
               Text(
                 'WHAT\'S NEW',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: dialogCs.onSurface,
@@ -49,7 +49,7 @@ Future<void> showChangelogDialog(
               const SizedBox(height: 4),
               Text(
                 'v$version',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: dialogCs.onSurfaceVariant,
@@ -77,7 +77,7 @@ Future<void> showChangelogDialog(
                         if (isSubHeading && display.isNotEmpty) {
                           return Text(
                             display.toUpperCase(),
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.nunito(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: dialogCs.primary,
@@ -107,7 +107,7 @@ Future<void> showChangelogDialog(
                             Expanded(
                               child: Text(
                                 display,
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.nunito(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w400,
                                   color: dialogCs.onSurface,
@@ -138,7 +138,7 @@ Future<void> showChangelogDialog(
                   ),
                   child: Text(
                     'GOT IT',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: dialogCs.onPrimary,

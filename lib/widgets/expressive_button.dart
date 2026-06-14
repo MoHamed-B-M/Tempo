@@ -105,7 +105,7 @@ class _ExpressiveButtonState extends State<ExpressiveButton>
             alignment: Alignment.center,
             child: DefaultTextStyle(
               style: TextStyle(
-                fontFamily: 'RobotoFlex',
+                fontFamily: 'Nunito',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: widget.foregroundColor ?? cs.onPrimary,

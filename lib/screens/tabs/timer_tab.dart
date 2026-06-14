@@ -156,7 +156,7 @@ class _TimerTabState extends State<TimerTab> {
           Text(
             'Timer',
             style: TextStyle(
-              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontFamily: 'Nunito',
               fontSize: 32,
               fontWeight: FontWeight.w800,
               color: cs.onSurface,
@@ -188,7 +188,7 @@ class _TimerTabState extends State<TimerTab> {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(':',
                   style: TextStyle(
-                    fontFamily: 'GoogleFonts.plusJakartaSans',
+                    fontFamily: 'Nunito',
                     fontSize: 36,
                     fontWeight: FontWeight.w200,
                     color: cs.onSurface,
@@ -201,7 +201,7 @@ class _TimerTabState extends State<TimerTab> {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(':',
                   style: TextStyle(
-                    fontFamily: 'GoogleFonts.plusJakartaSans',
+                    fontFamily: 'Nunito',
                     fontSize: 36,
                     fontWeight: FontWeight.w200,
                     color: cs.onSurface,
@@ -275,7 +275,7 @@ class _TimerTabState extends State<TimerTab> {
             child: Text(
               value.toString().padLeft(2, '0'),
               style: TextStyle(
-                fontFamily: 'GoogleFonts.plusJakartaSans',
+                fontFamily: 'Nunito',
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
                 color: cs.onSurface,
@@ -306,7 +306,7 @@ class _TimerTabState extends State<TimerTab> {
         const SizedBox(height: 4),
         Text(label,
             style: TextStyle(
-              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontFamily: 'Nunito',
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: cs.onSurfaceVariant,
@@ -327,7 +327,7 @@ class _TimerTabState extends State<TimerTab> {
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(label,
             style: TextStyle(
-              fontFamily: 'GoogleFonts.plusJakartaSans',
+              fontFamily: 'Nunito',
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: cs.onSurfaceVariant,
@@ -337,7 +337,7 @@ class _TimerTabState extends State<TimerTab> {
           controller: controller,
           keyboardType: TextInputType.number,
           style: TextStyle(
-            fontFamily: 'GoogleFonts.plusJakartaSans',
+            fontFamily: 'Nunito',
             fontSize: 36,
             fontWeight: FontWeight.w200,
             color: cs.onSurface,
@@ -353,7 +353,7 @@ class _TimerTabState extends State<TimerTab> {
             onPressed: () => Navigator.pop(ctx),
             child: Text('CANCEL',
                 style: TextStyle(
-                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                  fontFamily: 'Nunito',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: cs.onSurfaceVariant,
@@ -368,7 +368,7 @@ class _TimerTabState extends State<TimerTab> {
             },
             child: Text('SET',
                 style: TextStyle(
-                  fontFamily: 'GoogleFonts.plusJakartaSans',
+                  fontFamily: 'Nunito',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: cs.primary,
@@ -411,7 +411,7 @@ class _TimerTabState extends State<TimerTab> {
                     _formatTime(_remainingMs),
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'GoogleFonts.plusJakartaSans',
+                      fontFamily: 'Nunito',
                       fontSize: _initialMs >= 3600000 ? 28 : 36,
                       fontWeight: FontWeight.w800,
                       color: cs.onSurface,
@@ -424,7 +424,7 @@ class _TimerTabState extends State<TimerTab> {
                       ? "TIME'S UP!"
                       : (_isRunning ? 'RUNNING' : 'READY'),
                   style: TextStyle(
-                    fontFamily: 'GoogleFonts.plusJakartaSans',
+                    fontFamily: 'Nunito',
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: _isFinished ? Colors.green : cs.onSurfaceVariant,

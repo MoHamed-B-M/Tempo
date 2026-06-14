@@ -93,14 +93,14 @@ class _WorldClockCardState extends State<WorldClockCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(_name,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.nunito(
                         fontSize: 17, fontWeight: FontWeight.w700,
                         color: cs.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text('$_offset • $_diff',
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.nunito(
                         fontSize: 12, fontWeight: FontWeight.w500,
                         color: cs.onSurfaceVariant,
                       ),
@@ -113,14 +113,14 @@ class _WorldClockCardState extends State<WorldClockCard> {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(_timeStr,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                       fontSize: 28, fontWeight: FontWeight.w700,
                       color: cs.onSurface, letterSpacing: -1,
                     ),
                   ),
                   const SizedBox(width: 2),
                   Text(_amPm,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                       fontSize: 13, fontWeight: FontWeight.w600,
                       color: cs.onSurfaceVariant,
                     ),

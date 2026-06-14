@@ -95,7 +95,7 @@ class _WorldClockTabState extends ConsumerState<WorldClockTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('World Clock',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 32, fontWeight: FontWeight.w800,
                   color: cs.onSurface, letterSpacing: -0.5,
                 ),
@@ -111,14 +111,14 @@ class _WorldClockTabState extends ConsumerState<WorldClockTab> {
                       textBaseline: TextBaseline.alphabetic,
                       children: [
                         Text(_localTime(),
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.nunito(
                             fontSize: 56, fontWeight: FontWeight.w200,
                             color: cs.onSurface, letterSpacing: -2, height: 1.0,
                           ),
                         ),
                         const SizedBox(width: 2),
                         Text(_localAmPm(),
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.nunito(
                             fontSize: 20, fontWeight: FontWeight.w600,
                             color: cs.onSurfaceVariant,
                           ),
@@ -127,7 +127,7 @@ class _WorldClockTabState extends ConsumerState<WorldClockTab> {
                     ),
                     const SizedBox(height: 6),
                     Text(_localDate(),
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.nunito(
                         fontSize: 13, fontWeight: FontWeight.w600,
                         color: cs.onSurfaceVariant, letterSpacing: 1,
                       ),
@@ -137,7 +137,7 @@ class _WorldClockTabState extends ConsumerState<WorldClockTab> {
               ),
               const SizedBox(height: 28),
               Text('LOCATIONS',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 12, fontWeight: FontWeight.w700,
                   color: cs.onSurfaceVariant, letterSpacing: 1.5,
                 ),

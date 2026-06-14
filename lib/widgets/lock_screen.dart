@@ -177,7 +177,7 @@ class _LockScreenState extends State<LockScreen>
                       const SizedBox(height: 16),
                       Text(
                         widget.title.toUpperCase(),
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: Colors.white.withValues(alpha: 0.7),
@@ -189,7 +189,7 @@ class _LockScreenState extends State<LockScreen>
                       const SizedBox(height: 6),
                       Text(
                         widget.subtitle!,
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 13,
                           fontWeight: FontWeight.w400,
                           color: Colors.white.withValues(alpha: 0.4),
@@ -261,7 +261,7 @@ class _LockScreenState extends State<LockScreen>
                     builder: (context, _) => Text(
                       widget.liveTime!.value,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.nunito(
                         fontSize: 82,
                         fontWeight: FontWeight.w200,
                         color: Colors.white,
@@ -273,7 +273,7 @@ class _LockScreenState extends State<LockScreen>
                 : Text(
                     widget.timeDisplay,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                       fontSize: 82,
                       fontWeight: FontWeight.w200,
                       color: Colors.white,
@@ -302,7 +302,7 @@ class _LockScreenState extends State<LockScreen>
                 icon: const Icon(Icons.nightlight_round, color: Colors.white70, size: 22),
                 label: Text(
                   'SNOOZE 5 MIN',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.nunito(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.white70,
@@ -329,7 +329,7 @@ class _LockScreenState extends State<LockScreen>
               icon: const Icon(Icons.stop_circle_outlined, color: Colors.white, size: 24),
               label: Text(
                 widget.mode == LockScreenMode.alarm ? 'DISMISS' : 'STOP',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -401,7 +401,7 @@ class _AutoDismissIndicatorState extends State<AutoDismissIndicator> {
       ),
       child: Text(
         'Auto-dismiss in $mins:${secs.toString().padLeft(2, '0')}',
-        style: GoogleFonts.plusJakartaSans(
+        style: GoogleFonts.nunito(
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: Colors.white.withValues(alpha: 0.5),

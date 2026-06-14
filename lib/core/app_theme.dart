@@ -42,7 +42,7 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         backgroundColor: cs.surfaceContainerHigh,
         contentTextStyle: const TextStyle(
-          fontFamily: 'RobotoFlex',
+          fontFamily: 'Nunito',
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
@@ -104,13 +104,13 @@ class AppTheme {
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const TextStyle(
-              fontFamily: 'RobotoFlex',
+              fontFamily: 'Nunito',
               fontSize: 12,
               fontWeight: FontWeight.w600,
             );
           }
           return const TextStyle(
-            fontFamily: 'RobotoFlex',
+            fontFamily: 'Nunito',
             fontSize: 12,
             fontWeight: FontWeight.w500,
           );

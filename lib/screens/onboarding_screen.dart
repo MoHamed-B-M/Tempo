@@ -158,7 +158,7 @@ class _WelcomePage extends StatelessWidget {
               const SizedBox(height: 40),
               Text(
                 'Tempo',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 48,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -1.5,
@@ -169,7 +169,7 @@ class _WelcomePage extends StatelessWidget {
               Text(
                 'A minimalist, high-fidelity\nalarm clock.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 18,
                   fontWeight: FontWeight.w400,
                   height: 1.5,
@@ -180,7 +180,7 @@ class _WelcomePage extends StatelessWidget {
               Text(
                 'Precision timekeeping powered by a low-latency\nclock engine with spring-driven interactions\nand dynamic Material You theming.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                   height: 1.6,
@@ -211,7 +211,7 @@ class _FeaturesPage extends StatelessWidget {
             children: [
               Text(
                 'Expressive Interaction',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
@@ -221,7 +221,7 @@ class _FeaturesPage extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'Every touch feels intentional.',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                   color: cs.onSurfaceVariant,
@@ -294,7 +294,7 @@ class _FeatureRow extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: cs.onSurface,
@@ -303,7 +303,7 @@ class _FeatureRow extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                   color: cs.onSurfaceVariant,
@@ -333,7 +333,7 @@ class _ReadyPage extends StatelessWidget {
             children: [
               Text(
                 'Ready to Begin',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
@@ -343,7 +343,7 @@ class _ReadyPage extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'One last thing before you start.',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                   color: cs.onSurfaceVariant,
@@ -368,7 +368,7 @@ class _ReadyPage extends StatelessWidget {
                       'currently undergoing a complete structural refactor '
                       'and may still display layout glitches.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.nunito(
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
                         height: 1.6,
@@ -388,7 +388,7 @@ class _ReadyPage extends StatelessWidget {
                 icon: const Icon(Icons.arrow_forward, size: 20),
                 label: Text(
                   'Get Started',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.nunito(
                     fontWeight: FontWeight.w600,
                   ),
                 ),

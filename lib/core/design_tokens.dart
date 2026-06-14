@@ -24,7 +24,7 @@ class DesignTokens {
   }
 
   static TextTheme textTheme() {
-    final family = GoogleFonts.robotoFlex().fontFamily;
+    final family = GoogleFonts.nunito().fontFamily;
     return TextTheme(
       displayLarge: TextStyle(
         fontFamily: family,

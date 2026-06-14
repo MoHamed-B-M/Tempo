@@ -58,7 +58,7 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
                   const SizedBox(height: 24),
                   Text(
                     'SET ALARM',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: sheetCs.onSurface,
@@ -151,7 +151,7 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
                     children: [
                       Text(
                         'Alarm',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 32,
                           fontWeight: FontWeight.w800,
                           color: cs.onSurface,
@@ -161,7 +161,7 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
                       const SizedBox(height: 4),
                       Text(
                         _getStatus(alarms),
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: cs.onSurfaceVariant,
@@ -251,7 +251,7 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
           const SizedBox(height: 20),
           Text(
             'No alarms',
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.nunito(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: cs.onSurface,
@@ -260,7 +260,7 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
           const SizedBox(height: 8),
           Text(
             'Tap + to create your first alarm',
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.nunito(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: cs.onSurfaceVariant,
@@ -357,7 +357,7 @@ class _AlarmGridCardState extends State<_AlarmGridCard> {
                     children: [
                       Text(
                         timeStr,
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.nunito(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           color: textColor,
@@ -399,7 +399,7 @@ class _AlarmGridCardState extends State<_AlarmGridCard> {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.nunito(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: mutedColor,

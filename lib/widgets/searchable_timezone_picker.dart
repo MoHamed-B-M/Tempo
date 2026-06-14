@@ -80,7 +80,7 @@ class _SearchableTimezonePickerState
                 const SizedBox(height: 20),
                 Text(
                   'ADD LOCATION',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.nunito(
                     fontSize: 16, fontWeight: FontWeight.w700,
                     color: cs.onSurface, letterSpacing: 0.5,
                   ),
@@ -89,12 +89,12 @@ class _SearchableTimezonePickerState
                 TextField(
                   controller: _searchController,
                   onChanged: _onSearchChanged,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.nunito(
                     fontSize: 14, color: cs.onSurface,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Search timezone or city...',
-                    hintStyle: GoogleFonts.plusJakartaSans(
+                    hintStyle: GoogleFonts.nunito(
                       fontSize: 14, color: cs.onSurfaceVariant,
                     ),
                     filled: true,
@@ -127,7 +127,7 @@ class _SearchableTimezonePickerState
                 ? Center(
                     child: Text(
                       _query.isEmpty ? 'Type to search timezones' : 'No timezones found',
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.nunito(
                         fontSize: 13, color: cs.onSurfaceVariant,
                       ),
                     ),
@@ -159,7 +159,7 @@ class _SearchableTimezonePickerState
                                   Expanded(
                                     child: Text(
                                       name,
-                                      style: GoogleFonts.plusJakartaSans(
+                                      style: GoogleFonts.nunito(
                                         fontSize: 14, fontWeight: FontWeight.w600,
                                         color: cs.onSurface,
                                       ),

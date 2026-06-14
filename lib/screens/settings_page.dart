@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:m3e_core/m3e_core.dart';
 import '../core/navigation.dart';
-import '../providers/nav_style_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/update_manager.dart';
@@ -217,7 +216,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ),
               ),
               const Divider(height: 1, indent: 72),
-              _NavBarStyleSelector(cs: cs),
             ]),
           ),
           const SizedBox(height: 12),
@@ -579,137 +577,6 @@ class _DotMatrixSlider extends StatelessWidget {
     if (width <= 0) return;
     final clamped = (dx / width).clamp(0.0, 1.0);
     onChanged(clamped);
-  }
-}
-
-class _NavBarStyleSelector extends ConsumerWidget {
-  final ColorScheme cs;
-
-  const _NavBarStyleSelector({required this.cs});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final navState = ref.watch(navStyleProvider);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => ref.read(navStyleProvider.notifier).toggle(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.bubble_chart_outlined,
-                    size: 20,
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    'Bubble Navigation',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: cs.onSurface,
-                        ),
-                  ),
-                ),
-                Switch(
-                  value: navState.useBubbleNav,
-                  onChanged: (_) =>
-                      ref.read(navStyleProvider.notifier).toggle(),
-                ),
-              ],
-            ),
-            if (navState.useBubbleNav) ...[
-              const SizedBox(height: 16),
-              Text(
-                'STYLE',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      letterSpacing: 1.5,
-                    ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: List.generate(NavBarPreset.values.length, (i) {
-                  final preset = NavBarPreset.values[i];
-                  final isSelected = preset == navState.selectedPreset;
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: i > 0 ? 6 : 0,
-                        right: i < NavBarPreset.values.length - 1 ? 6 : 0,
-                      ),
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          ref
-                              .read(navStyleProvider.notifier)
-                              .setPreset(preset);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? cs.primaryContainer
-                                : cs.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: isSelected
-                                  ? cs.primary.withValues(alpha: 0.5)
-                                  : cs.outlineVariant,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                preset.icon,
-                                size: 20,
-                                color: isSelected
-                                    ? cs.primary
-                                    : cs.onSurfaceVariant,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                preset.label,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                      color: isSelected
-                                          ? cs.primary
-                                          : cs.onSurfaceVariant,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.w500,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
   }
 }
 
