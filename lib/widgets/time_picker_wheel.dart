@@ -36,31 +36,28 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
     _minuteController = FixedExtentScrollController(
       initialItem: widget.initialMinute + (60 * 5),
     );
-    _hourController.addListener(_onScroll);
-    _minuteController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    _hourController
-      ..removeListener(_onScroll)
-      ..dispose();
-    _minuteController
-      ..removeListener(_onScroll)
-      ..dispose();
+    _hourController.dispose();
+    _minuteController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (!_hourController.hasClients || !_minuteController.hasClients) return;
-    final hour = _hourController.selectedItem % 24;
-    final minute = _minuteController.selectedItem % 60;
-    if (hour != _selectedHour || minute != _selectedMinute) {
-      setState(() {
-        _selectedHour = hour;
-        _selectedMinute = minute;
-      });
-      widget.onChanged?.call(TimeOfDay(hour: hour, minute: minute));
+  void _onHourChanged(int index) {
+    final hour = index % 24;
+    if (hour != _selectedHour) {
+      setState(() => _selectedHour = hour);
+      widget.onChanged?.call(TimeOfDay(hour: hour, minute: _selectedMinute));
+    }
+  }
+
+  void _onMinuteChanged(int index) {
+    final minute = index % 60;
+    if (minute != _selectedMinute) {
+      setState(() => _selectedMinute = minute);
+      widget.onChanged?.call(TimeOfDay(hour: _selectedHour, minute: minute));
     }
   }
 
@@ -109,11 +106,15 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
             ListWheelScrollView(
               controller: controller,
               itemExtent: itemHeight,
-              diameterRatio: 1.2,
-              offAxisFraction: -0.35,
-              useMagnifier: false,
+              diameterRatio: 1.35,
+              offAxisFraction: 0.0,
+              useMagnifier: true,
+              magnification: 1.15,
               clipBehavior: Clip.none,
               physics: const FixedExtentScrollPhysics(),
+              onSelectedItemChanged: controller == _hourController
+                  ? _onHourChanged
+                  : _onMinuteChanged,
               children: List.generate(itemCount, (index) {
                 final value = index % (itemCount ~/ 10);
                 final isSelected = value == selected;
@@ -260,7 +261,7 @@ class _TimePickerWheelState extends State<TimePickerWheel> {
 class _HalfWheelClipper extends CustomClipper<Rect> {
   @override
   Rect getClip(Size size) {
-    return Rect.fromLTWH(0, 0, size.width, size.height);
+    return Rect.fromLTWH(0, size.height / 2, size.width, size.height / 2);
   }
 
   @override

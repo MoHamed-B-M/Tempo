@@ -1,6 +1,6 @@
 # Tempo
 
-A minimalist, high-fidelity alarm clock app built with Flutter, featuring a warm Nothing OS aesthetic with a vibrant orange accent. Tempo combines essential timekeeping tools — alarms, stopwatch, timer — with an expressive Material 3 inspired design.
+A minimalist, high-fidelity alarm clock app built with Flutter, featuring dynamic Material 3 colour extraction (Material You), expressive card-based UI, and a Nothing OS-inspired aesthetic with the Nunito rounded font family. Tempo combines essential timekeeping tools — alarms, stopwatch, timer, world clock — with a modern M3 expressive design language.
 
 <p align="center">
   <img src="screenshots/alarms_tab.png" width="200" alt="Alarms Tab">
@@ -17,14 +17,13 @@ A minimalist, high-fidelity alarm clock app built with Flutter, featuring a warm
 - Create, edit, and delete alarms with an intuitive bottom sheet editor
 - Time picker wheel with smooth inertial scrolling
 - Repeat on specific days of the week
-- Custom alarm label
-- Multiple sound options
-- Toggle on/off with a checkmark button
+- Custom alarm label and multiple sound options
 - Swipe-to-delete with animated dismiss
 - Swipe-to-snooze / swipe-to-stop gesture on lock screen
 - Notification action buttons: "Snooze 5min" and "Stop"
 - Persistent scheduling using exact alarms (`exactAllowWhileIdle`)
 - Heads-up notification with full-screen intent on Android
+- Alarm grid cards with M3 Container Transform animation
 
 ### Stopwatch
 - Lap recording with horizontal lap list
@@ -36,6 +35,13 @@ A minimalist, high-fidelity alarm clock app built with Flutter, featuring a warm
 - H/M/S input selector with circular ring progress
 - Finish notification with sound and "Stop" action button
 - Persistent looping finish sound via `audioplayers`
+- Sleep timer tab with customizable duration
+
+### World Clock
+- Searchable timezone picker with 150ms debounced search
+- Favourite cities persisted via Hive (defaults: New York, London, Tokyo)
+- Each city card has isolated `Timer.periodic(1s)` + `RepaintBoundary`
+- Header local clock with independent tick timer
 
 ### Lock Screen
 - Animated HSV gradient background with blur overlay
@@ -44,19 +50,24 @@ A minimalist, high-fidelity alarm clock app built with Flutter, featuring a warm
 - iOS-style slide-to-snooze / slide-to-stop gesture control
 - Circular stop button for tap-to-dismiss
 - Auto-dismiss countdown timer
-- Vibrate loop (every 2 seconds)
-- Adjustable volume
-- Screen wake on alarm: `FLAG_SHOW_WHEN_LOCKED` + `FLAG_TURN_SCREEN_ON` + `FLAG_KEEP_SCREEN_ON`
+- Vibrate loop (every 2 seconds) and adjustable volume
+- Screen wake: `FLAG_SHOW_WHEN_LOCKED` + `FLAG_TURN_SCREEN_ON` + `FLAG_KEEP_SCREEN_ON`
 
 ### Settings
-- Dark/Light theme toggle
+- Theme mode selector: Light / Dark / System (`SegmentedButton`)
+- Bubble navigation bar (always on, circular animated style)
 - Update channel selector (Stable / Beta)
-- Check for updates via GitHub API (`/releases/latest`)
-- Update available bottom sheet with Download button
+- Check for updates via GitHub manifest with one-time "What's New" popup
 - Auto-dismiss minutes picker (Off, 1, 2, 5, 10, 15, 30 min)
-- Vibrate on alarm toggle
-- Dot-matrix volume slider
-- Inspirational quote displayed at the bottom (changes on relaunch)
+- Vibrate on alarm toggle and dot-matrix volume slider
+- Dedicated About page with dynamic changelog from CHANGELOG.md
+
+### Dynamic Color (Material You)
+- Android 12+ wallpaper-based colour extraction via `dynamic_color` package
+- Hct tone-mapping with chroma boost — green hues forced to chroma 52 for vibrancy
+- WCAG-safe contrast: light tone clamped to 40, dark tone clamped to 75
+- Green brand fallback (`#2E7D32` light / `#66BB6A` dark) when dynamic colour unavailable
+- Throttled wallpaper change detection (30s cooldown) with automatic refresh
 
 ---
 
@@ -84,14 +95,18 @@ A minimalist, high-fidelity alarm clock app built with Flutter, featuring a warm
 
 - **Framework:** Flutter 3.41+
 - **Language:** Dart 3.x
-- **State Management:** Provider (`ChangeNotifier`)
+- **State Management:** Riverpod 2.x (`flutter_riverpod`)
 - **Notifications:** `flutter_local_notifications` 17.x
 - **Audio:** `audioplayers` 6.x
-- **Time Zones:** `flutter_timezone`, `timezone`
-- **Fonts:** `google_fonts` (Plus Jakarta Sans)
+- **Time Zones:** `flutter_timezone`, `timezone`, `tz_data`
+- **Fonts:** `google_fonts` (Nunito)
 - **HTTP:** `http` package
-- **Persistence:** `shared_preferences`
-- **APK Release:** GitHub Actions with ProGuard/R8, ABI splits, App Bundle
+- **Persistence:** Hive + Hive Flutter
+- **Dynamic Color:** `dynamic_color` 1.x, `material_color_utilities`
+- **Animations:** `flutter_animate`, `animations`, `motor`
+- **Navigation:** Custom animated bubble nav bar
+- **Layout:** M3 Expressive with theme extensions
+- **APK Release:** GitHub Actions with ProGuard/R8, obfuscation, single universal APK
 
 ---
 
@@ -101,89 +116,44 @@ A minimalist, high-fidelity alarm clock app built with Flutter, featuring a warm
 |---|---|
 | **Developer** | Mohamed |
 | **Source Code** | [github.com/MoHamed-B-M/Tempo](https://github.com/MoHamed-B-M/Tempo) |
-| **Current Version** | 1.0.14 |
+| **Current Version** | 1.5.1 |
+| **Design** | Material 3 Expressive + Nothing OS inspired |
 | **License** | MIT |
 
 ---
 
 ## Release Notes
 
-### [1.0.14] - 2026-05-31
-- Fixed notification stop button: uses `abs()` hash for positive notification IDs, `showsUserInterface: false` for silent background stop, backup SharedPreferences persistence in foreground handler
-- Refactored alarms tab with Material 3 expressive design: `Card` with elevation, `FilledButton`, `FloatingActionButton`, orange accent throughout, `AnimatedContainer` for toggle transitions
-- Fixed lock screen full-screen intent: updated `MainActivity.kt` to use `setShowWhenLocked()` / `setTurnScreenOn()` (API 29+), calls `ScreenWakeHandler.enable()` before pushing route
-- Added clearAllAlarms() method for safe data reset
-- Added random inspirational quotes on settings page (changes on relaunch)
-- Added about section with dev credit and source code link
+### [1.5.1] - 2026-06-14
 
-### [1.0.13] - 2026-05-31
-- Replaced stopwatch OrangeRingPainter and circular container with animated BackdropFilter glow behind clock text
-- Pushed save/cancel buttons up in alarm editor bottom sheet with top padding for better reachability
-- Changed alarm editor default time from hardcoded 7:00 AM to TimeOfDay.now()
-- Rewrote update checker to use /releases/latest endpoint — single release object, simpler parsing
-- Replaced AlertDialog with bottom sheet for update available (version, release notes, Download button)
-- Added floating snackbar for up-to-date status; improved error handling for all update check failure modes
+**What's New**
+- Redesigned AboutPage with M3 Expressive cards — version badge, info chips, GitHub & Telegram action buttons, dynamic changelog from CHANGELOG.md
+- One-time "What's New" popup on first launch after update — shows changelog for the new version, works for both auto-checks and manual updates
+- Replaced Plus Jakarta Sans and RobotoFlex with Nunito — rounded, friendly M3 expressive font across all ~140 text elements
+- Bubble is now the only navigation style — removed Pill, Minimal, Compact presets and settings toggle
 
-### [1.0.12] - 2026-05-31
-- Updated Android app icon — replaced launcher icons across all mipmap densities with new adaptive icon
+**Dynamic Color**
+- `DynamicThemeManager` with Hct tone-mapping enforces WCAG contrast (tone 40/75)
+- Green brand fallback (`#2E7D32` / `#66BB6A`) with green-hue chroma boost (90–150° → chroma 52)
+- Wallpaper change detection with 30s throttle and automatic refresh
+- `SegmentedButton<ThemeMode>` for Light/Dark/System switching
+- Custom M3 SwitchThemeData with primary track and onPrimary thumb
 
-### [1.0.11] - 2026-05-31
-- Fixed alarm notification: foreground detection (checkMissedAlarms on resume) to show lock screen when alarm fires while app is active
-- Fixed cold-start alarm handling: getNotificationAppLaunchDetails + processPendingAlarm
-- Added onDidReceiveBackgroundNotificationResponse callback
-- Added timer finish notification
-- Glowing ring effect for OrangeRingPainter
-- Fixed alarm save button, snooze action, and stop action for repeating alarms
+**World Clock**
+- `TimezoneService` singleton — IANA database initialized once
+- `SearchableTimezonePicker` with 150ms debounced search
+- `WorldClockCard` with isolated 1s timer + `RepaintBoundary`
+- Favourites persisted via Hive (New York / London / Tokyo)
 
-### [1.0.10] - 2026-05-31
-- Added AlarmSettings service (auto-dismiss, vibrate, volume) with SharedPreferences persistence
-- Enhanced LockScreen: auto-dismiss countdown, vibrate loop, adjustable volume
-- Enhanced SettingsPage: monochromatic alarm section, dot-matrix volume slider
-- Fixed touch responsiveness, nested GestureDetector conflicts, tab-switch debouncing
+**Build & CI**
+- Fixed "Gradle build failed to produce an .apk file" — removed custom build directory redirect
+- Fixed Gradle OOM — reduced JVM heap from 8G to 4G
+- Fixed R8 stripping plugin classes — comprehensive ProGuard keep rules
+- Single universal APK with obfuscation and split debug info
+- CI workflows with Pub/Gradle caching and rolling preview releases
 
-### [1.0.8] - 2026-05-31
-- Fixed alarm not ringing — exact alarm scheduling with exactAllowWhileIdle
-- Alarm sound via audioplayers with looping in AlarmRingScreen
-- Nothing OS TimePickerWheel replacing +/- 15min buttons
-- TimerTab with countdown timer, circular ring, and finish sound
-- Unified LockScreen widget with animated gradient, slide-to-snooze/stop
-- StopwatchState ChangeNotifier, stopwatch lock screen
-- Notification action buttons: Snooze 5min and Stop
-- Smooth sliding orange pill navigation, fade transitions, "Show Nav Labels" toggle
-
-### [1.0.6] - 2026-05-31
-- MainScreen with Scaffold bottomNavigationBar
-- StopwatchTab with orange ring CustomPainter, lap recording
-- Layout stability with fixed SizedBox dimensions
-- Safe-area padding for notched devices
-
-### [1.0.5] - 2026-05-30
-- Version aligned to match workflow iteration cadence
-
-### [1.0.4] - 2026-05-29
-- Complete Nothing OS redesign (warm charcoal / off-white palette)
-- Alarm ring screen with animated gradient background
-- Sound picker and slide-to-snooze/dismiss gesture
-- zonedSchedule for exact alarm scheduling
-- Edit alarm feature (tap alarm tile to modify time, sound, repeat, label)
-
-### [1.0.3] - 2026-05-28
-- ProGuard/R8 minification, ABI splits, App Bundle support
-- Split debug info and obfuscation for release builds
-- Keystore auto-generation, fixed AGP Kotlin DSL build errors
-- GitHub Actions: beta and release workflows
-
-### [1.0.2] - 2026-05-26
-- Nothing OS themed time picker with half-wheel effect
-- Alarm list with swipe-to-delete and toggle switches
-- Dark/light theme toggle, settings page with update channel selector
-- In-app update checker, GitHub Actions CI for APK builds
-- Animated page transitions with easeInOutCubic curve
-
-### [1.0.1] - 2026-05-25
-- Initial project setup with Flutter
-- AlarmModel with JSON serialization
-- AlarmService with shared_preferences persistence
-- flutter_local_notifications for Android AlarmManager
-- Custom Nothing OS light/dark themes
-- Android permissions for exact alarms and notifications
+**Bug Fixes**
+- Fixed `AlarmForegroundService.kt` — missing `BroadcastReceiver` import
+- Fixed `AlarmRingScreen` — redundant `ScreenWakeHandler.enable()` removed
+- Fixed deprecated Color API: `value` → `toARGB32()`, `red/green/blue` → `r/g/b`
+- Fixed ABI build conflict — `ndk { abiFilters.clear() }`

@@ -256,7 +256,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
               letterSpacing: -0.5,
             ),
           ),
-          const Spacer(),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.04),
           Center(
             child: ColoredBox(
               color: Colors.transparent,
