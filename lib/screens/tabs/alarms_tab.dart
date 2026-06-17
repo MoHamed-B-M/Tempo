@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:m3e_core/m3e_core.dart';
 import '../../models/alarm_model.dart';
 import '../../providers/alarm_provider.dart';
-import '../../widgets/time_picker_wheel.dart';
 import '../../widgets/expressive_open_container.dart';
 import '../alarm_edit_page.dart';
 
@@ -17,89 +16,83 @@ class AlarmsTab extends ConsumerStatefulWidget {
 }
 
 class _AlarmsTabState extends ConsumerState<AlarmsTab> {
-  void _showCreateSheet() {
-    final cs = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: cs.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) {
-        final sheetCs = Theme.of(ctx).colorScheme;
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            var hour = TimeOfDay.now().hour;
-            var minute = (TimeOfDay.now().minute + 1) % 60;
+  Future<void> _showCreateSheet() async {
+    final now = TimeOfDay.now();
+    final initial = TimeOfDay(
+      hour: now.hour,
+      minute: (now.minute + 1) % 60,
+    );
 
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                24,
-                24,
-                24,
-                MediaQuery.of(ctx).viewInsets.bottom +
-                    MediaQuery.of(ctx).padding.bottom +
-                    24,
+    final cs = Theme.of(context).colorScheme;
+
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: cs.surfaceContainerHigh,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 48,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: sheetCs.onSurfaceVariant.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'SET ALARM',
-                    style: GoogleFonts.nunito(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: sheetCs.onSurface,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  TimePickerWheel(
-                    initialHour: hour,
-                    initialMinute: minute,
-                    onChanged: (t) {
-                      setSheetState(() {
-                        hour = t.hour;
-                        minute = t.minute;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: M3EFilledButton(
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        ref.read(alarmListProvider.notifier).addAlarm(
-                              hour: hour,
-                              minute: minute,
-                            );
-                        Navigator.pop(ctx);
-                      },
-                      size: M3EButtonSize.md,
-                      child: const Text('ADD ALARM'),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
+              hourMinuteShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            );
-          },
+              hourMinuteColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return cs.primaryContainer;
+                }
+                return cs.surfaceContainerHighest;
+              }),
+              hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return cs.onPrimaryContainer;
+                }
+                return cs.onSurface;
+              }),
+              dialHandColor: cs.primary,
+              dialBackgroundColor: cs.surfaceContainerHighest,
+              dialTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return cs.onPrimary;
+                }
+                return cs.onSurface;
+              }),
+              entryModeIconColor: cs.onSurfaceVariant,
+              dayPeriodColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return cs.primaryContainer;
+                }
+                return cs.surfaceContainerHighest;
+              }),
+              dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return cs.onPrimaryContainer;
+                }
+                return cs.onSurface;
+              }),
+              dayPeriodBorderSide: BorderSide(color: cs.outlineVariant),
+            ),
+            dialogTheme: DialogThemeData(
+              backgroundColor: cs.surfaceContainerHigh,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+            ),
+          ),
+          child: child!,
         );
       },
     );
+
+    if (picked != null && mounted) {
+      HapticFeedback.mediumImpact();
+      ref.read(alarmListProvider.notifier).addAlarm(
+            hour: picked.hour,
+            minute: picked.minute,
+          );
+    }
   }
 
   String _getStatus(List<AlarmModel> alarms) {

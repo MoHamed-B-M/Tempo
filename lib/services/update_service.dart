@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -22,30 +24,46 @@ class VersionInfo {
   final String version;
   final String downloadUrl;
   final String changelog;
+  final String channel;
 
   VersionInfo({
     required this.version,
     required this.downloadUrl,
     this.changelog = '',
+    this.channel = 'stable',
   });
 
-  factory VersionInfo.fromJson(Map<String, dynamic> json, UpdateChannel channel) {
+  factory VersionInfo.fromGitHubRelease(
+    Map<String, dynamic> json,
+    UpdateChannel channel,
+  ) {
+    final String tagName = json['tag_name'] as String? ?? '';
+    final String body = json['body'] as String? ?? '';
+    final String htmlUrl = json['html_url'] as String? ?? '';
+    final String version = tagName.startsWith(RegExp(r'[vV]'))
+        ? tagName.substring(1)
+        : tagName;
+
     return VersionInfo(
-      version: json[channel.versionKey] as String? ?? '',
-      downloadUrl: json[channel.urlKey] as String? ?? '',
-      changelog: json[channel.changelogKey] as String? ?? '',
+      version: version,
+      downloadUrl: htmlUrl,
+      changelog: body,
+      channel: channel.label,
     );
   }
 
+  factory VersionInfo.empty() => VersionInfo(version: '', downloadUrl: '');
+
   Version get semver {
     try {
-      return Version.parse(version.startsWith(RegExp(r'[vV]'))
-          ? version.substring(1)
-          : version);
+      return Version.parse(
+          version.startsWith(RegExp(r'[vV]')) ? version.substring(1) : version);
     } catch (_) {
       return Version(0, 0, 0);
     }
   }
+
+  bool get isEmpty => version.isEmpty;
 }
 
 enum UpdateCheckResult {
@@ -64,22 +82,28 @@ class UpdateCheckResponse {
 }
 
 class UpdateService {
-  static const _versionUrl =
-      'https://raw.githubusercontent.com/MoHamed-B-M/Tempo/main/version.json';
-  static const _cacheKey = 'cached_version_json';
-  static const _cacheTimestampKey = 'cached_version_timestamp';
+  static const _releasesUrl =
+      'https://api.github.com/repos/MoHamed-B-M/Tempo/releases';
+  static const _cacheKey = 'cached_releases_json';
+  static const _cacheTimestampKey = 'cached_releases_timestamp';
   static const _cacheDuration = Duration(hours: 2);
+  static const _requestTimeout = Duration(seconds: 8);
+
+  static final Map<String, String> _apiHeaders = {
+    'X-GitHub-Api-Version': '2026-03-10',
+    'Accept': 'application/vnd.github+json',
+    'User-Agent': 'Tempo-App',
+  };
 
   static final UpdateService _instance = UpdateService._();
   static UpdateService get instance => _instance;
 
   final http.Client _client;
 
-  Map<String, dynamic>? _lastFetched;
+  List<Map<String, dynamic>>? _lastFetched;
   DateTime? _lastFetchTime;
 
-  UpdateService._({http.Client? client})
-      : _client = client ?? http.Client();
+  UpdateService._({http.Client? client}) : _client = client ?? http.Client();
 
   factory UpdateService({http.Client? client}) {
     if (client != null) {
@@ -93,22 +117,25 @@ class UpdateService {
     bool forceRefresh = false,
   }) async {
     try {
-      final json = await _fetchVersionJson(forceRefresh: forceRefresh);
-      if (json == null) {
+      final releases = await _fetchReleases(forceRefresh: forceRefresh);
+      if (releases == null) {
         return const UpdateCheckResponse(result: UpdateCheckResult.networkError);
       }
 
-      final remote = VersionInfo.fromJson(json, channel);
-      if (remote.version.isEmpty) {
-        debugPrint('[UpdateService] No version info for channel ${channel.label}');
-        return const UpdateCheckResponse(result: UpdateCheckResult.invalidResponse);
+      final remote = _findLatestForChannel(releases, channel);
+      if (remote.isEmpty) {
+        debugPrint(
+            '[UpdateService] No release found for channel ${channel.label}');
+        return const UpdateCheckResponse(
+            result: UpdateCheckResult.invalidResponse);
       }
 
       final currentVersion = await getCurrentVersion();
       final current = Version.parse(currentVersion);
       final remoteSemver = remote.semver;
 
-      debugPrint('[UpdateService] Current: $current, Remote: $remoteSemver (${channel.label})');
+      debugPrint(
+          '[UpdateService] Current: $current, Remote: $remoteSemver (${channel.label})');
 
       if (remoteSemver > current) {
         return UpdateCheckResponse(
@@ -118,13 +145,39 @@ class UpdateService {
       }
 
       return const UpdateCheckResponse(result: UpdateCheckResult.upToDate);
+    } on SocketException {
+      debugPrint('[UpdateService] No internet connection');
+      return const UpdateCheckResponse(result: UpdateCheckResult.noConnection);
+    } on ClientException catch (e) {
+      debugPrint('[UpdateService] Client error: $e');
+      return const UpdateCheckResponse(result: UpdateCheckResult.networkError);
+    } on TimeoutException {
+      debugPrint('[UpdateService] Request timed out');
+      return const UpdateCheckResponse(result: UpdateCheckResult.networkError);
     } on Exception catch (e) {
       debugPrint('[UpdateService] Error: $e');
       return const UpdateCheckResponse(result: UpdateCheckResult.networkError);
     }
   }
 
-  Future<Map<String, dynamic>?> _fetchVersionJson({
+  VersionInfo _findLatestForChannel(
+    List<Map<String, dynamic>> releases,
+    UpdateChannel channel,
+  ) {
+    for (final release in releases) {
+      final bool isPrerelease = release['prerelease'] as bool? ?? false;
+      final bool match = channel == UpdateChannel.beta
+          ? isPrerelease
+          : !isPrerelease;
+
+      if (match) {
+        return VersionInfo.fromGitHubRelease(release, channel);
+      }
+    }
+    return VersionInfo.empty();
+  }
+
+  Future<List<Map<String, dynamic>>?> _fetchReleases({
     bool forceRefresh = false,
   }) async {
     if (!forceRefresh && _lastFetched != null && _lastFetchTime != null) {
@@ -136,36 +189,37 @@ class UpdateService {
 
     final cached = await _readCached();
 
-    // Try the network
     try {
       final response = await _client
-          .get(
-            Uri.parse(_versionUrl),
-            headers: {'User-Agent': 'Tempo-App'},
-          )
-          .timeout(const Duration(seconds: 10));
+          .get(Uri.parse(_releasesUrl), headers: _apiHeaders)
+          .timeout(_requestTimeout);
 
       if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        _lastFetched = json;
+        final List<dynamic> jsonList = jsonDecode(response.body) as List<dynamic>;
+        final releases =
+            jsonList.cast<Map<String, dynamic>>().toList();
+        _lastFetched = releases;
         _lastFetchTime = DateTime.now();
-        await _writeCache(json);
-        return json;
+        await _writeCache(releases);
+        return releases;
       }
 
       debugPrint('[UpdateService] HTTP ${response.statusCode}');
+    } on SocketException catch (e) {
+      debugPrint('[UpdateService] Socket error (offline): $e');
+    } on ClientException catch (e) {
+      debugPrint('[UpdateService] Client error: $e');
+    } on TimeoutException {
+      debugPrint('[UpdateService] Request timed out');
     } catch (e) {
       debugPrint('[UpdateService] Fetch failed: $e');
     }
 
-    // Network failed — use stale cache if available
     if (cached != null) {
       debugPrint('[UpdateService] Using stale cache');
       return cached;
     }
 
-    // No cache — write a default so subsequent checks have a fallback
-    await _writeDefaultCache();
     return null;
   }
 
@@ -180,48 +234,31 @@ class UpdateService {
     }
   }
 
-  Future<Map<String, dynamic>?> _readCached() async {
+  Future<List<Map<String, dynamic>>?> _readCached() async {
     try {
       final box = HiveHelper.settings;
       final jsonStr = box.get(_cacheKey) as String?;
       final timestamp = box.get(_cacheTimestampKey) as int?;
       if (jsonStr == null || timestamp == null) return null;
 
-      final cachedTime =
-          DateTime.fromMillisecondsSinceEpoch(timestamp);
+      final cachedTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
       if (DateTime.now().difference(cachedTime) > _cacheDuration) {
         return null;
       }
 
-      return jsonDecode(jsonStr) as Map<String, dynamic>;
+      final List<dynamic> jsonList = jsonDecode(jsonStr) as List<dynamic>;
+      return jsonList.cast<Map<String, dynamic>>().toList();
     } catch (_) {
       return null;
     }
   }
 
-  Future<void> _writeCache(Map<String, dynamic> json) async {
+  Future<void> _writeCache(List<Map<String, dynamic>> releases) async {
     try {
       final box = HiveHelper.settings;
-      await box.put(_cacheKey, jsonEncode(json));
-      await box.put(_cacheTimestampKey, DateTime.now().millisecondsSinceEpoch);
-    } catch (_) {}
-  }
-
-  Future<void> _writeDefaultCache() async {
-    try {
-      final box = HiveHelper.settings;
-      final exists = box.get(_cacheKey) != null;
-      if (exists) return;
-      const fallback = {
-        'latest_stable_version': '0.0.0',
-        'latest_stable_url': '',
-        'changelog_stable': '',
-        'latest_beta_version': '0.0.0',
-        'latest_beta_url': '',
-        'changelog_beta': '',
-      };
-      await box.put(_cacheKey, jsonEncode(fallback));
-      await box.put(_cacheTimestampKey, DateTime.now().millisecondsSinceEpoch);
+      await box.put(_cacheKey, jsonEncode(releases));
+      await box
+          .put(_cacheTimestampKey, DateTime.now().millisecondsSinceEpoch);
     } catch (_) {}
   }
 
