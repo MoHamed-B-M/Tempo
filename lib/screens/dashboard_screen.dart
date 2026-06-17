@@ -50,25 +50,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Expanded(flex: 7, child: _AlarmCard()),
+                           Expanded(flex: 7, child: RepaintBoundary(child: _AlarmCard())),
                           const SizedBox(width: 12),
                           Expanded(
                             flex: 5,
-                            child: _ClockCard(cs: cs),
+                            child: RepaintBoundary(child: _ClockCard(cs: cs)),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const _WorldClockCard(),
+                    const RepaintBoundary(child: _WorldClockCard()),
                     const SizedBox(height: 12),
                     const IntrinsicHeight(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(child: _TimerCard()),
+                          Expanded(child: RepaintBoundary(child: _TimerCard())),
                           SizedBox(width: 12),
-                          Expanded(child: _StopwatchCard()),
+                          Expanded(child: RepaintBoundary(child: _StopwatchCard())),
                         ],
                       ),
                     ),
@@ -283,13 +283,36 @@ class _AlarmCard extends ConsumerWidget {
   }
 }
 
-class _ClockCard extends StatelessWidget {
+class _ClockCard extends StatefulWidget {
   final ColorScheme cs;
   const _ClockCard({required this.cs});
 
   @override
+  State<_ClockCard> createState() => _ClockCardState();
+}
+
+class _ClockCardState extends State<_ClockCard> {
+  Timer? _timer;
+  DateTime _now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final cs = widget.cs;
+    final now = _now;
     final timeStr = DateFormat('h:mm').format(now);
     final periodStr = DateFormat('a').format(now);
 
@@ -306,6 +329,7 @@ class _ClockCard extends StatelessWidget {
                 painter: _GeometricClockPainter(
                   primaryColor: cs.secondary,
                   containerColor: cs.secondaryContainer,
+                  time: now,
                 ),
               ),
             ),
@@ -752,10 +776,12 @@ class _MediaButton extends StatelessWidget {
 class _GeometricClockPainter extends CustomPainter {
   final Color primaryColor;
   final Color containerColor;
+  final DateTime time;
 
   _GeometricClockPainter({
     required this.primaryColor,
     required this.containerColor,
+    required this.time,
   });
 
   @override
@@ -793,7 +819,7 @@ class _GeometricClockPainter extends CustomPainter {
       );
     }
 
-    final now = DateTime.now();
+    final now = time;
     final hourAngle = ((now.hour % 12) * 30 + now.minute * 0.5 - 90) * math.pi / 180;
     final minuteAngle = (now.minute * 6 + now.second * 0.1 - 90) * math.pi / 180;
 
@@ -851,7 +877,8 @@ class _GeometricClockPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _GeometricClockPainter old) => true;
+  bool shouldRepaint(covariant _GeometricClockPainter old) =>
+      old.time.second != time.second;
 }
 
 class _CircularProgressPainter extends CustomPainter {

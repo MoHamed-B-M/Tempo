@@ -148,7 +148,7 @@ class UpdateService {
     } on SocketException {
       debugPrint('[UpdateService] No internet connection');
       return const UpdateCheckResponse(result: UpdateCheckResult.noConnection);
-    } on ClientException catch (e) {
+    } on http.ClientException catch (e) {
       debugPrint('[UpdateService] Client error: $e');
       return const UpdateCheckResponse(result: UpdateCheckResult.networkError);
     } on TimeoutException {
@@ -207,7 +207,7 @@ class UpdateService {
       debugPrint('[UpdateService] HTTP ${response.statusCode}');
     } on SocketException catch (e) {
       debugPrint('[UpdateService] Socket error (offline): $e');
-    } on ClientException catch (e) {
+    } on http.ClientException catch (e) {
       debugPrint('[UpdateService] Client error: $e');
     } on TimeoutException {
       debugPrint('[UpdateService] Request timed out');

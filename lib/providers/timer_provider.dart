@@ -35,7 +35,7 @@ class StopwatchNotifier extends Notifier<StopwatchState> {
   }
 
   void tick() {
-    state = state.copyWith(elapsedMs: state.elapsedMs + 10);
+    state = state.copyWith(elapsedMs: state.elapsedMs + 16);
   }
 
   void setElapsed(int ms) {

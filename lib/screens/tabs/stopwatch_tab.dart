@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,7 +52,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
       );
     } else {
       sw.start();
-      _timer = Timer.periodic(const Duration(milliseconds: 10), (_) {
+      _timer = Timer.periodic(const Duration(milliseconds: 16), (_) {
         ref.read(stopwatchProvider.notifier).tick();
         _progressAnim.value =
             (ref.read(stopwatchProvider).elapsedMs % 60000) / 60000.0;
@@ -267,18 +266,13 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
                     child: SizedBox(
                       width: 220,
                       height: 220,
-                      child: ClipRect(
-                        child: BackdropFilter(
-                          filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 400),
-                            curve: Curves.easeInOutCubic,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.grey.withValues(
-                                  alpha: isRunning ? 0.12 : 0.03),
-                            ),
-                          ),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeInOutCubic,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: cs.surfaceContainerHighest.withValues(
+                              alpha: isRunning ? 0.5 : 0.2),
                         ),
                       ),
                     ),

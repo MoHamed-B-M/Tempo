@@ -58,9 +58,9 @@ class _TimerTabState extends State<TimerTab> {
       } else {
         if (_remainingMs <= 0) return;
         _isRunning = true;
-        _timer = Timer.periodic(const Duration(milliseconds: 10), (_) {
+        _timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
           setState(() {
-            _remainingMs -= 10;
+            _remainingMs -= 100;
             if (_remainingMs <= 0) {
               _remainingMs = 0;
               _timer?.cancel();
