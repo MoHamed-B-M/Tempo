@@ -48,7 +48,7 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
       - name: Build release APK
-        run: flutter build apk --release --split-debug-info=build/debug-info --obfuscate --target-platform android-arm64
+        run: flutter build apk --release --split-debug-info=build/debug-info --obfuscate
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -57,7 +57,13 @@ jobs:
       - name: Prepare APK artifact
         run: |
           mkdir -p outputs
-          cp build/app/outputs/flutter-apk/app-release.apk outputs/tempo-preview.apk
+          APK=$(find build/app/outputs/flutter-apk -name "*.apk" 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            echo "No APK found in flutter-apk directory"
+            ls -la build/app/outputs/flutter-apk/ 2>/dev/null || echo "Directory not found"
+            exit 1
+          fi
+          cp "$APK" outputs/tempo-preview.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

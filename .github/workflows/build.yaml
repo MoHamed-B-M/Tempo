@@ -30,18 +30,31 @@ jobs:
         with:
           channel: stable
 
-      - name: Build release APK & App Bundle
-        run: |
-          flutter build apk --release --split-debug-info=build/debug-info --obfuscate
-          flutter build appbundle --release --split-debug-info=build/debug-info --obfuscate
+      - name: Install dependencies
+        run: flutter pub get
 
-      - name: Upload APK & AAB to artifact
+      - name: Build release APK
+        shell: bash
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleRelease --no-daemon
+          cd ..
+          APK=$(find android/app/build/outputs -name "*.apk" 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: No APK produced"
+            find android/app/build/outputs -type f 2>/dev/null || echo "outputs dir empty"
+            exit 1
+          fi
+          mkdir -p build/app/outputs/flutter-apk
+          cp "$APK" build/app/outputs/flutter-apk/app-release.apk
+          echo "APK: $APK"
+
+      - name: Upload APK to artifact
         uses: actions/upload-artifact@v4
         with:
           name: tempo-release-artifacts
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
 
   release:
@@ -66,6 +79,9 @@ jobs:
         with:
           channel: stable
 
+      - name: Install dependencies
+        run: flutter pub get
+
       - name: Extract changelog for current version
         shell: bash
         run: |
@@ -85,31 +101,62 @@ jobs:
           fi
 
       - name: Decode Keystore
-        if: env.KEYSTORE_BASE64 != ''
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+            echo "Keystore decoded successfully"
+          else
+            echo "WARNING: KEYSTORE_BASE64 secret not set, using auto-generated keystore"
+          fi
 
-      - name: Build signed release APK & App Bundle
+      - name: Build signed release APK
+        shell: bash
         run: |
-          flutter build apk --release --split-debug-info=build/debug-info --obfuscate
-          flutter build appbundle --release --split-debug-info=build/debug-info --obfuscate
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleRelease --no-daemon
+          cd ..
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'android' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'upload' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
 
-      - name: Find APK file
+      - name: Build signed release AAB
+        shell: bash
+        run: |
+          cd android
+          ./gradlew bundleRelease --no-daemon
+          cd ..
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'android' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'upload' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
+
+      - name: Prepare release artifacts
         id: find-apk
         shell: bash
         run: |
-          APK=$(ls build/app/outputs/flutter-apk/*.apk 2>/dev/null | head -1)
-          AAB=build/app/outputs/bundle/release/app-release.aab
-          echo "apk=$APK" >> $GITHUB_OUTPUT
-          echo "aab=$AAB" >> $GITHUB_OUTPUT
-          echo "Found APK: $APK"
-          echo "AAB: $AAB"
+          mkdir -p release-artifacts
+          APK=$(find android/app/build/outputs -name "*release*.apk" 2>/dev/null | head -1)
+          AAB=$(find android/app/build/outputs -name "*release*.aab" 2>/dev/null | head -1)
+          if [ -n "$APK" ]; then
+            cp "$APK" release-artifacts/tempo-release.apk
+            echo "apk=release-artifacts/tempo-release.apk" >> $GITHUB_OUTPUT
+            echo "Found APK: $APK"
+          else
+            echo "WARNING: No APK found"
+            echo "apk=" >> $GITHUB_OUTPUT
+          fi
+          if [ -n "$AAB" ]; then
+            cp "$AAB" release-artifacts/tempo-release.aab
+            echo "aab=release-artifacts/tempo-release.aab" >> $GITHUB_OUTPUT
+            echo "Found AAB: $AAB"
+          else
+            echo "WARNING: No AAB found"
+            echo "aab=" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
