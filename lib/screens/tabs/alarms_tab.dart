@@ -202,7 +202,7 @@ class _AlarmsTabState extends ConsumerState<AlarmsTab> {
         Positioned(
           left: 0,
           right: 0,
-          bottom: 96,
+          bottom: MediaQuery.of(context).size.height * 0.18,
           child: Center(
             child: GestureDetector(
               onTap: _showCreateSheet,

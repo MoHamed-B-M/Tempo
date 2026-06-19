@@ -421,7 +421,7 @@ class _StopwatchTabState extends ConsumerState<StopwatchTab>
               ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

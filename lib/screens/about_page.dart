@@ -149,27 +149,12 @@ class _AboutPageState extends State<AboutPage> {
                       ],
                     ),
                     const SizedBox(height: 32),
-                    // Action buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildActionButton(
-                            cs,
-                            Icons.code_rounded,
-                            'GitHub',
-                            'https://github.com/MoHamed-B-M/Tempo',
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildActionButton(
-                            cs,
-                            Icons.telegram_rounded,
-                            'Telegram',
-                            'https://t.me/tempo_app',
-                          ),
-                        ),
-                      ],
+                    // GitHub button (full-width)
+                    _buildActionButton(
+                      cs,
+                      Icons.code_rounded,
+                      'GitHub',
+                      'https://github.com/MoHamed-B-M/Tempo',
                     ),
                   ],
                 ),
